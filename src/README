@@ -1,0 +1,135 @@
+Overview of epics module structure
+
+__init__.py
+    Master epics module exports, together with overview help text.
+Automatically imports all sub-modules, republishing their symbols as epics
+module symbols.  Also sets up the default configuration.
+
+autosave.py
+    Implementation of PV autosave and restore functionality.  Relies on some
+hooks in records and ioc writing.
+
+bits.py
+    Hacks for extending mbbiDirect and mbboDirect classes with bit and
+register support.
+
+configure.py
+    Top level module configuration.  Coordinates epics module configuration
+together with state reset when either starting a new configuration or a new
+IOC.
+
+dbd.py
+    Interface to list of all record types: defines RecordTypes, aliased as
+"records" which contains constructors for all the currently supported record
+types.  Also provides support for loading new DBD files.
+    
+fanout.py
+    Routines for building fanout and dfanout records from a list of records.
+
+iocinit.py
+    Ioc initialisation: supports IOC configuration settings together with
+coordination of the calls required to build a single IOC initialisation file.
+
+iocwriter.py
+    Support for writing out an entire IOC.  Supports two types of IOC: simple
+files, and entire directory structures.  The latter is very dependent on the
+Diamond IOC structuring conventions.
+
+libversion.py
+    Base support for modules and module versioning.  
+
+mydbstatic.py
+    Uses ctypes to create direct interface to libdbStaticHost.so library: this
+is part of EPICS and provides the API for reading and interpreting DBD files.
+
+recordbase.py
+    Record class support: all record types provided by the RecordTypes class
+are subclassed from Record defined here.  Also defines types for links to
+records, imported records, and template parameters.
+
+recordnames.py
+    Provides support for different record naming conventions.
+
+recordset.py
+    Collects together records as they are created and provides hooks for
+writing them out as part of IOC creation.  Also supports templates and their
+instances.
+
+support.py
+    A collection of sometimes fairly tricky support routines and base classes,
+including module export support, a few helpful iteration routines, and some
+tricks based on metaclasses: Singleton, autosuper, and auto-registering
+classes.
+
+versions_3_13.py
+    Module version definitions for epics 3.13.
+
+versions_3_14.py
+    Module version definitions for epics 3.14.
+
+hardware/__init__.py
+    The hardware sub-module collects together definitions suitable for
+defining hardware initialisation.
+
+hardware/baselib.py
+    Defines the core modules required by every IOC together with a handful of
+other miscellaneous modules with no other natural home including mbb32Direct,
+genSub, Transform and vxStats.
+
+hardware/device.py
+    Defines the Device class which is at the core of all loadable modules.
+This defines the detailed behaviour, including which library files need to be
+loaded and any initialisation required.
+
+hardware/hardware.py
+    Collects together the set of devices defined during the initialisation of
+an IOC and provides support for generating the appropriate startup files.
+
+hardware/IpCarrier.py
+    Provides generic support for IP carrier cards, namely Hytec 8001 and 8002
+cards, together with generic support for IP modules.
+
+hardware/Hy8001.py
+    Supports Hytec 8001 digital IO card with two optional IP slots.
+
+hardware/Hy8002.py
+    Supports Hytec 8002 four slot IP carrier card.
+
+hardware/DLS8512.py
+    Supports Hytec 8512 16 channel counter IP card.
+    
+hardware/Hy8401.py
+    Supports Hytec 8401 8 channel ADC IP card.
+
+hardware/Hy8402.py
+    Supports Hytec 8402 16 channel DAC IP card.
+
+hardware/Hy8505.py
+    Supports Hytec 8505 16 bit digital IO IP card.
+
+hardware/Hy8513.py
+    Supports Hytec 8513 4 channel encoder counter IP card.
+
+hardware/Hy8515.py
+    Supports Hytec 8515 and 8516 8 channel serial IP card.
+
+hardware/Oms.py
+    Supports OMS 58 8 channel VME card.
+
+hardware/streamBus.py
+    Supports stream bus module for providing simple protocol support for
+serial devices.
+
+hardware/Timing.py
+    Supports the Diamond event receiver card.  Event map generation and event
+numbering is built into this module.
+
+
+Notes:
+
+* It might be sensible to move hardware/device and hardware/hardware into the
+core epics module and reserve the hardware directory for actual hardware
+definitions.  But then we'd need a mechanism for adding extensions hardware
+modules.
+
+
