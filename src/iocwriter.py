@@ -274,7 +274,15 @@ $(LIBNAME): ../Makefile
 '''include $(EPICS_BASE)/configure/RULES_TOP
 ''',
     }
-    
+
+    IOC_MAKEFILE_TEMPLATE = \
+'''TOP=../..
+include $(TOP)/configure/CONFIG
+SCRIPTS += st%(ioc)s.boot
+include $(TOP)/configure/RULES
+%%.boot: ../%%.cmd
+	cp $< $@
+'''    
 
     @classmethod
     def OpenIocWriter(cls, *argv, **argk):
@@ -344,7 +352,7 @@ $(LIBNAME): ../Makefile
            Makefile         Top level makefile to call <ioc>App Makefiles
            iocBoot/
              ioc<ioc>/      Directory for st.cmd and other ioc resources
-               st.cmd       IOC startup script
+               st<ioc>.cmd  IOC startup script
                <ioc files>  Other ioc specific files may be placed here
            <ioc>App/
              Makefile       Makefile to build IOC db directory and file
@@ -370,18 +378,7 @@ $(LIBNAME): ../Makefile
         # Create the Db directory and its associated files.
         self.CreateDatabaseFiles(ioc, iocAppDir)
 
-        # Create the st.cmd file with appropriate hooks.
-        # Start by telling iocinit which .db files to load
-        if self.CountAutosaves():
-            self.WriteFile(
-                (iocBootDir, '0.req'), self.PrintAutosaves, header=None)
-            # The autosave directory needs to be configured before writing
-            # the command file.
-            Autosave.SetAutosaveDir(iocBootDir)
-        self.WriteFile(
-            (iocBootDir, 'st.cmd'), self.PrintIoc, '../..', maxLineLength=126)
-        # Copy any IOC specific files into the configured data directory.
-        self.CopyIocFiles(self.iocRoot)
+        self.CreateBootFiles(ioc, iocBootDir)
 
         # In static build mode create the source directory and add all the
         # modules we use to the list of libraries.
@@ -433,6 +430,26 @@ $(LIBNAME): ../Makefile
         self.MakeDirectory(iocSrcDir)
         self.WriteFile((iocSrcDir, 'Makefile'), self.SrcMakefile, ioc)
         self.TopMakefileList.append(iocSrcDir)
+
+
+    def CreateBootFiles(self, ioc, iocBootDir):
+        # Create the st.cmd file with appropriate hooks.
+        # Start by telling iocinit which .db files to load
+        if self.CountAutosaves():
+            self.WriteFile(
+                (iocBootDir, '0.req'), self.PrintAutosaves, header=None)
+            # The autosave directory needs to be configured before writing
+            # the command file.
+            Autosave.SetAutosaveDir(iocBootDir)
+        self.WriteFile(
+            (iocBootDir, 'st%s.cmd' % ioc),
+            self.PrintIoc, '../..', maxLineLength=126)
+        # Copy any IOC specific files into the configured data directory.
+        self.CopyIocFiles(self.iocRoot)
+
+        self.WriteFile((iocBootDir, 'Makefile'),
+            self.IOC_MAKEFILE_TEMPLATE % locals())
+        self.TopMakefileList.append(iocBootDir)
     
 
     def TopMakefile(self):

@@ -31,6 +31,12 @@ FPSLookup = dict(
     DBUS4 = 0x24,  DBUS5 = 0x25,  DBUS6 = 0x26,  DBUS7 = 0x27)
 
 
+# Event codes as placed in databases are formatted as hex numbers to increase
+# readability.
+def _FormatEvent(event):
+    return '0x%x' % event
+
+
 class _EventRecords:
     '''This class provides a mechanism for binding any record to the given
     EPICS event.'''
@@ -41,7 +47,7 @@ class _EventRecords:
         '''This binds record to this event so that the record will process
         when the associated event triggers.'''
         record.SCAN = 'Event'
-        record.EVNT = self.event
+        record.EVNT = _FormatEvent(self.event)
 
 
 # Support for handling a single event number.  
@@ -59,7 +65,7 @@ class _EventMap:
             PINI = 'YES',
             ENAB = 'Enabled',
             VME  = 'Disabled',
-            ENM  = event)
+            ENM  = _FormatEvent(event))
         _epics.UnsetDevice()
         for i in range(14):
             setattr(self.record, 'OUT%X' % i, 'Disabled')
@@ -95,7 +101,8 @@ class _EventMap:
             # global event number.
             self.er.SetDevice()
             self.er.event(name,
-                event = self.event, VAL = epics_event, PRIO = PRIO)
+                event = self.event,
+                VAL = _FormatEvent(epics_event), PRIO = PRIO)
             _epics.UnsetDevice()
 
             self.__SoftEvent = _EventRecords(epics_event)
@@ -114,6 +121,8 @@ class EventReceiver(Device):
     DbdFileList = ['evgevr.dbd']
     LibFileList__3_14 = ['evgevr']
 
+    # Ensure that the event receiver is initialised really quite early.  This
+    # is needed so that the appropriate timestamps are functioning.
     InitialisationPhase = -1
     
     def __init__(self, name = 'SET_HW',
@@ -154,8 +163,17 @@ class EventReceiver(Device):
             
 
     # Helper routine for computing the address of an event record.  This
-    # requires that an event field be included in the arguments.
+    # requires that an event field be included in the arguments.  We output
+    # the event number in hex to be friendly to anyone reading the database.
     def __event_address(self, fields):
+        address = '#C%d S%s @' % (self.slot, _FormatEvent(fields['event']))
+        del fields['event']
+        fields['SCAN'] = 'I/O Intr'
+        return address
+
+    # In EPICS 3.13 the event code cannot be in hex: vmeio parsing just
+    # doesn't stretch this far (see src/dbStatic/dbStaticLib.c in EPICS base).
+    def __event_address__3_13(self, fields):
         address = '#C%d S%d @' % (self.slot, fields['event'])
         del fields['event']
         fields['SCAN'] = 'I/O Intr'
@@ -164,7 +182,8 @@ class EventReceiver(Device):
         
     def Initialise(self):
         print 'ErConfigure(' \
-            '%(slot)d, %(address)d, %(vector)d, %(intLevel)d)' % self.__dict__
+            '%(slot)d, 0x%(address)x, %(vector)d, %(intLevel)d)' % \
+                self.__dict__
         if Configure.EpicsVersion == '3_13':
             print 'TSinit'
             print '# Use TSreport to interrogate the timing system status.'

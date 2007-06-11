@@ -7,7 +7,7 @@ from _epics import *
 
 # These devices are used directly, while the others are loaded as part of
 # other devices
-__all__ = ['vxStats', 'mbbi32Direct', 'genSub', 'Transform']
+__all__ = ['vxStats', 'mbbi32Direct', 'genSub', 'Transform', 'IOCinfo']
 
 
 
@@ -114,4 +114,21 @@ class vxStats(Substitution, Device):
         '''Creates a vxStats expansion instance for the named ioc.'''
         # This had better delegate to Substitution, otherwise the arguments
         # are going to go astray!  Thus the class inheritance order matters.
+        self.__super.__init__(device = iocname)
+
+
+class IOCinfo(Substitution, Device):
+    '''Provides basic information about the IOC, supplementing the information
+    provided by vxStats: provides temperature information.'''
+    
+    Arguments = ('device',)
+    TemplateFile = 'IOCinfo.template'
+    
+    LibFileList = ['IOCinfoLib']
+    DbdFileList = ['IOCinfo.dbd']
+
+    LibFileList__3_14 = ['IOCinfo']
+
+    def __init__(self, iocname):
+        '''Creates an IOCinfo expansion instance for the named ioc.'''
         self.__super.__init__(device = iocname)

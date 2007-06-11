@@ -4,6 +4,7 @@ from baselib import mbbi32Direct, Sscan
 
 
 class DLS8512(IpDevice):
+    Dependencies__3_14 = (Sscan,)
     Dependencies__3_13 = (mbbi32Direct,)
 
     LibFileList = ['DLS8512Lib']

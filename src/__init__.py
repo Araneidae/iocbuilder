@@ -7,7 +7,7 @@ The following code illustrates a simple use of the library to generate
 eight records, named AI0 to AI7, one for each of the channels of an 8401
 in IP socket A of a carrier card in VME slot 4:
 
-    from epics import *
+    from dls.builder import *
 
     card = hardware.Hy8002(4)
     adc = card.Hy8401(0, intEnable=1)
@@ -22,22 +22,22 @@ in IP socket A of a carrier card in VME slot 4:
 
 This approach is suitable for simple test applications, but for a more
 general approach (for example, the generation of complete buildable iocs)
-it is necessary to configure the epics module.  For example:
+it is necessary to configure the dls.builder module.  For example:
 
-    import epics
-    epics.Configure(... whatever ...)
-    from epics import *
+    import dls.builder
+    dls.builder.Configure(... whatever ...)
+    from dls.builder import *
     ... carry on in the new environment ...
 
-Note that changing the epics configuration will change the set of names
-exported by the epics module: hence the line "from epics import *" after
-the call to Configure.  For example, to configure the use of Diamond
+Note that changing the builder configuration will change the set of names
+exported by the builder module: hence the line "from dls.builder import *"
+after the call to Configure.  For example, to configure the use of Diamond
 convention names under Epics 3.13 the following configuration call is
 suitable:
 
-    import epics
-    epics.Configure(recordnames=epics.DiamondRecordNames())
-    from epics import *
+    import dls.builder
+    dls.builder.Configure(recordnames=dls.builder.DiamondRecordNames())
+    from dls.builder import *
 
 There is much more to describe.  Watch this space...
 '''

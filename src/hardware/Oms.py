@@ -121,16 +121,26 @@ class OmsVme58(Device):
         return _OmsVme58Channel(self.State.CardId(self.baseaddress), channel)
     
 
-    def Initialise(self):
+    def InitialiseOnce__3_13(self):
+        '''Internal method'''
+        # Backwards compatibility: prior to version 5-4 of the OMS motor
+        # record the second argument is required but ignored, but
+        # subsequently the argument must be omitted.
+        #   Unfortunately this has become a 3.13/3.14 distinction...!
+        print 'oms58Setup(' \
+            '%(CardCount)d, 0, 0x%(BaseAddress)x, %(Vector)d, ' \
+            '%(intlevel)d, %(pollrate)d)' % self.State.__dict__
+        del OmsVme58.State
+        
+    def InitialiseOnce(self):
         '''Internal method'''
         # Only generate initialisation if this the first call to Initialise.
         # Otherwise reset the state so that we can reuse this class for
         # another IOC.
-        if hasattr(OmsVme58, 'State'):
-            print 'oms58Setup(' \
-                '%(CardCount)d, 0, %(BaseAddress)d, %(Vector)d, ' \
-                '%(intlevel)d, %(pollrate)d)' % self.State.__dict__
-            del OmsVme58.State
+        print 'oms58Setup(' \
+            '%(CardCount)d, 0x%(BaseAddress)x, %(Vector)d, ' \
+            '%(intlevel)d, %(pollrate)d)' % self.State.__dict__
+        del OmsVme58.State
         
 
 class _OmsVme58Channel:
