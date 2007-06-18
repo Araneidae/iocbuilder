@@ -89,5 +89,6 @@ del _add_symbol, _delete_symbol, _globals
 # application generation, and load the default 3.13 versions file.
 Configure(
     recordnames = BasicRecordNames(),
-    iocwriter = SimpleIocWriter())
-Configure.LoadVersionFile('versions_3_13.py')
+    iocwriter = SimpleIocWriter(),
+    version = '3_14')
+# Configure.LoadVersionFile('versions_3_14.py')

@@ -56,9 +56,6 @@ class iocInit(Singleton):
         self.__DatabaseNameList = []
         self.__EnvList = dict(self.DefaultEnvironment)
 
-        self.__IocFileList = {}
-        self.__DataPath = None
-        
         # Configure the initial library for this ioc.
         self.__IocLib = initialLibrary()
 
@@ -165,40 +162,6 @@ class iocInit(Singleton):
         changing this can cause some drivers to stop working.'''
         self.__ClockRate = ClockRate
 
-
-    # Adds the given IocDataFile instance to the list of data files to be
-    # stored with this IOC.
-    def _AddDataFile(self, file_object):
-        file_name = file_object.name
-        if file_name in self.__IocFileList:
-            assert file_object == self.__IocFileList[file_name], \
-                'File %s already added to IOC with different path %s' % (
-                    file_object.source, self.__IocFileList[file_name].source)
-        else:
-            self.__IocFileList[file_name] = file_object
-
-        
-    # At the time the database is being constructed this must return the path
-    # to the data directory as expected by the IOC.
-    def _DataPath(self):
-        assert self.__DataPath is not None, \
-            'IOC data path not yet defined'
-        return self.__DataPath
-        
-
-    def SetDataPath(self, DataPath):
-        assert DataPath is None or self.__DataPath is None, \
-            'DataPath sequence error'
-        self.__DataPath = DataPath
-
-        
-    # Copies all IOC specific files into place.
-    def CopyIocFiles(self, targetDir):
-        for filename, file_object in self.__IocFileList.items():
-            shutil.copyfile(file_object.source,
-                os.path.join(targetDir, self._DataPath(), filename))
-        
-
     @export
     def EpicsEnvSet(self, key, value):
         '''Adds a key=value setting to the startup script.'''
@@ -216,18 +179,66 @@ class IocDataFile:
     '''
 
     # Ensure that when this class is used as a database field it isn't
-    # validate on assignment: this can be too early for path resolution!
+    # validated on assignment: this can be too early for path resolution!
     ValidateLater = True
+
+    # The following global state is managed as class variables.
+    __DataPath = None
+    __DataFileList = {}
+
+    @classmethod
+    def Reset(cls):
+        cls.__DataPath = None
+        cls.__DataFileList = {}
+
+    @classmethod
+    def SetDataPath(cls, DataPath):
+        '''Assigns the path to the data directory as seen by the IOC.'''
+
+        # Ensure we're not changing the data path on uncopied files.
+        assert DataPath is not None and not cls.__DataFileList, \
+            'DataPath sequence error'
+        cls.__DataPath = DataPath
+
+    @classmethod
+    def CopyDataFiles(cls, targetDir):
+        assert cls.__DataPath is not None, 'IOC data path not yet defined'
+        if targetDir is None:
+            targetDir = cls.__DataPath
+        for filename, file_object in cls.__DataFileList.items():
+            shutil.copyfile(file_object.source,
+                os.path.join(targetDir, cls.__DataPath, filename))
+
+        # Once the data files have been copied our work is done (so long as
+        # this is done after database generation!)  Reset our internal state.
+        cls.Reset()
+
+    @classmethod
+    def DataFileCount(cls):
+        return len(cls.__DataFileList)
+            
 
     def __init__(self, source_file):
         _, self.name = os.path.split(source_file)
         self.source = source_file
         assert os.access(self.source, os.R_OK), \
             'File "%s" not readable' % self.source
-        iocInit._AddDataFile(self)
+
+        try:
+            file_entry = self.__DataFileList[self.name]
+        except KeyError:
+            # New entry: just add ourself to the list of files
+            self.__DataFileList[self.name] = self
+        else:
+            # Existing entry: check that we're actually handling exactly the
+            # same underlying file (this is handled by the override of cmp).
+            assert self == file_entry, \
+                'File %s already added to IOC with different path %s' % (
+                    self.source, file_entry.source)
 
     def Path(self):
-        return os.path.join(iocInit._DataPath(), self.name)
+        assert self.__DataPath is not None, 'IOC data path not yet defined'
+        return os.path.join(self.__DataPath, self.name)
 
     def __str__(self):
         return self.Path()
@@ -237,6 +248,7 @@ class IocDataFile:
     def __cmp__(self, other):   return cmp(self.source, other.source)
 
 
+    
 # Export all the names exported by iocInit()
 __all__ = ['IocDataFile']
 for name in _ExportList:

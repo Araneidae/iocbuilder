@@ -124,14 +124,19 @@ class Configure(Singleton):
 
     def __ConfigureVersion(self):
         self.EpicsVersion = self.version
+        
+        libversion.ResetModuleVersions()
+        execfile(os.path.join(os.path.dirname(__file__),
+            'versions_%s.py' % self.EpicsVersion), self.__globals())
 
 
-    def LoadVersionFile(self, filename, path=None, keep=False):
-        if path is None:
-            path = os.path.dirname(__file__)
-        if not keep:
-            libversion.ResetModuleVersions()
-        execfile(os.path.join(path, filename), self.__globals())
+    def LoadVersionFile(self, filename):
+        '''Loads a list of module version declarations.  The given file is
+        executed with execfile() with the ModuleVersion() function already
+        in scope: no other calls or definitions should occur in the file.
+        '''
+        ModuleVersion = self.__globals()['ModuleVersion']
+        execfile(filename, dict(ModuleVersion = ModuleVersion))
 
 
     # List of allowable configuration settings and any configuration actions.

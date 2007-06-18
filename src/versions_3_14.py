@@ -8,6 +8,5 @@ Configure(
     baselib = hardware.baselib.epicsBase,
     dynamic_load = False,
     register_dbd = True,
-    version = '3_14',
     architecture = 'vxWorks-ppc604_long')
 

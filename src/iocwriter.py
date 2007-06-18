@@ -120,8 +120,11 @@ class IocWriter:
 
         # Add filename to list of databases known to this IOC
         self.AddDatabase = iocinit.iocInit.AddDatabaseName
+        
         # Copies all files bound to IOC into given location
-        self.CopyIocFiles = iocinit.iocInit.CopyIocFiles
+        self.SetDataPath = iocinit.IocDataFile.SetDataPath
+        self.CopyDataFiles = iocinit.IocDataFile.CopyDataFiles
+        self.DataFileCount = iocinit.IocDataFile.DataFileCount
 
         
     def WriteFile(self, filename, writer, *argv, **argk):
@@ -290,7 +293,7 @@ include $(TOP)/configure/RULES
 
     @classmethod
     def WriteOneIoc(cls, path, domain, techArea, id=1):
-        writer = cls(path, domain, techArea)
+        writer = cls.OpenIocWriter(path, domain, techArea)
         writer.WriteIoc(id)
         writer.Close()
 
@@ -318,11 +321,12 @@ include $(TOP)/configure/RULES
         
 
         
-    def __init__(self, path, domain, techArea):
+    def __init__(self, path, domain, techArea, make_boot=True):
         IocWriter.__init__(self, os.path.join(path, domain, techArea))
-        
+
         self.domain = domain
         self.techArea = techArea
+        self.make_boot = make_boot
         
         self.iocBoot = os.path.join(self.iocRoot, 'iocBoot')
         if os.access(self.iocRoot, os.F_OK):
@@ -331,9 +335,9 @@ include $(TOP)/configure/RULES
         self.MakeDirectory('iocBoot')
         self.MakeDirectory('configure')
 
-#         # Create the data directory
+        # Create the data directory
 #         self.MakeDirectory('data')
-#         iocinit.iocInit.SetDataPath('data')
+        self.SetDataPath('data')
         
         # Write the configure skeleton.
         for filename, content in self.IOC_configure_Skeleton.items():
@@ -372,8 +376,8 @@ include $(TOP)/configure/RULES
         self.MakeDirectory(iocBootDir)
         self.MakeDirectory(iocAppDir)
 
-        # The data path needs to be set before the database is expanded.
-        iocinit.iocInit.SetDataPath(iocBootDir)
+#         # The data path needs to be set before the database is expanded.
+#         self.SetDataPath(iocBootDir)
 
         # Create the Db directory and its associated files.
         self.CreateDatabaseFiles(ioc, iocAppDir)
@@ -387,7 +391,6 @@ include $(TOP)/configure/RULES
             self.ModuleList.update(libversion.ModuleBase.ListModules())
 
         # All done.  Reset all the resources we've used.
-        iocinit.iocInit.SetDataPath(None)
         self.Reset()
 
         
@@ -397,6 +400,12 @@ include $(TOP)/configure/RULES
         file needed by the makefile system.'''
         self.WriteFile('Makefile', self.TopMakefile)
         self.WriteFile('configure/RELEASE', self.ConfigureRelease)
+
+        # If there are any data files to copy, create the data directory and
+        # put them in place.
+        if self.DataFileCount():
+            self.MakeDirectory('data')
+            self.CopyDataFiles(self.iocRoot)
 
 
     def CreateDatabaseFiles(self, ioc, iocAppDir):
@@ -441,15 +450,19 @@ include $(TOP)/configure/RULES
             # The autosave directory needs to be configured before writing
             # the command file.
             Autosave.SetAutosaveDir(iocBootDir)
-        self.WriteFile(
-            (iocBootDir, 'st%s.cmd' % ioc),
-            self.PrintIoc, '../..', maxLineLength=126)
-        # Copy any IOC specific files into the configured data directory.
-        self.CopyIocFiles(self.iocRoot)
+#         # Copy any IOC specific files into the configured data directory.
+#         self.CopyDataFiles(self.iocRoot)
 
-        self.WriteFile((iocBootDir, 'Makefile'),
-            self.IOC_MAKEFILE_TEMPLATE % locals())
-        self.TopMakefileList.append(iocBootDir)
+        if self.make_boot:
+            self.WriteFile(
+                (iocBootDir, 'st%s.cmd' % ioc),
+                self.PrintIoc, '../..', maxLineLength=126)
+            self.WriteFile((iocBootDir, 'Makefile'),
+                self.IOC_MAKEFILE_TEMPLATE % locals())
+            self.TopMakefileList.append(iocBootDir)
+        else:
+            self.WriteFile((iocBootDir, 'st.cmd'), 
+                self.PrintIoc, '../..', maxLineLength=126)
     
 
     def TopMakefile(self):

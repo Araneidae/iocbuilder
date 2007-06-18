@@ -1,4 +1,4 @@
-EPICS_BASE_LIBS = '/home/epics/R3.14.8.2/base/lib/linux-x86'
+EPICS_BASE_LIBS = '/dls_sw/epics/R3.14.8.2/base/lib/linux-x86'
 
 import os
 from ctypes import *

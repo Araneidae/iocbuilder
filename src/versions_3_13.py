@@ -10,5 +10,4 @@ Configure(
     baselib = hardware.baselib.iocBase,
     dynamic_load = True,
     register_dbd = False,
-    version = '3_13',
     architecture = 'ppc604')

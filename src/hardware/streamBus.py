@@ -15,9 +15,10 @@ class streamBus(Device):
     # The set of protocol directories is remembered as a set.
     ProtocolDirs = set()
     
-    def __init__(self, protocolDir):
+    def __init__(self, protocolDir, port):
         self.__super.__init__()
         self.ProtocolDirs.add(protocolDir)
+        self.port = port
 
     def InitialiseOnce(self):
         # Version 1 of the streams library only supports one protocol
@@ -26,25 +27,30 @@ class streamBus(Device):
             'Inconsistent protocol directories %s' % repr(self.ProtocolDirs)
         print 'STREAM_PROTOCOL_DIR = "%s"' % self.ProtocolDirs.pop()
 
+    def Initialise__3_13(self):
+        print '%s_streamBus = "Tty"' % self.port
 
+        
 
-class streamProtocol(Device):
-    Dependencies__3_14 = (AsynSerial,)
-    
-    # Default path within component to protocol directory.  This is the
-    # standard path for EPICS 3.14 builds at Diamond.
+class streamProtocol(ModuleBase):
+#     # Default path within component to protocol directory.  This is the
+#     # standard path for EPICS 3.14 builds at Diamond.
     ProtocolPath = 'data'
 
+#    def __init__(self, port, ProtocolName = None, ProtocolFile = None):
     def __init__(self, port):
         self.__super.__init__()
+#         if ProtocolName is None:  ProtocolName = self.ProtocolName
+#         if ProtocolFile is None:  ProtocolFile = self.ProtocolFile
 
         path = self.LibPath()
         if self.ProtocolPath:
             path = os.path.join(path, self.ProtocolPath)
-        streamBus(path)
 
         self.port = port.DeviceName()
-        self.__FixupPort()
+        if Configure.EpicsVersion == '3_13':
+            self.port = self.port[1:].replace('/', '_')
+        streamBus(path, self.port)
 
         # Build the record factories for this channel
         for list, link in (
@@ -53,17 +59,6 @@ class streamProtocol(Device):
             for record in list:
                 setattr(self, record, RecordFactory(
                     getattr(records, record), 'stream', link, self._address))
-
-    def __FixupPort(self): pass
-    def __FixupPort__3_13(self):
-        self.port = self.port[1:].replace('/', '_')
-
-    def Initialise__3_13(self):
-        print '%s_streamBus = "Tty"' % self.port
-
-#     def Initialise__3_14(self):
-#         print 'drvAsynSerialPortConfigure("%s", "%s", 0, 0, 0)' % (
-#             self.port, self.raw_port)
 
 
     # Record factory support

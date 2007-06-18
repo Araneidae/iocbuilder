@@ -12,6 +12,5 @@ Configure(
     baselib = hardware.baselib.iocBase,
     dynamic_load = True,
     register_dbd = True,
-    version = '3_14_6',
     architecture = 'vxWorks-ppc604_long')
 

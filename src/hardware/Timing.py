@@ -109,8 +109,8 @@ class _EventMap:
         
         return self.__SoftEvent
 
-    def Bind(self, record):
-        self.SoftEvent().Bind(record)
+    def Bind(self, record, **kargs):
+        self.SoftEvent(**kargs).Bind(record)
 
 
 # Timing system event receiver
@@ -351,8 +351,10 @@ class MonitorEvent(Substitution, Device):
         0x5D: 'BEAMLOSS',   0x5E: 'MPSTRIP',
         0x7D: 'TSRESET' }        
 
-    def __init__(self, eventMap):
-        evnum = eventMap.SoftEvent().event
+    def __init__(self, eventMap, **kargs):
+        '''Monitors the event receiver event specified by eventMap. 
+        '''
+        evnum = eventMap.SoftEvent(**kargs).event
         eventMap.er.SetDevice()
         self.__super.__init__(
             SYSTEM = _epics.GetDevice(),
@@ -371,9 +373,10 @@ class EvrAlive(Substitution):
     TemplateFile = 'evr_alive.template'
 
 
-    def __init__(self, er):
+    def __init__(self, er, **kargs):
         # Ensure that we receive a Linac heartbeat soft event.
-        self.softEvent = er.EventMap('LINAC-HBT', er.LINAC_HBT).SoftEvent()
+        self.softEvent = \
+            er.EventMap('LINAC-HBT', er.LINAC_HBT).SoftEvent(**kargs)
         er.SetDevice()
         self.__super.__init__(
             SYSTEM = _epics.GetDevice(),

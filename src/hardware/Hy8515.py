@@ -8,11 +8,21 @@ class Hy8515(IpDevice):
     DbdFileList__3_14 = ['Hy8515.dbd']
     
     def __init__(self, carrier, ipslot, cardid=None,
-                 intdelay = -32, halfduplex = 0, delay845 = 0):
+            fifo_threshold = None, poll_delay = None,
+#            intdelay = -32,
+            halfduplex = 0, delay845 = 0):
         self.__super.__init__(carrier, ipslot, cardid)
 
-        # Default device parameters, can be overwritten by keyword arguments.
-        self.intdelay = intdelay
+        assert fifo_threshold is None or poll_delay is None, \
+            'Can\'t specify both FIFO and polling'
+        if fifo_threshold is not None:
+            assert 1 <= fifo_threshold < 64, 'Invalid FIFO threshold'
+            self.intdelay = - fifo_threshold
+        elif poll_delay is not None:
+            self.intdelay = poll_delay
+        else:
+            self.intdelay = 625
+
         self.halfduplex = halfduplex
         self.delay845 = delay845
         
@@ -55,6 +65,8 @@ class _Hy8515channel(Device):
         self.cardname = card.cardname
         self.portname = 'PORT%d_%d' % (card.cardid, channel)
         self.device = '/ty/%d/%d' % (card.cardid, channel)
+
+        self.port = self
 
     def SetParameters(self,
             speed=None, parity=None, stopbits=None,
