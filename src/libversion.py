@@ -147,6 +147,13 @@ class ModuleBase(object):
         '''Returns the path to the module.'''
         return cls.ModuleVersion().LibPath()
 
+    @classmethod
+    def ModuleFile(cls, filename):
+        '''Returns an absolute path to a file within this module.'''
+        filename = os.path.join(cls.LibPath(), filename)
+        assert os.access(filename, os.R_OK), 'File "%s" not found' % filename
+        return filename
+
     # Set of instantiated modules as ModuleVersion instances
     _ReferencedModules = set()
 

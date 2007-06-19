@@ -2,7 +2,7 @@
 
 import os
 
-from support import Singleton
+from support import Singleton, SameDirFile
 
 # Note that the configure module must not import any symbols directly from
 # any of the modules below: this rule is necessary to avoid import dependency
@@ -126,7 +126,7 @@ class Configure(Singleton):
         self.EpicsVersion = self.version
         
         libversion.ResetModuleVersions()
-        execfile(os.path.join(os.path.dirname(__file__),
+        execfile(SameDirFile(__file__,
             'versions_%s.py' % self.EpicsVersion), self.__globals())
 
 

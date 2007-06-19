@@ -1,11 +1,11 @@
 '''A miscellaneous collection of fairly generic utilities.'''
 
 import itertools
-import os
+import os, os.path
 import fnmatch
 import types
 
-__all__ = ['Singleton', 'autosuper', 'AutoRegisterClass']
+__all__ = ['Singleton', 'autosuper', 'AutoRegisterClass', 'SameDirFile']
 
 
 def ExportModules(globals, *modulenames):
@@ -31,6 +31,13 @@ def ExportAllModules(globals):
         if filename != '__init__.py']
     return ExportModules(globals, *allfiles)
 
+
+def SameDirFile(first_file, filename):
+    '''Returns a full filename of a file with the given filename in the same
+    directory as first_file.  Designed to be called as
+        path = SameDirFile(__file__, filename)
+    to return a path to a file in the same directory as the calling module.'''
+    return os.path.join(os.path.dirname(first_file), filename)
 
 
 def take(iter, n):
