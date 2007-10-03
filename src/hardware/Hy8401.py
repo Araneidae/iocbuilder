@@ -49,14 +49,16 @@ class Hy8401(IpDevice):
                  sampleSize = 0):            # Disable triggered capture
         '''Optional arguments are:
         intEnable     Set to 1 to enable interrupts
-        inputType     Set to 1 for single ended inputs (default is
-                      differential)
         externalClock Set to 1 for external clock
         clockRate     Set clock rate (default 15), 0 => 1Hz, 15 => 100kHz
         inhibit       Set to 1 to enable front panel inhibit signal
         sampleSize    Set to number of samples for triggered capture
         '''
 
+        assert intEnable in [0, 1], 'Invalid intEnable value'
+        assert externalClock in [0, 1], 'Invalid externalClock value'
+        assert clockRate in range(16), 'Invalid clock rate'
+        assert inhibit in [0, 1], 'Invalid inhibit value'
         assert sampleSize >= 0, 'Invalid sample size'
         assert (sampleSize > 0) <= bool(intEnable), \
             'Triggered capture requires interrupts'

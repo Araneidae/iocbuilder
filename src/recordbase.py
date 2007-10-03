@@ -5,7 +5,7 @@ import string
 import support, recordset
 
 
-__all__ = ['PP', 'CP', 'MS', 'ImportRecord', 'Parameter']
+__all__ = ['PP', 'CP', 'MS', 'NP', 'ImportRecord', 'Parameter']
 
 
 
@@ -52,6 +52,18 @@ class Record(object):
         self.__dict__['_Record__fields'] = {}
         self.__dict__['_Record__autosaves'] = set()
         self.__dict__['name'] = self.RecordName(record)
+
+        # Support the special 'address' field as an alias for either INP or
+        # OUT, depending on which of those exists.  We only set up this field
+        # if exactly one of INP or OUT is present as a valid field. 
+        address = [field
+            for field in ['INP', 'OUT']
+            if self.ValidFieldName(field)]
+        if len(address) == 1:
+            self.__dict__['_Record__address'] = address[0]
+        else:
+            self.__dict__['_Record__address'] = 'address'
+        
         # Make sure all the fields are properly processed and validated.
         for name, value in fields.items():
             setattr(self, name, value)
@@ -60,44 +72,11 @@ class Record(object):
 
 
     def Autosave(self, *fieldnames):
-        '''Enables named field for autosave and restore.'''
+        '''Enables named field(s) for autosave and restore.'''
         for fieldname in fieldnames:
             self.__validate.ValidFieldName(fieldname)
             self.__autosaves.add(fieldname)
 
-
-
-    # Assigning to a record attribute updates a field.
-    def __setattr__(self, fieldname, value):
-        # Treat assigning None to a field the same as deleting that field.
-        # This is convenient for default arguments.
-        if value is None:
-            if fieldname in self.__fields:
-                del self.__fields[fieldname]
-            return
-        
-        # If the field is callable we call it first: this is used to ensure
-        # we convert record pointers into links.  It's unlikely that this will
-        # have unfortunate side effects elsewhere, but it's always possible...
-        if callable(value):
-            value = value()
-        if not getattr(value, 'ValidateLater', False):
-            self.__ValidateField(fieldname, value)
-        self.__fields[fieldname] = value
-
-    # Field validation
-    def __ValidateField(self, fieldname, value):
-        # If the field can validate itself then ask it to, otherwise use our
-        # own validation routine.  This is really just a hook for parameters
-        # so that they can do their own validation.
-        if hasattr(value, 'Validate'):
-            value.Validate(self, fieldname)
-        else:
-            self.__validate.ValidFieldValue(fieldname, str(value))
-
-    # Allow individual fields to be deleted from the record.
-    def __delattr__(self, fieldname):
-        del self.__fields[fieldname]
 
 
     # Call to generate database description of this record.
@@ -144,11 +123,64 @@ class Record(object):
     # Calling the record generates a self link with a list of specifiers.
     def __call__(self, *specifiers):
         return _Link(self, None, *specifiers)
+        
+
+    # Assigning to a record attribute updates a field.
+    def __setattr__(self, fieldname, value):
+        if fieldname == 'address':
+            fieldname = self.__address
+        if value is None:
+            # Treat assigning None to a field the same as deleting that field.
+            # This is convenient for default arguments.
+            if fieldname in self.__fields:
+                del self.__fields[fieldname]
+        else:
+            # If the field is callable we call it first: this is used to
+            # ensure we convert record pointers into links.  It's unlikely
+            # that this will have unfortunate side effects elsewhere, but it's
+            # always possible...
+            if callable(value):
+                value = value()
+            if not getattr(value, 'ValidateLater', False):
+                self.__ValidateField(fieldname, value)
+            self.__fields[fieldname] = value
+
+    # Field validation
+    def __ValidateField(self, fieldname, value):
+        # If the field can validate itself then ask it to, otherwise use our
+        # own validation routine.  This is really just a hook for parameters
+        # so that they can do their own validation.
+        if hasattr(value, 'Validate'):
+            value.Validate(self, fieldname)
+        else:
+            self.__validate.ValidFieldValue(fieldname, str(value))
+
+    # Allow individual fields to be deleted from the record.
+    def __delattr__(self, fieldname):
+        if fieldname == 'address':
+            fieldname = self.__address
+        del self.__fields[fieldname]
+
 
     # Reading a record attribute returns a link to the record.
     def __getattr__(self, fieldname):
+        if fieldname == 'address':
+            fieldname = self.__address
         self.__validate.ValidFieldName(fieldname)
         return _Link(self, fieldname)
+
+    def ValidFieldName(self, fieldname):
+        '''Can be called to validate the given field name, returns True iff
+        this record type supports the given field name.'''
+        try:
+            # The validator is specified to raise an AttributeError exception
+            # if the field name cannot be validated.  We translate this into
+            # a boolean here.
+            self.__validate.ValidFieldName(fieldname)
+        except AttributeError:
+            return False
+        else:
+            return True
 
     # When a record is pickled for export it will reappear as an ImportRecord
     # instance.  This makes more sense (as the record has been fully generated
@@ -260,5 +292,9 @@ def MS(record):
     '''"Maximise Severity": any alarm state on the linked record is propogated
     to the linking record.'''
     return record('MS')
+
+def NP(record):
+    '''"No Process": the linked record is not processed.'''
+    return record('NPP')
 
 # ... put the rest in some time

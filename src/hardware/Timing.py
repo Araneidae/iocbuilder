@@ -242,11 +242,12 @@ class EventReceiver(Device):
         if inverted:
             setattr(self.record, 'DG%XP' % signal, 'Inverted')
 
-    def OTP(self, signal, name, delay, width, inverted=False):
+    def OTP(self, signal, name, delay, width, inverted=False, enabled=True):
         '''Enable an OTP signal and program the delay and pulse width.  If
         desired the output polarity of the signal can be inverted.'''
         assert 0 <= signal < 14, 'Invalid OTP signal'
-        setattr(self.record, 'OTP%X' % signal, 'Enabled')
+        if enabled:
+            setattr(self.record, 'OTP%X' % signal, 'Enabled')
         setattr(self.record, 'OT%XD' % signal, delay)
         setattr(self.record, 'OT%XW' % signal, width)
         if inverted:
@@ -298,8 +299,8 @@ class EventReceiver(Device):
     SR_BP_SYNK1 = 0x46  # 
     SEQ_RUN     = 0x50  # 
     SEQ_STOP    = 0x51  # 
-    TOPUP_ON    = 0x53  # 
-    TOPUP_OFF   = 0x54  # 
+    TOPUP_ON    = 0x53  # Start of topup/injection cycle
+    TOPUP_OFF   = 0x54  # Start of non-injection cycle
     FOFB_READ   = 0x57  # 
     BEAM_DUMP   = 0x5B  # 
     BEAM_LOSS   = 0x5D  # Diagnostics beam loss event for Libera PM event.
@@ -348,6 +349,7 @@ class MonitorEvent(Substitution, Device):
         0x2C: 'BRINJ',      0x30: 'BRPREXTR',
         0x31: 'BSDITRG',    0x32: 'SRPREINJ',
         0x3C: 'SRINJ',      0x40: 'SRDITRG',
+        0x53: 'TOPUPON',    0x54: 'TOPUPOFF',
         0x5D: 'BEAMLOSS',   0x5E: 'MPSTRIP',
         0x7D: 'TSRESET' }        
 

@@ -6,7 +6,7 @@ from setuptools import setup, find_packages, Extension
 try:
     version = version
 except:
-    version = "1.0"
+    version = "development"
 
 setup(
     # install_requires allows you to import a specific version of a module in your scripts 
