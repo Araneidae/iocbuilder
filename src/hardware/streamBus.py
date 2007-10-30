@@ -1,6 +1,9 @@
 import os.path
 from _epics import *
 
+from asyn import AsynSerial
+
+
 __all__ = ['streamProtocol']
 
 
@@ -29,10 +32,18 @@ class streamProtocol(Device):
             streamProtocol.__ForceCopy = True
 
         # Pick up the device name of the given serial port: this is actually
-        # all we need to bind to it.  
-        self.port = port.DeviceName()
+        # all we need to bind to it.  The process of binding to the port is a
+        # little curious and is system version dependent.
         if Configure.EpicsVersion == '3_13':
-            self.port = self.port[1:].replace('/', '_')
+            # The older stream device talks directly to the serial port, but
+            # requires the name to be hacked: we convert a device name of the
+            # form /ty/nn/mm into ty_nn_mm.
+            self.port = port.DeviceName()[1:].replace('/', '_')
+        else:
+            # The new stream device requires that the stream be wrapped as an
+            # asyn device.  We do that wrapping here.
+            self.port = AsynSerial(port).DeviceName()
+            
 
         # Pick up the protocol name from the file name.
         self.ProtocolName = os.path.basename(protocol_file)
