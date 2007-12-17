@@ -11,7 +11,6 @@ import fnmatch
 import iocinit
 import recordset
 import configure
-from support import Closure
 import libversion
 import hardware
 import device

@@ -153,13 +153,3 @@ def AutoRegisterClass(register, ignoreParent=True, superclass=type):
                 register(cls, name)
 
     return DoRegister
-
-
-def Closure(function, *argv, **argk):
-    '''Postpones the calling of the function and its arguments.  The sequence
-        c = Closure(f, *argv, **argk)
-        c()
-    is completely equivalent to
-        f(*argv, **argk).
-    '''
-    return lambda: function(*argv, **argk)
