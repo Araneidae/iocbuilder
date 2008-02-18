@@ -1,5 +1,6 @@
 from _epics import *
 from asyn import Asyn
+from seq import Seq
 
 
 __all__ = ['MotorLib', 'OmsVme58']
@@ -12,7 +13,7 @@ class MotorLib(Device):
     LibFileList = ['motorLib', 'softMotorLib']
     DbdFileList = ['motorRecord.dbd', 'devSoftMotor.dbd']
 
-    Dependencies__3_14 = (Asyn,)
+    Dependencies__3_14 = (Asyn, Seq)
     LibFileList__3_14 = ['motor', 'softMotor']
     DbdFileList__3_14 = ['motorSupport.dbd', 'devSoftMotor.dbd']
 

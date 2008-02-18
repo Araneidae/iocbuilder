@@ -294,6 +294,7 @@ class EventReceiver(Device):
     BR_PRE_EXTR = 0x30  # Booster pre-extract, c. 1ms before extract kick.
     BS_DI_TRG   = 0x31  # Diagnostics BS & SR trigger for Libera.
     SR_PRE_INJ  = 0x32  # Storage ring pre-injection
+    SR_INJ_SEPT = 0x33  # 
     SR_INJ      = 0x3C  # Storage ring injection.
     SR_DI_TRG   = 0x40  # Single shot trigger for SR diagnostics.
     SR_BP_SYNK1 = 0x46  # 

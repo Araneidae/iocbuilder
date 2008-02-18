@@ -11,7 +11,7 @@ class streamProtocol(Device):
     ModuleName = 'streamDevice'
     LibFileList = ['streamLib', 'streamTty.o']
     DbdFileList = ['stream.dbd']
-    LibFileList__3_14 = ['stream']
+    LibFileList__3_14 = ['pcre', 'stream']
 
     # We'll need to post process the list of instances
     __ProtocolFiles = set()
