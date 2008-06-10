@@ -1,6 +1,8 @@
 #   Generic hardware module support
 
 import os.path
+import string
+
 from support import autosuper
 from configure import Configure
 
@@ -24,6 +26,12 @@ def SetModulePath(prod):
 class ModuleVersion:
     '''Create instances of this class to declare the version of each module
     to be used.'''
+
+    # Restrict module names to names which can be used as identifiers.  This
+    # helps a lot when generating EPICS14 IOCs.
+    __ValidNameChars = set(
+        string.ascii_uppercase + string.ascii_lowercase +
+        string.digits + '_')
     
     def __init__(self, libname,
             version=None, home=None, override=False, use_name=True):
@@ -31,7 +39,9 @@ class ModuleVersion:
         # might be quite nice to extend this with a path search.
         if home is None:
             home = prodSupport
-            
+
+        assert set(libname) <= set(self.__ValidNameChars), \
+            'Module name %s must be a valid identifier' % libname
         self.__name = libname
         self.version = version
         self.home = home

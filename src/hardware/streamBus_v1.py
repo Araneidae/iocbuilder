@@ -1,16 +1,15 @@
 import os.path
 from _epics import *
 
-from asyn import AsynSerial
+
+__all__ = ['streamProtocol_v1']
 
 
-__all__ = ['streamProtocol']
-
-
-class streamProtocol(Device):
-    ModuleName = 'streamDevice'
+class streamProtocol_v1(Device):
+    ModuleName = 'streamDevice_v1'
+    LibFileList = ['streamDevice']
+    LibFileList__3_13 = ['streamLib', 'streamTty.o']
     DbdFileList = ['stream.dbd']
-    LibFileList = ['pcre', 'stream']
 
     # We'll need to post process the list of instances
     __ProtocolFiles = set()
@@ -22,18 +21,18 @@ class streamProtocol(Device):
         '''
         self.__super.__init__()
 
-        assert Configure.EpicsVersion != '3_13', \
-            'Use streamProtocol_v1 with EPICS 3.13'
-
-        # Add to the set of protocol files and remember whether copying was
-        # demanded.
+        # Manage the global state.  Since version 1 of the stream protocol
+        # doesn't support multiple protocol directories, we'll need to take a
+        # copy of the protocol files if necessary.  Also, if copying is
+        # forced then we'll need to copy all the files.
         self.__ProtocolFiles.add(protocol_file)
         if force_copy:
-            streamProtocol.__ForceCopy = True
+            streamProtocol_v1.__ForceCopy = True
 
-        # The new stream device requires that the stream be wrapped as an
-        # asyn device.  We do that wrapping here.
-        self.port = AsynSerial(port).DeviceName()
+        # The older stream device talks directly to the serial port, but
+        # requires the name to be hacked: we convert a device name of the
+        # form /ty/nn/mm into ty_nn_mm.
+        self.port = port.DeviceName()[1:].replace('/', '_')
         # Pick up the protocol name from the file name.
         self.ProtocolName = os.path.basename(protocol_file)
 
@@ -62,8 +61,7 @@ class streamProtocol(Device):
     def InitialiseOnce(self):
         # Figure out whether we need to copy the files.  If any protocol
         # needs to be copied or if we are trying to use more than one
-        # protocol directory then copying is needed.  (We could specify a
-        # protocol path instead, but this isn't implemented yet.)
+        # protocol directory then copying is needed.
         protocol_dirs = set(
             [os.path.dirname(file) for file in self.__ProtocolFiles])
         if self.__ForceCopy or len(protocol_dirs) > 1:
@@ -77,4 +75,8 @@ class streamProtocol(Device):
 
         # Reset the global state in case we're reused.
         self.__ProtocolFiles.clear()
-        streamProtocol.__ForceCopy = False
+        streamProtocol_v1.__ForceCopy = False
+        
+
+    def Initialise(self):
+        print '%s_streamBus = "Tty"' % self.port
