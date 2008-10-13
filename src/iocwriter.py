@@ -291,8 +291,24 @@ include $(TOP)/configure/RULES
         return cls(*argv, **argk)
 
     @classmethod
-    def WriteOneIoc(cls, path, domain, techArea, id=1):
-        writer = cls.OpenIocWriter(path, domain, techArea)
+    def WriteOneIoc(cls, path, domain, techArea,
+            id = 1, make_boot = True, long_name = False):
+        '''Writes an IOC to the given location with the specified domain,
+        technical area and id.  The full name of the IOC is either
+            domain/techArea                 (long_name == False)
+        or
+            domain/domain-techArea-IOC-id   (long_name == True)
+        '''
+        # Dirty hack for the moment: if long_name is selected, pass this as
+        # the id to the constructor, which will then use this as a check.
+        #    Shortly the ability to write multiple IOCs will be withdrawn.
+        if long_name:
+            long_name_id = id
+        else:
+            long_name_id = None
+        writer = cls.OpenIocWriter(
+            path, domain, techArea,
+            make_boot = make_boot, long_name = long_name, id = long_name_id)
         writer.WriteIoc(id)
         writer.Close()
 
@@ -320,8 +336,17 @@ include $(TOP)/configure/RULES
         
 
         
-    def __init__(self, path, domain, techArea, make_boot=True):
-        IocWriter.__init__(self, os.path.join(path, domain, techArea))
+    def __init__(self, path, domain, techArea,
+            make_boot = True, long_name = False, id = None):
+        if long_name:
+            assert id, 'Must specify id with long_name'
+            self.long_name = id
+            iocDir = '%s-%s-IOC-%02d' % (domain, techArea, id)
+        else:
+            assert id is None, 'Must not specify id unless long_name set'
+            self.long_name = False
+            iocDir = techArea
+        IocWriter.__init__(self, os.path.join(path, domain, iocDir))
 
         self.domain = domain
         self.techArea = techArea
@@ -366,6 +391,8 @@ include $(TOP)/configure/RULES
         The Makefile will create a db/ directory, copy the <ioc>.db file into
         it, and create an expanded <ioc>.expanded.db file.'''
 
+        assert not self.long_name or id == self.long_name, \
+            'Can only generate IOC-%02d here' % self.long_name
         ioc = '%s-%s-IOC-%02d' % (self.domain, self.techArea, id)
         iocinit.iocInit.SetIocName(ioc)
 

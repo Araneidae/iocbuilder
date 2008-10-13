@@ -194,10 +194,6 @@ class IocDataFile:
     @classmethod
     def SetDataPath(cls, DataPath):
         '''Assigns the path to the data directory as seen by the IOC.'''
-
-        # Ensure we're not changing the data path on uncopied files.
-        assert DataPath is not None and not cls.__DataFileList, \
-            'DataPath sequence error'
         cls.__DataPath = DataPath
 
     @classmethod
