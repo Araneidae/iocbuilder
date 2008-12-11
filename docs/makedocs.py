@@ -6,13 +6,13 @@ import pydoc
 import shutil
 import types
 
-sys.path.append(os.path.abspath('build/lib'))
+sys.path.append(os.path.abspath('../build/lib'))
 import dls.builder
 
-if os.access('docs', os.F_OK):
-    shutil.rmtree('docs')
-os.mkdir('docs')
-os.chdir('docs')
+if os.access('pydoc', os.F_OK):
+    shutil.rmtree('pydoc')
+os.mkdir('pydoc')
+os.chdir('pydoc')
 
 def WriteModules(package):
     for name in dir(package):

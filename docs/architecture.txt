@@ -1,0 +1,115 @@
+Builder Architecture Notes
+==========================
+
+Goals for Current Development
+-----------------------------
+
+. Eliminate all restart functionality: builder classes are now initialised
+just the once.
+
+. Move hardware definitions into individual modules, as far as possible.
+
+Sub-goals and issues arising
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The `hardware` module needs to change so that it is not populated.
+- What do we do about the initial default configuration?  Maybe add some
+canned configure options instead.
+- Let's enforce that `Configure` can only be called once.  This makes the
+version file support a bit more difficult, but perhaps this is where we use
+canned configurations.
+
+
+Startup Processing
+------------------
+
+. Load core system modules.  This will remain unchanged.
+. Import the `hardware` module and all its components.  This needs to change
+rather drastically.
+. The following `Configure` call:
++
+    Configure(
+        recordnames = BasicRecordNames(),
+        iocwriter = SimpleIocWriter(),
+        version = '3_14')
+    Configure.LoadVersionFile('versions_3_14.py')
++
+This has 'definitely' got to go!
+
+
+Version Information
+~~~~~~~~~~~~~~~~~~~
+
+`version_3_14.py`
+
+-------------------
+# Version information for EPICS 3.14.8.2: static build only
+
+SetModulePath('/dls_sw/prod/R3.14.8.2/support')
+ModuleVersion('EPICS_BASE',
+    home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)
+
+Configure(
+    baselib = hardware.baselib.epicsBase,
+    dynamic_load = False,
+    register_dbd = True,
+    architecture = 'vxWorks-ppc604_long')
+
+-------------------
+
+`version_3_13.py`
+
+-------------------
+# Version information for EPICS 3.13
+
+SetModulePath('/home/diamond/R3.13.9/prod/support')
+# Nasty hack: required for mixed build process!
+ModuleVersion('EPICS_BASE',
+    home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)
+ModuleVersion('baseTop',      '3-2')
+
+Configure(
+    baselib = hardware.baselib.iocBase,
+    dynamic_load = True,
+    register_dbd = False,
+    architecture = 'ppc604')
+-------------------
+
+Let's take a look at what's going on here.
+
+- First, the `SetModulePath` simply identifies where `ModuleVersion` can
+locate the module definitions -- nothing too complicated here.
+- Next, `ModuleVersion('EPICS_BASE',...)`.  This is a bit of a hack: we need a
+module to represent the core EPICS function, and this is how it is loaded.
+Perhaps we could build on this.
+- Finally other aspects are configured.  Some of these could be part of the
+EPICS base component, certainly the `baselib` component should.
+
+Let's review what `Configure` does:
+
+`recordnames`:: Specifies how record names should be specified.  A sensible
+default is possible.
+
+`iocwriter`:: Defines output hooks.  Actually this isn't really a core
+configuration function, though it does affect the set of symbols exported by
+the builder.
+
+`version`::  Currently causes the appropriate `versions_%s.py` file to be
+loaded, and triggers some hacks.  May be possible to eliminate this.
+
+`baselib`:: Not quite sure: part of hooking in the EPICS base object, I think.
+
+`dynamic_load`:: Configures whether IOCs are built with dynamic or statically
+loaded libraries.  Needs to be a bit more sophisticated.  Affects the output
+of the `DiamondIocWriter`, the paths to library files, and the startup script.
+
+`architecture`:: Defines machine architecture, in particular the path to
+follow in the `bin` directory.
+
+`register_dbd`:: Whether to call `registerRecordDeviceDriver` function.  This
+is an option of `dynamic_load`, only taking effect if that flag is set.
+
+
+Structure of the Builder
+------------------------
+
