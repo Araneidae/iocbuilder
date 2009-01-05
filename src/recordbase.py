@@ -2,15 +2,12 @@
 
 import string
 
-import support, recordset
+import support
+import recordnames
+import recordset
 
 
 __all__ = ['PP', 'CP', 'MS', 'NP', 'ImportRecord', 'Parameter']
-
-
-
-def BindNames(recordnames):
-    Record.BindNames(recordnames)
 
 
 
@@ -21,20 +18,11 @@ def BindNames(recordnames):
 class Record(object):
     '''Base class for all record types.'''
 
-    # Configuration hook used for record names.  This is defined during
-    # startup configuration and may change during normal operation.
-    __recordnames = None
-    
-    @classmethod
-    def BindNames(cls, recordnames):
-        '''Binds the records to their naming convention.'''
-        cls.__recordnames = recordnames
-        
     @classmethod
     def RecordName(cls, name):
         '''Converts a short form record name into the full record name as it
         will appear in the generated database.'''
-        return cls.__recordnames.RecordName(name)
+        return recordnames.RecordNames.RecordName(name)
 
 
     # Builds standard record name using the currently configured RecordName

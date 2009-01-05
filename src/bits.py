@@ -95,5 +95,3 @@ class _Bits:
         return _Bits(
             self.parent, self.direction, self._record,
             self.offset + offset, length)
-
-

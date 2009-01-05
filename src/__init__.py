@@ -69,26 +69,11 @@ def _add_symbol(name, value):
     globals()[name] = value
     _epics._add_symbol(name, value)
 
-def _delete_symbol(name):
-    del __all__[__all__.index(name)]
-    del globals()[name]
-    _epics._delete_symbol(name)
-
 def _globals():
     return globals()
 
 Configure._Configure__add_symbol = staticmethod(_add_symbol)
-Configure._Configure__delete_symbol = staticmethod(_delete_symbol)
 Configure._Configure__globals = staticmethod(_globals)
 
 del ExportModules, ExportAllModules
-del _add_symbol, _delete_symbol, _globals
-
-
-# Finally set up the default configuration: basic record names, simple
-# application generation, and load the default 3.13 versions file.
-Configure(
-    recordnames = BasicRecordNames(),
-    iocwriter = SimpleIocWriter(),
-    version = '3_14')
-# Configure.LoadVersionFile('versions_3_14.py')
+del _add_symbol, _globals

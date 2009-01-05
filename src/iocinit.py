@@ -33,7 +33,6 @@ import os
 import shutil
 
 from support import Singleton
-import hardware
 from liblist import Hardware
 
 
@@ -47,7 +46,7 @@ def export(function):
 class iocInit(Singleton):
     DefaultEnvironment = { 'EPICS_TS_MIN_WEST' : 0 }
     
-    def Reset(self, initialLibrary):
+    def __init__(self):
         self.__TargetDir = os.getcwd()
         self.__Gateway = None
         self.__ClockRate = None
@@ -56,6 +55,8 @@ class iocInit(Singleton):
         self.__DatabaseNameList = []
         self.__EnvList = dict(self.DefaultEnvironment)
 
+        
+    def SetInitialLibrary(self, initialLibrary):
         # Configure the initial library for this ioc.
         self.__IocLib = initialLibrary()
 

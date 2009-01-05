@@ -3,7 +3,7 @@
 import os.path
 import subprocess
 
-import recordbase
+import recordnames
 from libversion import ModuleBase
 from support import Singleton
 
@@ -15,11 +15,6 @@ __all__ = ['LookupRecord', 'Substitution']
 
 class RecordSet(Singleton):
     def __init__(self):
-        self.Reset()
-
-    def Reset(self):
-        '''Reset set of records.  Normally called after records have been
-        written to a .db file.'''
         self.__RecordSet = {}
 
     def PublishRecord(self, name, record):
@@ -30,7 +25,7 @@ class RecordSet(Singleton):
     def LookupRecord(self, record):
         '''Returns the record with the given name.  We perform record name
         expansion using the currently configured record name hook.'''
-        return self.__RecordSet[recordbase.Record.RecordName(record)]
+        return self.__RecordSet[recordnames.RecordNames.RecordName(record)]
 
     def Print(self):
         '''Output complete set of records to stdout.'''

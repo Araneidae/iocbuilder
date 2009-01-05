@@ -1,0 +1,34 @@
+To Do
+=====
+
+To do
+-----
+
+- In `dbd.py` the `_DBD` class is pointless, as really it only wraps
+`LoadDbdFile` -- rewrite this.
+
+
+Current changes
+---------------
+
+- Removed resets.
+- Added `iocinit.SetInitialLibrary`.
+- Removed initial `Configure` call from `__init__.py`.  This means that the
+builder cannot be used without being configured.
+- Removed support for deleting symbols.
+- Modified `iocwriter.DiamondIocWriter` to write only one IOC
+- Trying to rework `configure` module.
+
+
+Issues
+------
+
+Module import is currently completely tangled.
+
+
+Goals
+-----
+
+- Remove as much complexity as possible.
+- Implement dynamic loading of modules.
+- Implement outstanding TRAC requests.

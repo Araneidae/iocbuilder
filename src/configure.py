@@ -4,30 +4,9 @@ import os
 
 from support import Singleton, SameDirFile
 
-# Note that the configure module must not import any symbols directly from
-# any of the modules below: this rule is necessary to avoid import dependency
-# loops.
-import recordset, recordbase, dbd
-import iocinit, liblist, libversion
 
 
-__all__ = ['Configure']
-
-
-def ResetIoc():
-    '''Called back from the IocCmd.Reset() method to complete any final
-    resetting required.  Also called each time Configure() is called to
-    ensure that everything is reinitialised.'''
-
-    if Configure.recordnames:
-        Configure.recordnames.Reset()
-    recordset.Reset()   # Redundant?
-
-    dbd.Reset()
-    liblist.Hardware.Reset()
-    if Configure.baselib:
-        iocinit.iocInit.Reset(Configure.baselib)
-
+__all__ = ['Configure', 'LoadVersionFile', 'ConfigureVmeIOC']
 
     
 class Configure(Singleton):
@@ -43,9 +22,8 @@ class Configure(Singleton):
     dynamic_load = True
     register_dbd = False
 
-    # Support nested calling of Configure: only call ResetIoc on exit from
-    # the outermost call.
-    __NestedCallDepth = 0
+    # Ensure we don't have to cope with multiple reconfigurations.
+    __called = False
 
 
     def __call__(self, **configurations):
@@ -69,7 +47,8 @@ class Configure(Singleton):
         Each configuration entity can also define a list of names which will
         be added to the list of names exported by the epics library.'''
 
-        self.__NestedCallDepth += 1
+        assert not self.__called, 'Cannot call Configure more than once!'
+        self.__called = True
 
         # The generic configuration process is straightforward and uniform.
         # Every configuration is retained within the framework as a single
@@ -81,9 +60,6 @@ class Configure(Singleton):
             # Check that this configuration name is valid and pick up any
             # specific configuration.
             configure = self.__Configure[key]
-            # Withdraw any global names publshed by any earlier version of
-            # this entity.
-            self.__WithdrawNames(key)
             # Retain the new configuration entity into the framework state.
             setattr(self, key, value)
             # If any particular configuration is required, do it now.
@@ -91,12 +67,6 @@ class Configure(Singleton):
                 configure(self)
             # Finally publish the names provided by this entity.
             self.__PublishNames(key)
-
-        self.__NestedCallDepth -= 1
-        if self.__NestedCallDepth == 0:
-            # Ensure that everything is in a consistent initial state after
-            # this has been called.
-            ResetIoc()
         
 
     # Add the names listed in the given configuration object to the set of
@@ -107,28 +77,20 @@ class Configure(Singleton):
             for name in configuration.__all__:
                 self.__add_symbol(name, getattr(configuration, name))
 
-                
-    # Remove the names listed in an old configuration object from the set of
-    # published global names.
-    def __WithdrawNames(self, config_name):
-        configuration = getattr(self, config_name)
-        if hasattr(configuration, '__all__'):
-            for name in configuration.__all__:
-                self.__delete_symbol(name)
-            
 
     # Configuration specific initialisation.
 
     def __ConfigureRecordNames(self):
-        recordbase.BindNames(self.recordnames)
+        import recordnames
+        recordnames.RecordNames = self.recordnames
 
     def __ConfigureVersion(self):
         self.EpicsVersion = self.version
-        
-        libversion.ResetModuleVersions()
-        execfile(SameDirFile(__file__,
-            'versions_%s.py' % self.EpicsVersion), self.__globals())
 
+    def __ConfigureBaselib(self):
+        import iocinit
+        iocinit.iocInit.SetInitialLibrary(self.baselib)
+        
 
     def LoadVersionFile(self, filename):
         '''Loads a list of module version declarations.  The given file is
@@ -144,7 +106,31 @@ class Configure(Singleton):
         'recordnames'  : __ConfigureRecordNames,
         'iocwriter'    : None,
         'version'      : __ConfigureVersion,
-        'baselib'      : None,
+        'baselib'      : __ConfigureBaselib,
         'dynamic_load' : None,
         'architecture' : None,
         'register_dbd' : None }
+
+
+# Some sensible default configurations.
+
+def ConfigureVmeIOC(module_path = '/dls_sw/prod/R3.14.8.2/support'):
+    import libversion
+    import recordnames
+    import iocwriter
+    from hardware import baselib
+    
+    libversion.SetModulePath(module_path)
+    libversion.ModuleVersion('EPICS_BASE',
+        home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)
+    Configure(
+        baselib = baselib.epicsBase,
+        dynamic_load = False,
+        register_dbd = True,
+        architecture = 'vxWorks-ppc604_long',
+        recordnames = recordnames.DiamondRecordNames(),
+        iocwriter = iocwriter.DiamondIocWriter,
+        version = '3_14')
+
+
+LoadVersionFile = Configure.LoadVersionFile

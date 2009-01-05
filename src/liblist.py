@@ -18,9 +18,6 @@ class Hardware(Singleton):
     # library instances are loaded.
 
     def __init__(self):
-        self.Reset()
-        
-    def Reset(self):
         # Each entity on the library list must support the CallLoadLibrary
         # method which should write out the initialisation code required to
         # load this library.  The code generated via this list is executed

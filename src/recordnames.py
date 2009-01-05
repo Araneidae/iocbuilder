@@ -2,18 +2,16 @@
 
 import string
 
-__all__ = [ 'BasicRecordNames', 'TemplateRecordNames', 'DiamondRecordNames' ]
+__all__ = ['BasicRecordNames', 'TemplateRecordNames', 'DiamondRecordNames']
 
 
-class RecordNames:
+class RecordNamesBase:
     '''Base class for record name configuration.'''
     def RecordName(self, name):
         return name
-    def Reset(self):
-        pass
 
 
-class BasicRecordNames(RecordNames):
+class BasicRecordNames(RecordNamesBase):
     '''Default record name support: each record is created with precisely
     the name it is given.'''
 
@@ -31,7 +29,7 @@ class BasicRecordNames(RecordNames):
         return name
 
 
-class TemplateRecordNames(RecordNames):
+class TemplateRecordNames(RecordNamesBase):
     '''Simple support for building templates.  To be expanded.'''
     
     __all__ = ['TemplateName']
@@ -48,7 +46,7 @@ class TemplateRecordNames(RecordNames):
         self.__Name = name
     
 
-class DiamondRecordNames(RecordNames):
+class DiamondRecordNames(RecordNamesBase):
     '''Support for record names following the Diamond naming convention.
     Record names are of the form
         DD[DDD]-TT-CCCCC-NN:RRRRRRRRRR
@@ -76,11 +74,6 @@ class DiamondRecordNames(RecordNames):
         the maximum name length and other naming conventions.'''
         self.__MaxNameLength, self.__MaxNameComponents = \
             self.__VersionInfo[version]
-        self.Reset()
-        
-
-    def Reset(self):
-        '''Internal method.'''
         self.__TechnicalArea = None
         self.__Domain = None
         self.__Device = None
@@ -151,3 +144,9 @@ class DiamondRecordNames(RecordNames):
 
         assert device != None, 'Must define device name first'
         return '%s:%s' % (device, record)
+
+
+
+# By default we use an instance of RecordNamesBase for record names, but this
+# can be rebound during configuration.
+RecordNames = RecordNamesBase()

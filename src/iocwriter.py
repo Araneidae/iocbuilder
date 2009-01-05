@@ -13,7 +13,6 @@ import recordset
 import configure
 import libversion
 import hardware
-import device
 from liblist import Hardware
 from autosave import Autosave
 
@@ -146,14 +145,6 @@ class IocWriter:
         It is harmless to call this method repeatedly.'''
         recordset.Reset()
 
-    def Reset(self):
-        '''This must be called after the IOC has been written to enable a
-        further round of IOC generation.
-
-        It should be harmless to call this repeatedly.'''
-        self.ResetRecords()
-        configure.ResetIoc()
-
 
 
 class SimpleIocWriter(IocWriter):
@@ -189,8 +180,6 @@ class SimpleIocWriter(IocWriter):
 
         self.WriteFile(filename, self.PrintIoc, maxLineLength=126)
 
-        self.Reset()
-
         
         
 
@@ -207,7 +196,7 @@ class DiamondIocWriter(IocWriter):
 
     '''
 
-    __all__ = ['OpenIocWriter', 'WriteOneIoc']
+    __all__ = ['WriteIoc']
     
 
     IOC_configure_Skeleton = {
@@ -287,31 +276,8 @@ include $(TOP)/configure/RULES
 '''    
 
     @classmethod
-    def OpenIocWriter(cls, *argv, **argk):
-        return cls(*argv, **argk)
-
-    @classmethod
-    def WriteOneIoc(cls, path, domain, techArea,
-            id = 1, make_boot = True, long_name = False):
-        '''Writes an IOC to the given location with the specified domain,
-        technical area and id.  The full name of the IOC is either
-            domain/techArea                 (long_name == False)
-        or
-            domain/domain-techArea-IOC-id   (long_name == True)
-        '''
-        # Dirty hack for the moment: if long_name is selected, pass this as
-        # the id to the constructor, which will then use this as a check.
-        #    Shortly the ability to write multiple IOCs will be withdrawn.
-        if long_name:
-            long_name_id = id
-        else:
-            long_name_id = None
-        writer = cls.OpenIocWriter(
-            path, domain, techArea,
-            make_boot = make_boot, long_name = long_name, id = long_name_id)
-        writer.WriteIoc(id)
-        writer.Close()
-
+    def WriteIoc(cls, *argv, **argk):
+        cls(*argv, **argk)
 
     def MakeDirectory(self, *dir_names):
         os.makedirs(os.path.join(self.iocRoot, *dir_names))
@@ -336,21 +302,37 @@ include $(TOP)/configure/RULES
         
 
         
-    def __init__(self, path, domain, techArea,
-            make_boot = True, long_name = False, id = None):
+    def __init__(self, path, domain, techArea, id,
+            make_boot = True, long_name = False):
+        '''The Diamond style of IOC as supported by this writer is of the
+        following form, where <ioc>=<domain>-<techArea>-IOC-<id> and <iocDir>
+        is either <techArea> or <ioc> depending on whether long_name is set.
+        
+         <path>/<domain>/<iocDir>
+           Makefile         Top level makefile to call <ioc>App Makefiles
+           iocBoot/
+             ioc<ioc>/      Directory for st.cmd and other ioc resources
+               st<ioc>.cmd  IOC startup script
+               <ioc files>  Other ioc specific files may be placed here
+           <ioc>App/
+             Makefile       Makefile to build IOC db directory and file
+             Db/            Directory containing substitutions and other files
+               <ioc>.db     Generated database file
+               <ioc>.substitutions   Substitutions file
+
+        The Makefile will create a db/ directory, copy the <ioc>.db file into
+        it, and create an expanded <ioc>.expanded.db file.'''
+        
         if long_name:
-            assert id, 'Must specify id with long_name'
-            self.long_name = id
             iocDir = '%s-%s-IOC-%02d' % (domain, techArea, id)
         else:
-            assert id is None, 'Must not specify id unless long_name set'
-            self.long_name = False
             iocDir = techArea
         IocWriter.__init__(self, os.path.join(path, domain, iocDir))
 
         self.domain = domain
         self.techArea = techArea
         self.make_boot = make_boot
+        self.id = id
         
         self.iocBoot = os.path.join(self.iocRoot, 'iocBoot')
         if os.access(self.iocRoot, os.F_OK):
@@ -370,30 +352,12 @@ include $(TOP)/configure/RULES
         self.TopMakefileList = ['configure']
         self.ModuleList = set()
 
+        self.__WriteIoc()
+        self.__Close()
+
             
-        
-    def WriteIoc(self, id=1):
-        '''The Diamond style of IOC as supported by this writer is of the
-        following form, where <ioc>=<domain>-<techArea>-IOC-<id>
-        
-         <path>/<domain>/<techArea>
-           Makefile         Top level makefile to call <ioc>App Makefiles
-           iocBoot/
-             ioc<ioc>/      Directory for st.cmd and other ioc resources
-               st<ioc>.cmd  IOC startup script
-               <ioc files>  Other ioc specific files may be placed here
-           <ioc>App/
-             Makefile       Makefile to build IOC db directory and file
-             Db/            Directory containing substitutions and other files
-               <ioc>.db     Generated database file
-               <ioc>.substitutions   Substitutions file
-
-        The Makefile will create a db/ directory, copy the <ioc>.db file into
-        it, and create an expanded <ioc>.expanded.db file.'''
-
-        assert not self.long_name or id == self.long_name, \
-            'Can only generate IOC-%02d here' % self.long_name
-        ioc = '%s-%s-IOC-%02d' % (self.domain, self.techArea, id)
+    def __WriteIoc(self):
+        ioc = '%s-%s-IOC-%02d' % (self.domain, self.techArea, self.id)
         iocinit.iocInit.SetIocName(ioc)
 
         # Create the core directories for this ioc
@@ -416,11 +380,8 @@ include $(TOP)/configure/RULES
             self.CreateSourceFiles(ioc, iocAppDir)
             self.ModuleList.update(libversion.ModuleBase.ListModules())
 
-        # All done.  Reset all the resources we've used.
-        self.Reset()
-
         
-    def Close(self):
+    def __Close(self):
         '''This should be called when all IOCs have been written.  This writes
         the final version of the top level makefile and the configure RELEASE
         file needed by the makefile system.'''

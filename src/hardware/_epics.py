@@ -9,6 +9,3 @@ __all__ = []
 def _add_symbol(name, value):
     globals()[name] = value
     __all__.append(name)
-
-def _delete_symbol(name):
-    del globals()[name]

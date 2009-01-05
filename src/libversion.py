@@ -191,11 +191,3 @@ class ModuleBase(object):
 # Dictionary of all modules with announced versions.  This will be
 # interrogated when modules are initialised.
 _ModuleVersionTable = {}
-
-
-
-# Resets all configured module versions.
-def ResetModuleVersions():
-    SetModulePath(None)
-    _ModuleVersionTable.clear()
-    ModuleBase._ReferencedModules.clear()

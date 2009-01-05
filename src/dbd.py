@@ -20,11 +20,6 @@ class RecordTypes(Singleton):
     def __init__(self):
         self.__RecordTypes = set()
 
-    def Reset(self):
-        for recordType in self.__RecordTypes:
-            delattr(self, recordType)
-        self.__RecordTypes = set()
-
     def PublishRecordType(self, recordType, validate):
         # Each record we publish is a class so that individual record
         # classes can be subclassed when convenient.
@@ -52,11 +47,15 @@ class RecordTypes(Singleton):
 records = RecordTypes
 
 
-class _DBD:
+# Note: the _DBD class is really just a wrapper for LoadDbdFile, so there is
+# no point in creating this singleton class!
+
+class _DBD(Singleton):
     def __init__(self):
         self.__db = ctypes.c_void_p()
 
     def __del__(self):
+        assert False, 'Do we even get to here?!'
         # We test for the existence of mydbstatic because of a curious lifetime
         # issue during shutdown: it's entirely possible that the mydbstatic
         # module gets unloaded *before* this method gets called!
@@ -144,11 +143,4 @@ class ValidateDbField:
             'Can\'t write "%s" to field %s: %s' % (value, name, message)
 
 
-
-def Reset():
-    RecordTypes.Reset()
-    global _CurrentDBD
-    _CurrentDBD = _DBD()
-
-def LoadDbdFile(curDir, dbdfile):
-    _CurrentDBD.LoadDbdFile(curDir, dbdfile)
+LoadDbdFile = _DBD.LoadDbdFile

@@ -14,7 +14,7 @@ clean:
 	rm -rf pydoc
 
 %.html: %.txt
-	asciidoc -o $@ $<
+	asciidoc --attribute=quirks! --section-numbers -o $@ $<
 
 pydoc: $(shell find ../src -name \*.py)
 	./makedocs.py
