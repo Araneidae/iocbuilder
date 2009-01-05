@@ -115,39 +115,8 @@ class ModuleBase(object):
                     not cls.InheritModuleName:
                 cls.ModuleName = name
 
-        # This override of __getattribute__ allows us to dynamically delegate
-        # attributes to EPICS module specific attributes: this instance is
-        # used to ensure that ModuleBase (and children) class attributes
-        # are first tested for version specific implementations.
-        #    Note that this trick only works for class attributes that are
-        # fetched directly from the class: to support class attributes
-        # fetched from instances we also need to overide __getattribute__ in
-        # the ModuleBase class itself.
-        def __getattribute__(cls, name):
-            try:
-                # Try for the versioned name first
-                return autosuper.__getattribute__(cls,
-                    '%s__%s' % (name, Configure.EpicsVersion))
-            except:
-                # If that fails, fall back to the normal name
-                return autosuper.__getattribute__(cls, name)
-                    
-
     __metaclass__ = __ModuleBaseMeta
 
-
-    # Unfortunately class attribute lookup (as overridden in the metaclass
-    # above) appears to be bypassed when name lookup is performed on an
-    # instance rather than on the class.  Thus we also have to override the
-    # lookup here!
-    def __getattribute__(self, name):
-        try:
-            # Try for the versioned name first
-            return object.__getattribute__(self,
-                '%s__%s' % (name, Configure.EpicsVersion))
-        except:
-            # If that fails, fall back to the normal name
-            return object.__getattribute__(self, name)
 
     # By default the module name is not inherited
     InheritModuleName = False

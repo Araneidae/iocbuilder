@@ -4,12 +4,9 @@ from _epics import *
 
 # Digital to Analogue convert (DAC)
 class Hy8402(IpDevice):
-
     ModuleName = 'Hy8402ip'
-    LibFileList = ['Hy8402ipLib']
     DbdFileList = ['Hy8402ip.dbd']
-
-    LibFileList__3_14 = ['Hy8402ip']
+    LibFileList = ['Hy8402ip']
     
     def __init__(self, carrier, ipslot, cardid=None,
             doram=0, clockSource=0, clockRate=15, inhibit=0):

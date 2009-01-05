@@ -8,7 +8,6 @@ __all__ = ['streamProtocol_v1']
 class streamProtocol_v1(Device):
     ModuleName = 'streamDevice_v1'
     LibFileList = ['streamDevice']
-    LibFileList__3_13 = ['streamLib', 'streamTty.o']
     DbdFileList = ['stream.dbd']
 
     # We'll need to post process the list of instances

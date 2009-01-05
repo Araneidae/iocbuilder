@@ -36,10 +36,9 @@ class Hy8401(IpDevice):
     '''Hytec 8401 Analogue to Digital Converter (ADC).'''
 
     ModuleName = 'Hy8401ip'
-    LibFileList = ['Hy8401ipLib']
+    
     DbdFileList = ['Hy8401ip.dbd']
-
-    LibFileList__3_14 = ['Hy8401ip']
+    LibFileList = ['Hy8401ip']
         
     def __init__(self, carrier, ipslot, cardid=None,
                  intEnable = 0,              # No interrupts

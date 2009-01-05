@@ -1,17 +1,13 @@
 from IpCarrier import IpDevice
 from _epics import *
-from baselib import mbbi32Direct, Sscan
+from baselib import Sscan
 
 
 class DLS8512(IpDevice):
-    Dependencies__3_14 = (Sscan,)
-    Dependencies__3_13 = (mbbi32Direct,)
+    Dependencies = (Sscan,)
 
-    LibFileList = ['DLS8512Lib']
-    DbdFileList = ['DLS8512.dbd']
-    
-    LibFileList__3_14 = ['DLS8512Support']
-    DbdFileList__3_14 = ['DLS8512support.dbd']
+    LibFileList = ['DLS8512Support']
+    DbdFileList = ['DLS8512support.dbd']
 
     def __init__(self, carrier, ipslot, cardid=None,
                  timer=False, ignoreoverflow=True):

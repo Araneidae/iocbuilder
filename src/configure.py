@@ -6,7 +6,9 @@ from support import Singleton, SameDirFile
 
 
 
-__all__ = ['Configure', 'LoadVersionFile', 'ConfigureVmeIOC']
+__all__ = [
+    'Configure', 'LoadVersionFile',
+    'ConfigureVmeIOC', 'ConfigureTemplate']
 
     
 class Configure(Singleton):
@@ -84,9 +86,6 @@ class Configure(Singleton):
         import recordnames
         recordnames.RecordNames = self.recordnames
 
-    def __ConfigureVersion(self):
-        self.EpicsVersion = self.version
-
     def __ConfigureBaselib(self):
         import iocinit
         iocinit.iocInit.SetInitialLibrary(self.baselib)
@@ -105,7 +104,6 @@ class Configure(Singleton):
     __Configure = {
         'recordnames'  : __ConfigureRecordNames,
         'iocwriter'    : None,
-        'version'      : __ConfigureVersion,
         'baselib'      : __ConfigureBaselib,
         'dynamic_load' : None,
         'architecture' : None,
@@ -129,8 +127,25 @@ def ConfigureVmeIOC(module_path = '/dls_sw/prod/R3.14.8.2/support'):
         register_dbd = True,
         architecture = 'vxWorks-ppc604_long',
         recordnames = recordnames.DiamondRecordNames(),
-        iocwriter = iocwriter.DiamondIocWriter,
-        version = '3_14')
+        iocwriter = iocwriter.DiamondIocWriter)
+
+
+def ConfigureTemplate(record_names = None):
+    import libversion
+    import recordnames
+    import iocwriter
+    from hardware import baselib
+    
+    if record_names is None:
+        record_names = recordnames.TemplateRecordNames
+    libversion.SetModulePath(None)
+    libversion.ModuleVersion('EPICS_BASE',
+        home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)
+    Configure(
+        baselib = baselib.epicsBase,
+        recordnames = record_names, 
+        iocwriter = iocwriter.SimpleIocWriter())
+    
 
 
 LoadVersionFile = Configure.LoadVersionFile

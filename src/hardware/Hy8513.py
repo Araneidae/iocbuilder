@@ -3,9 +3,8 @@ from _epics import *
 
 
 class Hy8513(IpDevice):
-    LibFileList = ['Hy8513Lib']
     DbdFileList = ['Hy8513.dbd']
-    LibFileList__3_14 = ['Hy8513']
+    LibFileList = ['Hy8513']
 
     def Initialise(self):
         print 'Hy8513Configure(' \

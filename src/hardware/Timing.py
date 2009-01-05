@@ -117,9 +117,8 @@ class _EventMap:
 class EventReceiver(Device):
     ModuleName = 'Timing'
     InheritModuleName = True
-    LibFileList = ['evgevrLib']
     DbdFileList = ['evgevr.dbd']
-    LibFileList__3_14 = ['evgevr']
+    LibFileList = ['evgevr']
 
     # Ensure that the event receiver is initialised really quite early.  This
     # is needed so that the appropriate timestamps are functioning.
@@ -171,24 +170,11 @@ class EventReceiver(Device):
         fields['SCAN'] = 'I/O Intr'
         return address
 
-    # In EPICS 3.13 the event code cannot be in hex: vmeio parsing just
-    # doesn't stretch this far (see src/dbStatic/dbStaticLib.c in EPICS base).
-    def __event_address__3_13(self, fields):
-        address = '#C%d S%d @' % (self.slot, fields['event'])
-        del fields['event']
-        fields['SCAN'] = 'I/O Intr'
-        return address
-
-        
     def Initialise(self):
         print 'ErConfigure(' \
             '%(slot)d, 0x%(address)x, %(vector)d, %(intLevel)d)' % \
                 self.__dict__
-        if Configure.EpicsVersion == '3_13':
-            print 'TSinit'
-            print '# Use TSreport to interrogate the timing system status.'
-        else:
-            print 'iocClockRegister ErGetTime, ErGetEventTime'
+        print 'iocClockRegister ErGetTime, ErGetEventTime'
 
 
     # The following methods are used to add event receiver definitions to the
@@ -337,9 +323,8 @@ class MonitorEvent(Substitution, Device):
     TemplateFile = 'event_stats.template'
 
     Dependencies = (genSub,)
-    LibFileList = ['timingfuncsLib']
-    LibFileList__3_14 = ['timingfuncs']
-    DbdFileList__3_14 = ['TimingTemplates.dbd']
+    LibFileList = ['timingfuncs']
+    DbdFileList = ['TimingTemplates.dbd']
 
 
     # "Official" event names as defined by Angelos

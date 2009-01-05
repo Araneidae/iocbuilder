@@ -6,10 +6,8 @@ from _epics import *
 class Hy8403(IpDevice):
 
     ModuleName = 'Hy8403ip'
-    LibFileList = ['Hy8403ipLib']
     DbdFileList = ['Hy8403ip.dbd']
-
-    LibFileList__3_14 = ['Hy8403ip']
+    LibFileList = ['Hy8403ip']
     
     def __init__(self, carrier, ipslot, cardid=None,
             aitype=0, memsize = 1, clockSource=0, clockRate=200,

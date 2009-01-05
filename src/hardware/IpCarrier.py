@@ -12,10 +12,8 @@ __all__ = ['IpDevice']
 class ipacLib(Device):
     '''IP carrier support library.'''
     ModuleName = 'ipac'
-    LibFileList = ['ipacLib']
     DbdFileList = ['drvIpac.dbd']
-    
-    LibFileList__3_14 = ['Ipac']
+    LibFileList = ['Ipac']
 
 
 # All IpDevice instances are automatically registered and announced to all

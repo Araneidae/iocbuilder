@@ -9,13 +9,10 @@ __all__ = ['MotorLib', 'OmsVme58']
 
 class MotorLib(Device):
     ModuleName = 'motor'
-
-    LibFileList = ['motorLib', 'softMotorLib']
-    DbdFileList = ['motorRecord.dbd', 'devSoftMotor.dbd']
-
-    Dependencies__3_14 = (Asyn, Seq)
-    LibFileList__3_14 = ['motor', 'softMotor']
-    DbdFileList__3_14 = ['motorSupport.dbd', 'devSoftMotor.dbd']
+    Dependencies = (Asyn, Seq)
+    
+    LibFileList = ['motor', 'softMotor']
+    DbdFileList = ['motorSupport.dbd', 'devSoftMotor.dbd']
 
 
 
@@ -36,10 +33,8 @@ class OmsVme58(Device):
     ModuleName = MotorLib.ModuleName
     
     Dependencies = (MotorLib,)
-    LibFileList = ['omsLib']
     DbdFileList = ['devOms.dbd']
-    
-    LibFileList__3_14 = ['oms']
+    LibFileList = ['oms']
         
         
     # The initialisation and configuration of OMS Vme58 motor controller
@@ -122,17 +117,6 @@ class OmsVme58(Device):
         return _OmsVme58Channel(self.State.CardId(self.baseaddress), channel)
     
 
-    def InitialiseOnce__3_13(self):
-        '''Internal method'''
-        # Backwards compatibility: prior to version 5-4 of the OMS motor
-        # record the second argument is required but ignored, but
-        # subsequently the argument must be omitted.
-        #   Unfortunately this has become a 3.13/3.14 distinction...!
-        print 'oms58Setup(' \
-            '%(CardCount)d, 0, 0x%(BaseAddress)x, %(Vector)d, ' \
-            '%(intlevel)d, %(pollrate)d)' % self.State.__dict__
-        del OmsVme58.State
-        
     def InitialiseOnce(self):
         '''Internal method'''
         # Only generate initialisation if this the first call to Initialise.

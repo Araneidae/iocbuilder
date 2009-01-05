@@ -26,9 +26,6 @@ class iocBase(Device):
     LibFileList = ['iocCore', 'baseLib', 'initHooks.o']
     DbdFileList = ['baseApp.dbd']
 
-    LibFileList__3_14_6 = ['baseTop.munch']
-    DbdFileList__3_14_6 = ['baseTop.dbd']
-
     def SetIocName(self, ioc_name):
         pass
 
@@ -69,13 +66,8 @@ class mbbi32Direct(Device):
 class genSub(Device):
     '''Implementation of gensub record type.'''
 
-    ModuleName__3_13 = 'gensub'
-    
-    LibFileList = ['genSubRecord.o']
-    DbdFileList = ['menuGenSub.dbd', 'genSubRecord.dbd']
-
-    LibFileList__3_14 = ['genSub']
-    DbdFileList__3_14 = ['genSubRecord.dbd']
+    LibFileList = ['genSub']
+    DbdFileList = ['genSubRecord.dbd']
     
 
 class Sscan(Device):
@@ -87,16 +79,10 @@ class Sscan(Device):
 
 class Transform(Device):
     '''Implementation of transform record type.'''
-
-    ModuleName = 'transform'
-
-    LibFileList = ['transformLib']
-    DbdFileList = ['transformApp.dbd']
-
-    ModuleName__3_14 = 'calc'
-    Dependencies__3_14 = (Sscan,)
-    LibFileList__3_14 = ['calc']
-    DbdFileList__3_14 = ['calcSupport.dbd']
+    ModuleName = 'calc'
+    Dependencies = (Sscan,)
+    LibFileList = ['calc']
+    DbdFileList = ['calcSupport.dbd']
     
 
 class vxStats(Substitution, Device):
@@ -124,10 +110,8 @@ class IOCinfo(Substitution, Device):
     Arguments = ('device',)
     TemplateFile = 'IOCinfo.template'
     
-    LibFileList = ['IOCinfoLib']
     DbdFileList = ['IOCinfo.dbd']
-
-    LibFileList__3_14 = ['IOCinfo']
+    LibFileList = ['IOCinfo']
 
     def __init__(self, iocname):
         '''Creates an IOCinfo expansion instance for the named ioc.'''

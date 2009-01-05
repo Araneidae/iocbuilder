@@ -47,73 +47,12 @@ class RecordTypes(Singleton):
 records = RecordTypes
 
 
-# Note: the _DBD class is really just a wrapper for LoadDbdFile, so there is
-# no point in creating this singleton class!
-
-class _DBD(Singleton):
-    def __init__(self):
-        self.__db = ctypes.c_void_p()
-
-    def __del__(self):
-        assert False, 'Do we even get to here?!'
-        # We test for the existence of mydbstatic because of a curious lifetime
-        # issue during shutdown: it's entirely possible that the mydbstatic
-        # module gets unloaded *before* this method gets called!
-        #    Even worse, it seems we can be called while mydbstatic is being
-        # unloade and dbFreeBase is None!
-        if self.__db and mydbstatic and mydbstatic.dbFreeBase:
-            mydbstatic.dbFreeBase(self.__db)
-
-    def LoadDbdFile(self, dbdDir, dbdfile):
-        # Read the specified dbd file into the current database.  This allows
-        # us to see any new definitions.
-        from hardware import baselib
-        curdir = os.getcwd()
-        os.chdir(dbdDir)
-        status = mydbstatic.dbReadDatabase(
-            ctypes.byref(self.__db), dbdfile,
-            '.:%s/dbd' % baselib.EpicsBasePath(), None)
-        assert status == 0, 'Error reading database %s/%s (status %d)' % \
-            (dbdDir, dbdfile, status)
-        os.chdir(curdir)
-
-        # Now export any new names made available
-        self.__BuildRecordClasses()
-
-
-    # This method builds all the epics records
-    def __BuildRecordClasses(self):
-        # Enumerate all the record types and build a record generator class
-        # for each one that we've not seen before.
-        entry = mydbstatic.dbAllocEntry(self.__db)
-        status = mydbstatic.dbFirstRecordType(entry)
-        while status == 0:
-            recordType = mydbstatic.dbGetRecordTypeName(entry)
-            if not hasattr(RecordTypes, recordType):
-                self.__BuildRecordClass(entry, recordType)
-            status = mydbstatic.dbNextRecordType(entry)
-        mydbstatic.dbFreeEntry(entry)
-
-
-    # Builds an instance of a generic record building class
-    def __BuildRecordClass(self, entry, recordType):
-        validate = ValidateDbField(self, entry)
-        RecordTypes.PublishRecordType(recordType, validate)
-
-        
 
 # This class uses a the static database to validate whether the associated
 # record type allows a given value to be written to a given field.
 class ValidateDbField:
-    def __init__(self, dbd, dbEntry):
-        # Hang on to the calling dbd to ensure that the parent database
-        # doesn't go away prematurely.
-        self.dbd = dbd
+    def __init__(self, dbEntry):
         self.dbEntry = mydbstatic.dbCopyEntry(dbEntry)
-
-    def __del__(self):
-        if mydbstatic:
-            mydbstatic.dbFreeEntry(self.dbEntry)
 
     # This method raises an attribute error if the given field name is
     # invalid.  As an important side effect it also sets the database
@@ -143,4 +82,35 @@ class ValidateDbField:
             'Can\'t write "%s" to field %s: %s' % (value, name, message)
 
 
-LoadDbdFile = _DBD.LoadDbdFile
+
+# The same database pointer is used for all DBD files: this means that all
+# the DBD entries are accumulated into a single large database.
+_db = ctypes.c_void_p()
+
+def LoadDbdFile(dbdDir, dbdfile):
+    # Read the specified dbd file into the current database.  This allows
+    # us to see any new definitions.
+    from hardware import baselib
+    curdir = os.getcwd()
+    os.chdir(dbdDir)
+    
+    status = mydbstatic.dbReadDatabase(
+        ctypes.byref(_db), dbdfile,
+        '.:%s/dbd' % baselib.EpicsBasePath(), None)
+    assert status == 0, 'Error reading database %s/%s (status %d)' % \
+        (dbdDir, dbdfile, status)
+    
+    os.chdir(curdir)
+
+    
+    # Enumerate all the record types and build a record generator class
+    # for each one that we've not seen before.
+    entry = mydbstatic.dbAllocEntry(_db)
+    status = mydbstatic.dbFirstRecordType(entry)
+    while status == 0:
+        recordType = mydbstatic.dbGetRecordTypeName(entry)
+        if not hasattr(RecordTypes, recordType):
+            validate = ValidateDbField(entry)
+            RecordTypes.PublishRecordType(recordType, validate)
+        status = mydbstatic.dbNextRecordType(entry)
+    mydbstatic.dbFreeEntry(entry)

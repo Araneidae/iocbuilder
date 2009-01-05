@@ -15,6 +15,9 @@ __all__ = ['LookupRecord', 'Substitution']
 
 class RecordSet(Singleton):
     def __init__(self):
+        self.Reset()
+
+    def Reset(self):
         self.__RecordSet = {}
 
     def PublishRecord(self, name, record):

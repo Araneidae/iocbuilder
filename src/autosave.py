@@ -5,7 +5,6 @@ import os.path
 
 from device import Device
 from recordset import Substitution
-from configure import Configure
 
 
 def SetAutosaveServer(server, ip, path):
@@ -30,9 +29,8 @@ class _AutosaveStatus(Substitution):
 class Autosave(Device):
     ModuleName = 'autosave'
 
-    LibFileList = ['asLib']
-    LibFileList__3_14 = ['autosave']
-    DbdFileList__3_14 = ['asSupport.dbd']
+    LibFileList = ['autosave']
+    DbdFileList = ['asSupport.dbd']
 
     def __init__(self, iocName, debug=0):
         self.__super.__init__()
@@ -47,8 +45,6 @@ class Autosave(Device):
 
     def Initialise(self):
         print '# Autosave and restore initialisation'
-        if Configure.EpicsVersion == '3_13':
-            print 'initHookRegister autosaveInitHooks'
         print 'hostAdd "%s", "%s"' % (_AutosaveServer, _AutosaveIp)
         print 'nfsAuthUnixSet "%s", %d, %d, 0, 0' % (
             _AutosaveServer, 1015, 500)  # gid for mga83, pid for dcs

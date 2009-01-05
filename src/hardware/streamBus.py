@@ -22,9 +22,6 @@ class streamProtocol(Device):
         '''
         self.__super.__init__()
 
-        assert Configure.EpicsVersion != '3_13', \
-            'Use streamProtocol_v1 with EPICS 3.13'
-
         # Add to the set of protocol files and remember whether copying was
         # demanded.
         self.__ProtocolFiles.add(protocol_file)

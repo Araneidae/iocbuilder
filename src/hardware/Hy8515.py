@@ -3,9 +3,8 @@ from IpCarrier import IpDevice
 
 
 class Hy8515(IpDevice):
-    LibFileList = ['drvHy8515.o']
-    LibFileList__3_14 = ['drvHy8515']
-    DbdFileList__3_14 = ['Hy8515.dbd']
+    LibFileList = ['drvHy8515']
+    DbdFileList = ['Hy8515.dbd']
     
     def __init__(self, carrier, ipslot, cardid=None,
             fifo_threshold = None, poll_delay = None,
