@@ -1,6 +1,6 @@
 # Hardware implementation for 8001 digital IO card.
 
-from iocbuilder import *
+from iocbuilder import records, RecordFactory
 from IpCarrier import IpCarrier
 
 

@@ -12,7 +12,7 @@ import iocinit
 import recordset
 import configure
 import libversion
-import hardware
+
 from liblist import Hardware
 from autosave import Autosave
 
@@ -502,7 +502,7 @@ include $(TOP)/configure/RULES
         # The epicsBase module has a rather special role in the RELEASE file:
         # it must appear, even if we're not actually linking anything, and it
         # must appear last.
-        epics_base = hardware.baselib.epicsBase.ModuleVersion()
+        epics_base = configure.epics_base
         for module in sorted(self.ModuleList - set([epics_base])):
             print '%s=%s' % (module.Name(), module.LibPath())
         print '%s=%s' % (epics_base.Name(), epics_base.LibPath())

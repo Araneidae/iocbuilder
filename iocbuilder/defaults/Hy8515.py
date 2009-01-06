@@ -1,5 +1,5 @@
 from iocbuilder import Device
-from IpCarrier import IpDevice
+from iocbuilder.hardware import IpDevice
 
 
 class Hy8515(IpDevice):

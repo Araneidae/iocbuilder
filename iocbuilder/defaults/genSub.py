@@ -1,20 +1,9 @@
-from iocbuilder import Substitution, Device
+from iocbuilder import Device
 
-__all__ = ['vxStats']
+__all__ = ['genSub']
 
-class vxStats(Substitution, Device):
-    '''Creates vx statistics for the ioc.  To view the ioc statistics
-    run vxStatsApp/opi/edl/iocStatus.edl with the same device=iocname
-    substitution.'''
+class genSub(Device):
+    '''Implementation of gensub record type.'''
 
-    Arguments = ('device',)
-    TemplateFile = 'vxStats.template'
-    
-    LibFileList = ['vxStatsLib']
-    DbdFileList = ['vxStats.dbd']
-
-    def __init__(self, iocname):
-        '''Creates a vxStats expansion instance for the named ioc.'''
-        # This had better delegate to Substitution, otherwise the arguments
-        # are going to go astray!  Thus the class inheritance order matters.
-        self.__super.__init__(device = iocname)
+    LibFileList = ['genSub']
+    DbdFileList = ['genSubRecord.dbd']

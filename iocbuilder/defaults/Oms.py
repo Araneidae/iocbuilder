@@ -1,7 +1,5 @@
-from iocbuilder import *
-from asyn import Asyn
-from seq import Seq
-
+from iocbuilder import Device, records, RecordFactory
+from iocbuilder.hardware import IpDevice, Asyn, Seq
 
 __all__ = ['MotorLib', 'OmsVme58']
 

@@ -5,7 +5,7 @@ from iocbuilder import Device
 
 # These devices are used directly, while the others are loaded as part of
 # other devices
-__all__ = ['AsynSerial']
+__all__ = ['Asyn', 'AsynSerial']
 
 
 class Asyn(Device):

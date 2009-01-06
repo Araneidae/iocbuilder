@@ -1,4 +1,4 @@
-from iocbuilder import *
+from iocbuilder import Device
 
 __all__ = ['Seq']
 

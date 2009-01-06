@@ -1,5 +1,5 @@
-from IpCarrier import IpDevice
-from iocbuilder import *
+from iocbuilder import records, RecordFactory
+from iocbuilder.hardware import IpDevice
 
 
 # 24 bit serial ADC

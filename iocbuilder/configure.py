@@ -117,9 +117,11 @@ def ConfigureVmeIOC(module_path = '/dls_sw/prod/R3.14.8.2/support'):
     import recordnames
     import iocwriter
     import baselib
+
+    global epics_base
     
     libversion.SetModulePath(module_path)
-    libversion.ModuleVersion('EPICS_BASE',
+    epics_base = libversion.ModuleVersion('EPICS_BASE',
         home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)
     Configure(
         baselib = baselib.epicsBase,
@@ -136,10 +138,12 @@ def ConfigureTemplate(record_names = None):
     import iocwriter
     from hardware import baselib
     
+    global epics_base
+    
     if record_names is None:
         record_names = recordnames.TemplateRecordNames()
     libversion.SetModulePath(None)
-    libversion.ModuleVersion('EPICS_BASE',
+    epics_base = libversion.ModuleVersion('EPICS_BASE',
         home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)
     Configure(
         baselib = baselib.epicsBase,

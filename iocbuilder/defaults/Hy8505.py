@@ -1,5 +1,5 @@
-from IpCarrier import IpDevice, RecordFactory
-from iocbuilder import records
+from iocbuilder import records, RecordFactory
+from iocbuilder.hardware import IpDevice
 
 
 class Hy8505(IpDevice):

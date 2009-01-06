@@ -125,7 +125,6 @@ class ModuleVersion:
             
             if hasattr(Module, '__all__'):
                 for name in Module.__all__:
-                    print 'Adding', name
                     setattr(hardware, name, getattr(Module, name))
 
         else:
