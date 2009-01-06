@@ -21,10 +21,12 @@ remove:
 	-find -name '*.pyc' -exec rm {} \;
 
 install: all
-	$(PYTHON) setup.py dls_install -m --script-dir=$(SCRIPT_DIR) dist/*.egg
+	$(PYTHON) setup.py easy_install -m \
+            --script-dir=$(SCRIPT_DIR) dist/*.egg
 
 test: all
-	$(PYTHON) setup.py dls_install -m --install-dir=$(TEST_INSTALL_DIR) \
+	$(PYTHON) setup.py easy_install -m \
+            --install-dir=$(TEST_INSTALL_DIR) \
             --script-dir=$(TEST_SCRIPT_DIR) dist/*.egg
 
 make_docs:
