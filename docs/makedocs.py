@@ -6,8 +6,8 @@ import pydoc
 import shutil
 import types
 
-sys.path.append(os.path.abspath('../build/lib'))
-import dls.builder
+sys.path.append(os.path.abspath('..'))
+import iocbuilder
 
 if os.access('pydoc', os.F_OK):
     shutil.rmtree('pydoc')
@@ -20,6 +20,6 @@ def WriteModules(package):
         if type(value) is types.ModuleType:
             pydoc.writedoc(value)
 
-pydoc.writedoc(dls.builder)
-WriteModules(dls.builder)
-WriteModules(dls.builder.hardware)
+pydoc.writedoc(iocbuilder)
+WriteModules(iocbuilder)
+WriteModules(iocbuilder.hardware)

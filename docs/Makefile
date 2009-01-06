@@ -16,5 +16,5 @@ clean:
 %.html: %.txt
 	asciidoc --attribute=quirks! --section-numbers -o $@ $<
 
-pydoc: $(shell find ../src -name \*.py)
+pydoc: $(shell find ../iocbuilder -name \*.py)
 	./makedocs.py

@@ -86,16 +86,21 @@ class ModuleVersion:
 
 
     def __LoadModuleDefinitions(self):
+        return
+        
         # Module definitions will be loaded from one of the following places:
-        #   1. <module-path>/python/builder.py
-        #   2. defaults/<name>.py
-        DefsFile = os.path.join(self.LibPath(), 'python', 'builder.py')
-        if not os.access(DefsFile, os.R_OK):
-            # Ok, not that.  Try the defaults file.
-            DefsFile = SameDirFile(__file__, 'defaults', '%s.py' % self.__name)
-            if not os.access(DefsFile, os.R_OK):
-                # Not that either.  Never mind then!
-                DefsFile = None
+        #   1. <module-path>/data/builder.py
+        #   2. <module-path>/python/builder.py
+        #   3. defaults/<name>.py
+        Places = [
+            os.path.join(self.LibPath(), 'data',   'builder.py'),
+            os.path.join(self.LibPath(), 'python', 'builder.py'),
+            SameDirFile(__file__, 'defaults', '%s.py' % self.__name)]
+        for DefsFile in Places:
+            if os.access(DefsFile, os.R_OK):
+                break
+        else:
+            DefsFile = None
 
         if DefsFile:
             print 'Trying to load', DefsFile
