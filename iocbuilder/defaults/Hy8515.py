@@ -1,4 +1,4 @@
-from _epics import Device
+from iocbuilder import Device
 from IpCarrier import IpDevice
 
 

@@ -2,7 +2,7 @@
 # carriers, but a generic form of support is provided here.
 
 import new
-from _epics import *
+from iocbuilder import *
 
 __all__ = ['IpDevice']
 

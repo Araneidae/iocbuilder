@@ -5,5 +5,5 @@ __all__ = []
 
 # Automatically import all hardware definitions.
 def _import():
-    from _epics import ExportAllModules
+    from iocbuilder import ExportAllModules
     __all__.extend(ExportAllModules(globals()))

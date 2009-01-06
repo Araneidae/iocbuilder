@@ -1,15 +1,18 @@
 #   Generic hardware module support
 
-import os.path
+import sys
+import os
 import string
+from types import ModuleType
 
-from support import autosuper, SameDirFile
+from support import autosuper, SameDirFile, CreateModule
 from configure import Configure
 
-import modules
+import hardware
 
 
-__all__ = ['ModuleVersion', 'ModuleBase', 'SetModulePath']
+__all__ = ['ModuleVersion', 'ModuleBase', 'SetModulePath', 'modules']
+
 
 
 
@@ -86,8 +89,6 @@ class ModuleVersion:
 
 
     def __LoadModuleDefinitions(self):
-        return
-        
         # Module definitions will be loaded from one of the following places:
         #   1. <module-path>/data/builder.py
         #   2. <module-path>/python/builder.py
@@ -96,28 +97,39 @@ class ModuleVersion:
             os.path.join(self.LibPath(), 'data',   'builder.py'),
             os.path.join(self.LibPath(), 'python', 'builder.py'),
             SameDirFile(__file__, 'defaults', '%s.py' % self.__name)]
-        for DefsFile in Places:
-            if os.access(DefsFile, os.R_OK):
+        for ModuleFile in Places:
+            if os.access(ModuleFile, os.R_OK):
                 break
         else:
-            DefsFile = None
+            ModuleFile = None
 
-        if DefsFile:
-            print 'Trying to load', DefsFile
+        if ModuleFile:
+            ModuleFile = os.path.abspath(ModuleFile)
+            ModuleDir  = os.path.dirname(ModuleFile)
+            ModuleName = 'iocbuilder.modules.%s' % self.__name
 
-            global_context = Configure._Configure__globals()
-            local_context = {}
-            print 'globals:', global_context.keys()
-            execfile(DefsFile, global_context, local_context)
-            print 'globals:', global_context.keys()
-            print 'locals:',  local_context.keys()
-            if '__all__' in local_context:
-                for name in local_context['__all__']:
-                    setattr(modules, name, local_context[name])
-                print 'modules:', dir(modules)
+            # The following is rather tricky.  We dynamically synthesise a
+            # fake package to receive all the definitions that we're about to
+            # load from ModuleFile.  The trick is to create fresh module
+            # object, set up the file name and path so that it looks like a
+            # convincing Python package, and add it to the list of loaded
+            # modules.
+            #   After this preliminary work, executing execfile has the
+            # desired effect of ensuring that all imports with ModuleFile are
+            # treated as local to ModuleFile.
+            Module = CreateModule(ModuleName)
+            Module.__file__ = ModuleFile
+            Module.__path__ = [ModuleDir]
+            setattr(modules, self.__name, Module)
+            execfile(ModuleFile, Module.__dict__)
             
+            if hasattr(Module, '__all__'):
+                for name in Module.__all__:
+                    print 'Adding', name
+                    setattr(hardware, name, getattr(Module, name))
+
         else:
-            print 'No file found for', self.__name
+            print 'Module', self.__name, 'not found'
 
     
 
@@ -203,3 +215,7 @@ class ModuleBase(object):
 # Dictionary of all modules with announced versions.  This will be
 # interrogated when modules are initialised.
 _ModuleVersionTable = {}
+
+
+# We maintain all loaded modules in a synthetic module.
+modules = CreateModule('iocbuilder.modules')

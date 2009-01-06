@@ -1,4 +1,4 @@
-from _epics import *
+from iocbuilder import *
 
 __all__ = ['Seq']
 

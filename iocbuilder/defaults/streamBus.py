@@ -1,5 +1,5 @@
 import os.path
-from _epics import *
+from iocbuilder import *
 
 from asyn import AsynSerial
 

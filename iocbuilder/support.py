@@ -2,6 +2,7 @@
 
 import itertools
 import os, os.path
+import sys
 import fnmatch
 import types
 
@@ -30,6 +31,14 @@ def ExportAllModules(globals):
         for filename in fnmatch.filter(os.listdir(moduledir), '*.py')
         if filename != '__init__.py']
     return ExportModules(globals, *allfiles)
+
+
+def CreateModule(module_name):
+    '''Creates a fully qualified module from thin air and ensures it's added
+    to the module table.'''
+    module = types.ModuleType(module_name)
+    sys.modules[module_name] = module
+    return module
 
 
 def SameDirFile(first_file, *filename):

@@ -1,5 +1,5 @@
 from IpCarrier import IpDevice
-from _epics import *
+from iocbuilder import *
 
 
 class Hy8513(IpDevice):

@@ -2,7 +2,7 @@
 
 from baselib import genSub
 import _epics
-from _epics import *
+from iocbuilder import *
 
 __all__ = [ 'EventReceiver', 'MonitorEvent', 'EvrAlive' ]
 

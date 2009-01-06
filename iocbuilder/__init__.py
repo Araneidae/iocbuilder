@@ -42,10 +42,9 @@ suitable:
 There is much more to describe.  Watch this space...
 '''
 
-from support import ExportModules, ExportAllModules
+from support import ExportModules, ExportAllModules, CreateModule
 
-import hardware
-from hardware import _epics
+hardware = CreateModule('iocbuilder.hardware')
 
 __all__ = ['hardware']
 __all__ += ExportModules(globals(),
@@ -54,12 +53,6 @@ __all__ += ExportModules(globals(),
     'fanout', 'recordnames', 'iocwriter',
     'configure')    # Best to load configure module last
 
-for name in __all__:
-    _epics._add_symbol(name, globals()[name])
-_epics._add_symbol('ExportAllModules', ExportAllModules)
-    
-hardware._import()
-
 
 # Hacks for configure support.  The Configure class is allowed to edit the
 # set of symbols exported by the epics module: it does so through these two
@@ -67,7 +60,6 @@ hardware._import()
 def _add_symbol(name, value):
     __all__.append(name)
     globals()[name] = value
-    _epics._add_symbol(name, value)
 
 def _globals():
     return globals()
@@ -77,3 +69,5 @@ Configure._Configure__globals = staticmethod(_globals)
 
 del ExportModules, ExportAllModules
 del _add_symbol, _globals
+
+

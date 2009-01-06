@@ -1,5 +1,5 @@
 from IpCarrier import IpDevice
-from _epics import *
+from iocbuilder import *
 
 
 # Digital to Analogue convert (DAC)

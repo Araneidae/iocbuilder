@@ -1,4 +1,4 @@
-from _epics import *
+from iocbuilder import *
 from asyn import Asyn
 from seq import Seq
 

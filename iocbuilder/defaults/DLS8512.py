@@ -1,6 +1,5 @@
-from IpCarrier import IpDevice
-from _epics import *
-from baselib import Sscan
+from iocbuilder import records, RecordFactory
+from iocbuilder.hardware import Sscan, IpDevice
 
 
 class DLS8512(IpDevice):

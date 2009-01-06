@@ -1,5 +1,5 @@
 from IpCarrier import IpDevice, RecordFactory
-from _epics import records
+from iocbuilder import records
 
 
 class Hy8505(IpDevice):

@@ -1,6 +1,6 @@
 import os.path
 
-from _epics import Device
+from iocbuilder import Device
 
 
 # These devices are used directly, while the others are loaded as part of

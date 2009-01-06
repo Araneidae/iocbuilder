@@ -3,7 +3,7 @@
 
 import os.path
 
-from _epics import *
+from iocbuilder import *
 
 # These devices are used directly, while the others are loaded as part of
 # other devices
@@ -68,51 +68,3 @@ class genSub(Device):
 
     LibFileList = ['genSub']
     DbdFileList = ['genSubRecord.dbd']
-    
-
-class Sscan(Device):
-    ModuleName = 'sscan'
-
-    LibFileList = ['sscan']
-    DbdFileList = ['sscanSupport.dbd']
-
-
-class Transform(Device):
-    '''Implementation of transform record type.'''
-    ModuleName = 'calc'
-    Dependencies = (Sscan,)
-    LibFileList = ['calc']
-    DbdFileList = ['calcSupport.dbd']
-    
-
-class vxStats(Substitution, Device):
-    '''Creates vx statistics for the ioc.  To view the ioc statistics
-    run vxStatsApp/opi/edl/iocStatus.edl with the same device=iocname
-    substitution.'''
-
-    Arguments = ('device',)
-    TemplateFile = 'vxStats.template'
-    
-    LibFileList = ['vxStatsLib']
-    DbdFileList = ['vxStats.dbd']
-
-    def __init__(self, iocname):
-        '''Creates a vxStats expansion instance for the named ioc.'''
-        # This had better delegate to Substitution, otherwise the arguments
-        # are going to go astray!  Thus the class inheritance order matters.
-        self.__super.__init__(device = iocname)
-
-
-class IOCinfo(Substitution, Device):
-    '''Provides basic information about the IOC, supplementing the information
-    provided by vxStats: provides temperature information.'''
-    
-    Arguments = ('device',)
-    TemplateFile = 'IOCinfo.template'
-    
-    DbdFileList = ['IOCinfo.dbd']
-    LibFileList = ['IOCinfo']
-
-    def __init__(self, iocname):
-        '''Creates an IOCinfo expansion instance for the named ioc.'''
-        self.__super.__init__(device = iocname)

@@ -116,7 +116,7 @@ def ConfigureVmeIOC(module_path = '/dls_sw/prod/R3.14.8.2/support'):
     import libversion
     import recordnames
     import iocwriter
-    from hardware import baselib
+    import baselib
     
     libversion.SetModulePath(module_path)
     libversion.ModuleVersion('EPICS_BASE',
@@ -137,7 +137,7 @@ def ConfigureTemplate(record_names = None):
     from hardware import baselib
     
     if record_names is None:
-        record_names = recordnames.TemplateRecordNames
+        record_names = recordnames.TemplateRecordNames()
     libversion.SetModulePath(None)
     libversion.ModuleVersion('EPICS_BASE',
         home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)

@@ -1,6 +1,6 @@
 # Hardware implementation for 8001 digital IO card.
 
-from _epics import *
+from iocbuilder import *
 from IpCarrier import IpCarrier
 
 

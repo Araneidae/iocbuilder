@@ -90,7 +90,7 @@ _db = ctypes.c_void_p()
 def LoadDbdFile(dbdDir, dbdfile):
     # Read the specified dbd file into the current database.  This allows
     # us to see any new definitions.
-    from hardware import baselib
+    import baselib
     curdir = os.getcwd()
     os.chdir(dbdDir)
     
