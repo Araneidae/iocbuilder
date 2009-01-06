@@ -14,6 +14,5 @@ setup(
     description = 'IOC builder',
     author = 'Michael Abbott',
     author_email = 'Michael.Abbott@diamond.ac.uk',
-    packages = ['iocbuilder'] + [
-        'iocbuilder.%s' % d for d in ['defaults', 'hardware', 'modules'] ],
+    packages = ['iocbuilder', 'iocbuilder.defaults'],
     zip_safe = False)

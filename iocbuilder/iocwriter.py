@@ -12,9 +12,9 @@ import iocinit
 import recordset
 import configure
 import libversion
+import hardware
 
 from liblist import Hardware
-from autosave import Autosave
 
 
 __all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter']
@@ -436,7 +436,7 @@ include $(TOP)/configure/RULES
                 (iocBootDir, '0.req'), self.PrintAutosaves, header=None)
             # The autosave directory needs to be configured before writing
             # the command file.
-            Autosave.SetAutosaveDir(iocBootDir)
+            hardware.Autosave.SetAutosaveDir(iocBootDir)
 #         # Copy any IOC specific files into the configured data directory.
 #         self.CopyDataFiles(self.iocRoot)
 
