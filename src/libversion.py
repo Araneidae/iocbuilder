@@ -3,8 +3,11 @@
 import os.path
 import string
 
-from support import autosuper
+from support import autosuper, SameDirFile
 from configure import Configure
+
+import modules
+
 
 __all__ = ['ModuleVersion', 'ModuleBase', 'SetModulePath']
 
@@ -57,6 +60,11 @@ class ModuleVersion:
         # Add this to the list of module versions
         _ModuleVersionTable[libname] = self
 
+        # Finally attempt to load any definitions associated with this
+        # module.
+        self.__LoadModuleDefinitions()
+        
+
     def LibPath(self, noVersion=False):
         '''Returns the path to the module directory defined by this entry.'''
         path = self.home
@@ -75,6 +83,36 @@ class ModuleVersion:
     # sorted lists of modules behave predicably.
     def __hash__(self):         return hash(self.__name)
     def __cmp__(self, other):   return cmp(self.__name, other.__name)
+
+
+    def __LoadModuleDefinitions(self):
+        # Module definitions will be loaded from one of the following places:
+        #   1. <module-path>/python/builder.py
+        #   2. defaults/<name>.py
+        DefsFile = os.path.join(self.LibPath(), 'python', 'builder.py')
+        if not os.access(DefsFile, os.R_OK):
+            # Ok, not that.  Try the defaults file.
+            DefsFile = SameDirFile(__file__, 'defaults', '%s.py' % self.__name)
+            if not os.access(DefsFile, os.R_OK):
+                # Not that either.  Never mind then!
+                DefsFile = None
+
+        if DefsFile:
+            print 'Trying to load', DefsFile
+
+            global_context = Configure._Configure__globals()
+            local_context = {}
+            print 'globals:', global_context.keys()
+            execfile(DefsFile, global_context, local_context)
+            print 'globals:', global_context.keys()
+            print 'locals:',  local_context.keys()
+            if '__all__' in local_context:
+                for name in local_context['__all__']:
+                    setattr(modules, name, local_context[name])
+                print 'modules:', dir(modules)
+            
+        else:
+            print 'No file found for', self.__name
 
     
 
