@@ -5,6 +5,7 @@ To do
 -----
 
 - EpicsBasePath currently in baselib -- this isn't right.
+- Completely rename builder, to `ioc_builder` or something similar.
 
 
 Current changes
@@ -15,6 +16,10 @@ Current changes
 Issues
 ------
 
+Where do we manage the module globals?  Currently we have a rather tangled
+approach: `__init__.py` defines `_globals()` to provide access to the module
+globals, which is then injected into `Configure` as its private `__globals()`
+method.  It also define `_add_symbol` which adds to globals and to `_epics`.
 
 
 Goals
