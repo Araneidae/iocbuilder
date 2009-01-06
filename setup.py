@@ -14,6 +14,5 @@ setup(
     description = 'IOC builder',
     author = 'Michael Abbott',
     author_email = 'Michael.Abbott@diamond.ac.uk',
-    
-    include_package_data = True,
+    packages = ['iocbuilder'],
     zip_safe = False)
