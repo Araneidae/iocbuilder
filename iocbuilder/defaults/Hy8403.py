@@ -59,4 +59,3 @@ class _ADCchannel:
         address = '#C%d S%d @' % (adc.cardid, channel)
         self.ai = RecordFactory(records.ai, 'Hy8403ai', 'INP', address)
         self.ao = RecordFactory(records.ao, 'Hy8403ao', 'OUT', address)
-

@@ -5,8 +5,18 @@ To do
 -----
 
 - EpicsBasePath currently in baselib -- this isn't right.
-- Completely rename builder, to `ioc_builder` or something similar.
-
+- Relocate `data` directory.  One suggestion is to put the `data` directory in
+the IOC, and Austen would like the data to then be copied at make time.  (TRAC
+#718).
+- Suggestions from Austen:
+. Fully commmented template build file (not quite sure what this means)
+. Example `build.py` for each supported module.
+- Change support macro names to be more consistent.  Nick suggests module name
+in upper case (and with non identifier characters converted to underscores).
+- Use macro names in generated makefiles (TRAC #344).
+- Support `AsynOctec` (TRAC #717).
+- Ensure that `autosave` properly implements full autosave functionality.
+- Looks as if `calc` is a bit incomplete!
 
 Current changes
 ---------------
@@ -21,10 +31,14 @@ approach: `__init__.py` defines `_globals()` to provide access to the module
 globals, which is then injected into `Configure` as its private `__globals()`
 method.  It also define `_add_symbol` which adds to globals and to `_epics`.
 
+Currently we're importing `python/builder.py` or `data/builder.py`, but it
+actually behaves just like a Python package -- this suggests that it might be
+more honest to import `builder/__init__.py`!
+
 
 Goals
 -----
 
 - Remove as much complexity as possible.
-- Implement dynamic loading of modules.
+- Implement dynamic loading of modules.  Done!
 - Implement outstanding TRAC requests.

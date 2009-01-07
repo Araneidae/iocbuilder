@@ -1,6 +1,5 @@
 # Timing system
 
-from baselib import genSub
 from iocbuilder import *
 
 __all__ = ['EventReceiver']

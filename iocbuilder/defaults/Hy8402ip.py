@@ -34,4 +34,3 @@ class _DACchannel:
         assert 0 <= channel  and  channel < 16, 'Channel out of range'
         address = '#C%d S%d @' % (dac.cardid, channel)
         self.ao = RecordFactory(records.ao, 'Hy8402ip', 'OUT', address)
-

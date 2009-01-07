@@ -2,11 +2,7 @@
 # for programmer suppport.
 
 import os.path
-
-# from iocbuilder.device import Device
-# from iocbuilder.recordset import Substitution
 from iocbuilder import Device, Substitution
-
 
 __all__ = ['Autosave', 'SetAutosaveServer']
 
