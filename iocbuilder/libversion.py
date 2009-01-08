@@ -38,6 +38,9 @@ class ModuleVersion:
     __ValidNameChars = set(
         string.ascii_uppercase + string.ascii_lowercase +
         string.digits + '_')
+
+    # Set of module macro names already allocated, used to ensure no clashes.
+    __MacroNames = set()
     
     def __init__(self, libname,
             version=None, home=None, override=False, use_name=True):
@@ -52,6 +55,11 @@ class ModuleVersion:
         self.version = version
         self.home = home
         self.use_name = use_name
+
+        self.__macroname = libname.upper()
+        assert self.__macroname not in self.__MacroNames, \
+            'Module with macro name %s already defined' % self.__macroname
+        self.__MacroNames.add(self.__macroname)
 
         # A couple of sanity checks: libname must not be already defined iff
         # version override has not been requested.
@@ -68,18 +76,26 @@ class ModuleVersion:
         self.__LoadModuleDefinitions()
         
 
-    def LibPath(self, noVersion=False):
-        '''Returns the path to the module directory defined by this entry.'''
+    def LibPath(self, macro_name=False):
+        '''Returns the path to the module directory defined by this entry.
+        If macro_name is set then a form suitable for macro expansion is
+        returned.'''
+        if macro_name:
+            return '$(%s)' % self.__macroname
+        
         path = self.home
         if self.use_name:
             path = os.path.join(path, self.__name)
-        if self.version and not noVersion:
+        if self.version:
             path = os.path.join(path, self.version)
         return path
 
-    def Name(self):
+    def Name(self, macro_name = False):
         '''Returns the module name.'''
         return self.__name
+
+    def MacroName(self):
+        return self.__macroname
 
     # The following definitions ensure that when hashed and when compared
     # this class behaves exactly like its name: this ensures that sets and
@@ -89,13 +105,20 @@ class ModuleVersion:
 
 
     def __LoadModuleDefinitions(self):
+        # Create the associated module and record it in our list of loaded
+        # modules.  If we can find any module definitions then they will be
+        # loaded into this module.
+        ModuleName = 'iocbuilder.modules.%s' % self.__name
+        self.module = CreateModule(ModuleName)
+        setattr(modules, self.__name, self.module)
+        
         # Module definitions will be loaded from one of the following places:
         #   1. <module-path>/data/builder.py
         #   2. <module-path>/python/builder.py
         #   3. defaults/<name>.py
         Places = [
-            os.path.join(self.LibPath(), 'data',   'builder.py'),
-            os.path.join(self.LibPath(), 'python', 'builder.py'),
+            os.path.join(self.LibPath(), 'data',   '__builder__.py'),
+            os.path.join(self.LibPath(), 'python', '__builder__.py'),
             SameDirFile(__file__, 'defaults', '%s.py' % self.__name)]
         for ModuleFile in Places:
             if os.access(ModuleFile, os.R_OK):
@@ -106,26 +129,18 @@ class ModuleVersion:
         if ModuleFile:
             ModuleFile = os.path.abspath(ModuleFile)
             ModuleDir  = os.path.dirname(ModuleFile)
-            ModuleName = 'iocbuilder.modules.%s' % self.__name
 
-            # The following is rather tricky.  We dynamically synthesise a
-            # fake package to receive all the definitions that we're about to
-            # load from ModuleFile.  The trick is to create fresh module
-            # object, set up the file name and path so that it looks like a
-            # convincing Python package, and add it to the list of loaded
-            # modules.
-            #   After this preliminary work, executing execfile has the
-            # desired effect of ensuring that all imports with ModuleFile are
-            # treated as local to ModuleFile.
-            Module = CreateModule(ModuleName)
-            Module.__file__ = ModuleFile
-            Module.__path__ = [ModuleDir]
-            setattr(modules, self.__name, Module)
-            execfile(ModuleFile, Module.__dict__)
+            # Convert the module into a package by setting up the file name
+            # and path so that it looks like a convincing Python package.  Now
+            # executing execfile has the desired effect of ensuring that all
+            # imports with ModuleFile are treated as local to ModuleFile.
+            self.module.__file__ = ModuleFile
+            self.module.__path__ = [ModuleDir]
+            execfile(ModuleFile, self.module.__dict__)
             
-            if hasattr(Module, '__all__'):
-                for name in Module.__all__:
-                    setattr(hardware, name, getattr(Module, name))
+            if hasattr(self.module, '__all__'):
+                for name in self.module.__all__:
+                    setattr(hardware, name, getattr(self.module, name))
 
         else:
             print 'Module', self.__name, 'not found'
@@ -176,9 +191,10 @@ class ModuleBase(object):
     InheritModuleName = False
 
     @classmethod
-    def LibPath(cls):
-        '''Returns the path to the module.'''
-        return cls.ModuleVersion().LibPath()
+    def LibPath(cls, macro_name=False):
+        '''Returns the path to the module.  If macro_name is set then a macro
+        for the path is returned, otherwise the true path is returned.'''
+        return cls.ModuleVersion().LibPath(macro_name = macro_name)
 
     @classmethod
     def ModuleFile(cls, filename):

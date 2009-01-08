@@ -1,7 +1,7 @@
-EPICS_BASE_LIBS = '/dls_sw/epics/R3.14.8.2/base/lib/linux-x86'
-
 import os
 from ctypes import *
+
+import paths
 
 __all__ = []
 
@@ -30,7 +30,8 @@ def _DeclareFunction(name, restype, argtypes):
     __all__.append(name)
 
 
-_mydbstatic = CDLL(os.path.join(EPICS_BASE_LIBS, 'libdbStaticHost.so'))
+_mydbstatic = CDLL(os.path.join(
+    paths.EPICS_BASE, 'lib', paths.EPICS_HOST_ARCH, 'libdbStaticHost.so'))
 
 for functions in _FunctionList:
     _DeclareFunction(*functions)

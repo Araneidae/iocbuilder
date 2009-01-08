@@ -4,6 +4,7 @@ import os, os.path
 import ctypes
 
 import mydbstatic   # Pick up interface to EPICS dbd files
+import paths
 from support import Singleton
 
 from recordbase import Record
@@ -90,13 +91,11 @@ _db = ctypes.c_void_p()
 def LoadDbdFile(dbdDir, dbdfile):
     # Read the specified dbd file into the current database.  This allows
     # us to see any new definitions.
-    import baselib
     curdir = os.getcwd()
     os.chdir(dbdDir)
     
     status = mydbstatic.dbReadDatabase(
-        ctypes.byref(_db), dbdfile,
-        '.:%s/dbd' % baselib.EpicsBasePath(), None)
+        ctypes.byref(_db), dbdfile, '.:%s/dbd' % paths.EPICS_BASE, None)
     assert status == 0, 'Error reading database %s/%s (status %d)' % \
         (dbdDir, dbdfile, status)
     

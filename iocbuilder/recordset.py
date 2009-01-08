@@ -86,13 +86,13 @@ class SubstitutionSet(Singleton):
             self.__Substitutions.items(),
             key=lambda (s,l): s.TemplateFile)
 
-    def Print(self):
+    def Print(self, macro_name = True):
         '''Prints out a substitutions file.'''
         # Print out the list in canonical order to help with comparison
         # across minor changes.
         for template, subList in self.SortedTemplateList():
             print
-            print 'file %s' % template.TemplateName()
+            print 'file %s' % template.TemplateName(macro_name)
             print '{'
             template.PrintPattern()
             for substitution in subList:
@@ -119,9 +119,11 @@ class Substitution(ModuleBase):
     TemplateFile = None
 
     @classmethod
-    def TemplateName(cls):
-        '''Computes the template file name.'''
-        return os.path.join(cls.LibPath(), 'db', cls.TemplateFile)
+    def TemplateName(cls, macro_name = False):
+        '''Computes the template file name.  If macro_name is true then
+        a form suitable for msi macro expansion is returned.'''
+        return os.path.join(
+            cls.LibPath(macro_name = macro_name), 'db', cls.TemplateFile)
 
     @classmethod
     def PrintPattern(cls):

@@ -2,13 +2,12 @@
 
 import os
 
+import paths
 from support import Singleton, SameDirFile
 
 
-
 __all__ = [
-    'Configure', 'LoadVersionFile',
-    'ConfigureVmeIOC', 'ConfigureTemplate']
+    'Configure', 'LoadVersionFile', 'ConfigureIOC', 'ConfigureTemplate']
 
     
 class Configure(Singleton):
@@ -18,10 +17,8 @@ class Configure(Singleton):
     # Placeholders for configurations.
     recordnames  = None
     iocwriter    = None
-    version      = None
-    baselib      = None
-    architecture = None
     dynamic_load = True
+    architecture = None
     register_dbd = False
 
     # Ensure we don't have to cope with multiple reconfigurations.
@@ -86,48 +83,41 @@ class Configure(Singleton):
         import recordnames
         recordnames.RecordNames = self.recordnames
 
-    def __ConfigureBaselib(self):
-        import iocinit
-        iocinit.iocInit.SetInitialLibrary(self.baselib)
-        
-
-    def LoadVersionFile(self, filename):
-        '''Loads a list of module version declarations.  The given file is
-        executed with execfile() with the ModuleVersion() function already
-        in scope: no other calls or definitions should occur in the file.
-        '''
-        ModuleVersion = self.__globals()['ModuleVersion']
-        execfile(filename, dict(ModuleVersion = ModuleVersion))
 
 
     # List of allowable configuration settings and any configuration actions.
     __Configure = {
         'recordnames'  : __ConfigureRecordNames,
         'iocwriter'    : None,
-        'baselib'      : __ConfigureBaselib,
         'dynamic_load' : None,
         'architecture' : None,
         'register_dbd' : None }
 
 
+def LoadVersionFile(filename):
+    '''Loads a list of module version declarations.  The given file is
+    executed with execfile() with the ModuleVersion() function already in
+    scope: no other calls or definitions should occur in the file.'''
+    from libversion import ModuleVersion
+    execfile(filename, dict(ModuleVersion = ModuleVersion))
+
+
 # Some sensible default configurations.
 
-def ConfigureVmeIOC(module_path = '/dls_sw/prod/R3.14.8.2/support'):
+def ConfigureIOC(
+        architecture = 'vxWorks-ppc604_long',
+        module_path = paths.module_path):
     import libversion
     import recordnames
     import iocwriter
-    import baselib
+    import iocinit
 
-    global epics_base
-    
     libversion.SetModulePath(module_path)
-    epics_base = libversion.ModuleVersion('EPICS_BASE',
-        home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)
+    iocinit.iocInit.Initialise()
     Configure(
-        baselib = baselib.epicsBase,
         dynamic_load = False,
         register_dbd = True,
-        architecture = 'vxWorks-ppc604_long',
+        architecture = architecture,
         recordnames = recordnames.DiamondRecordNames(),
         iocwriter = iocwriter.DiamondIocWriter)
 
@@ -136,20 +126,11 @@ def ConfigureTemplate(record_names = None):
     import libversion
     import recordnames
     import iocwriter
-    from hardware import baselib
-    
-    global epics_base
     
     if record_names is None:
         record_names = recordnames.TemplateRecordNames()
     libversion.SetModulePath(None)
-    epics_base = libversion.ModuleVersion('EPICS_BASE',
-        home = '/dls_sw/epics/R3.14.8.2/base', use_name = False)
+    iocinit.iocInit.Initialise()
     Configure(
-        baselib = baselib.epicsBase,
         recordnames = record_names, 
         iocwriter = iocwriter.SimpleIocWriter())
-    
-
-
-LoadVersionFile = Configure.LoadVersionFile

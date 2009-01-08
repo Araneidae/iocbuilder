@@ -15,15 +15,11 @@ import libversion
 import hardware
 
 from liblist import Hardware
+from paths import msiPath
 
 
 __all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter']
 
-
-
-# An absolute path: this definitely isn't right!
-# This is where we locate the msi application.
-msiPath = '/dls_sw/epics/R3.14.8.2/extensions/bin/linux-x86'
 
 
         
@@ -124,6 +120,10 @@ class IocWriter:
         self.CopyDataFiles = iocinit.IocDataFile.CopyDataFiles
         self.DataFileCount = iocinit.IocDataFile.DataFileCount
 
+
+    def SetIocName(self, ioc_name):
+        iocinit.iocInit.SetIocName(ioc_name)
+
         
     def WriteFile(self, filename, writer, *argv, **argk):
         if not isinstance(filename, types.StringTypes):
@@ -180,8 +180,7 @@ class SimpleIocWriter(IocWriter):
 
         self.WriteFile(filename, self.PrintIoc, maxLineLength=126)
 
-        
-        
+
 
 class DiamondIocWriter(IocWriter):
     '''This IOC writer generates a complete IOC application tree in the
@@ -358,7 +357,7 @@ include $(TOP)/configure/RULES
             
     def __WriteIoc(self):
         ioc = '%s-%s-IOC-%02d' % (self.domain, self.techArea, self.id)
-        iocinit.iocInit.SetIocName(ioc)
+        self.SetIocName(ioc)
 
         # Create the core directories for this ioc
         iocBootDir = os.path.join('iocBoot', 'ioc' + ioc)
@@ -469,8 +468,6 @@ include $(TOP)/configure/RULES
         print 'include $(TOP)/configure/CONFIG'
         for target in DbTargets:
             print 'DB += %s' % target
-        for template, _ in self.SortedTemplateList():
-            print 'USES_TEMPLATE += %s' % template.TemplateName()
         print 'include $(TOP)/configure/RULES'
 
 
@@ -502,7 +499,5 @@ include $(TOP)/configure/RULES
         # The epicsBase module has a rather special role in the RELEASE file:
         # it must appear, even if we're not actually linking anything, and it
         # must appear last.
-        epics_base = configure.epics_base
-        for module in sorted(self.ModuleList - set([epics_base])):
-            print '%s=%s' % (module.Name(), module.LibPath())
-        print '%s=%s' % (epics_base.Name(), epics_base.LibPath())
+        for module in sorted(self.ModuleList):
+            print '%s = %s' % (module.MacroName(), module.LibPath())

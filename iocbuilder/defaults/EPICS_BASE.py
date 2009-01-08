@@ -3,7 +3,7 @@
 
 import os.path
 
-from device import Device
+from iocbuilder import Device
 
 
 class epicsBase(Device):

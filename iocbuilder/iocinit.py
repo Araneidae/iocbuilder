@@ -28,12 +28,13 @@
 #   AddIocFile(filename)
 #       Adds file to be copied into IOC directory tree.
 
-
 import os
 import shutil
 
 from support import Singleton
 from liblist import Hardware
+from libversion import ModuleVersion
+import paths
 
 
 
@@ -56,9 +57,13 @@ class iocInit(Singleton):
         self.__EnvList = dict(self.DefaultEnvironment)
 
         
-    def SetInitialLibrary(self, initialLibrary):
-        # Configure the initial library for this ioc.
-        self.__IocLib = initialLibrary()
+    def Initialise(self):
+        # We can't import the IOC until we've finished importing (at least,
+        # not if we want EPICS_BASE to behave like other modules), so we have
+        # to put off creating it until configure tells us to initialise.
+        ModuleVersion('EPICS_BASE', home = paths.EPICS_BASE, use_name = False)
+        from modules.EPICS_BASE import epicsBase
+        self.__IocLib = epicsBase()
 
     def SetIocName(self, ioc_name):
         self.__IocLib.SetIocName(ioc_name)
