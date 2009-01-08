@@ -41,6 +41,11 @@ class ModuleVersion:
 
     # Set of module macro names already allocated, used to ensure no clashes.
     __MacroNames = set()
+
+    # This is set while the module is being loaded so that we can detect
+    # nested loads (really bad idea) and can treat the module name specially
+    # in  ModuleBase.
+    _LoadingModule = None
     
     def __init__(self, libname,
             version=None, home=None, override=False, use_name=True):
@@ -136,7 +141,12 @@ class ModuleVersion:
             # imports with ModuleFile are treated as local to ModuleFile.
             self.module.__file__ = ModuleFile
             self.module.__path__ = [ModuleDir]
+            
+            assert self._LoadingModule is None, \
+                'Calling ModuleVersion inside an EPICS module is a BAD idea!'
+            ModuleVersion._LoadingModule = self
             execfile(ModuleFile, self.module.__dict__)
+            ModuleVersion._LoadingModule = None
             
             if hasattr(self.module, '__all__'):
                 for name in self.module.__all__:
@@ -177,11 +187,24 @@ class ModuleBase(object):
             super(cls._ModuleBase__ModuleBaseMeta, cls).__init__(
                 name, bases, dict)
 
-            # If the class hasn't defined its own ModuleName then unless
-            # InheritModuleName has been set to true then default ModuleName
-            # to the class name.
-            if 'ModuleName' not in cls.__dict__ and \
-                    not cls.InheritModuleName:
+            if ModuleVersion._LoadingModule is None:
+                # Module is being defined as part of the build script, not in
+                # the module.  In this case f the class hasn't defined its own
+                # ModuleName then unless InheritModuleName has been set to
+                # true then default ModuleName to the class name.
+                if 'ModuleName' not in cls.__dict__ and \
+                        not cls.InheritModuleName:
+                    cls.ModuleName = name
+            else:
+                # If we're called while loading a module then force the module
+                # name to agree with the loading module: in other words, an
+                # EPICS module isn't allowed to create classes which belong to
+                # other modules.
+                name = ModuleVersion._LoadingModule.Name()
+                if 'ModuleName' in cls.__dict__:
+                    assert cls.__dict__['ModuleName'] == name, \
+                        'ModuleName must be %s' % name
+                    print 'Redundant ModuleName for', cls.__name__
                 cls.ModuleName = name
 
     __metaclass__ = __ModuleBaseMeta

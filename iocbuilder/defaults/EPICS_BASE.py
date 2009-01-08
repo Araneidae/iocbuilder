@@ -7,9 +7,6 @@ from iocbuilder import Device
 
 
 class epicsBase(Device):
-    '''EPICS base library (for 3.14 only).  This should be loaded first.'''
-    ModuleName = 'EPICS_BASE'
-
     DbdFileList = ['base.dbd']
 
     # This *must* initialise before anything else!

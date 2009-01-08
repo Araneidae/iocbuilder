@@ -9,17 +9,13 @@ __all__ = ['Asyn', 'AsynSerial']
 
 
 class Asyn(Device):
-    ModuleName = 'asyn'
-
     LibFileList = ['asyn']
     DbdFileList = ['asyn.dbd']
 
     
 
 class AsynSerial(Device):
-    ModuleName = Asyn.ModuleName
     Dependencies = (Asyn,)
-
     DbdFileList = ['drvAsynSerialPort.dbd']
 
     def __init__(self, port, name=None):

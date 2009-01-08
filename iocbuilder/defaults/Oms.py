@@ -6,7 +6,6 @@ __all__ = ['MotorLib', 'OmsVme58']
 
 
 class MotorLib(Device):
-    ModuleName = 'motor'
     Dependencies = (Asyn, Seq)
     
     LibFileList = ['motor', 'softMotor']
@@ -27,9 +26,6 @@ class OmsVme58(Device):
     it is necessary to create all OmsVme85 instances before creating any
     channels.  This convention is enforced by this class.
     '''
-
-    ModuleName = MotorLib.ModuleName
-    
     Dependencies = (MotorLib,)
     DbdFileList = ['devOms.dbd']
     LibFileList = ['oms']

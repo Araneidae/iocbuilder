@@ -4,8 +4,6 @@ from iocbuilder.hardware import IpDevice
 
 # 24 bit serial ADC
 class Hy8403(IpDevice):
-
-    ModuleName = 'Hy8403ip'
     DbdFileList = ['Hy8403ip.dbd']
     LibFileList = ['Hy8403ip']
     

@@ -11,7 +11,6 @@ __all__ = ['IpDevice']
 # library.  This device has no instances of its own.
 class ipacLib(Device):
     '''IP carrier support library.'''
-    ModuleName = 'ipac'
     DbdFileList = ['drvIpac.dbd']
     LibFileList = ['Ipac']
 
@@ -40,10 +39,6 @@ class _IpRegistry(Singleton):
 # carrier cards (though the 8001 only supports slots A and B).
 class IpCarrier(Device):
     '''Support for IP carrier cards.'''
-
-    ModuleName = ipacLib.ModuleName
-    InheritModuleName = True   # All IP carriers use this library by default
-
     __metaclass__ = AutoRegisterClass(
         _IpRegistry.RegisterCarrier, superclass=Device.__metaclass__)
 

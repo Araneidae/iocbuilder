@@ -15,20 +15,16 @@ def SetAutosaveServer(server, ip, path):
 
 
 class _AutosaveFile(Substitution):
-    ModuleName = 'autosave'
     Arguments = ('device', 'file',)
     TemplateFile = 'dlssrfile.template'
 
     
 class _AutosaveStatus(Substitution):
-    ModuleName = 'autosave'
     Arguments = ('device',)
     TemplateFile = 'dlssrstatus.template'
 
     
 class Autosave(Device):
-    ModuleName = 'autosave'
-
     LibFileList = ['autosave']
     DbdFileList = ['asSupport.dbd']
 

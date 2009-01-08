@@ -5,7 +5,6 @@ __all__ = ['Transform']
 
 class Transform(Device):
     '''Implementation of transform record type.'''
-    ModuleName = 'calc'
     Dependencies = (Sscan,)
     LibFileList = ['calc']
     DbdFileList = ['calcSupport.dbd']

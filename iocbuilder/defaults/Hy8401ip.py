@@ -33,9 +33,6 @@ def _ReadField(fields, key, param):
 
 class Hy8401(IpDevice):
     '''Hytec 8401 Analogue to Digital Converter (ADC).'''
-
-    ModuleName = 'Hy8401ip'
-    
     DbdFileList = ['Hy8401ip.dbd']
     LibFileList = ['Hy8401ip']
         

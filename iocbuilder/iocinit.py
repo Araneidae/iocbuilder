@@ -203,13 +203,18 @@ class IocDataFile:
         cls.__DataPath = DataPath
 
     @classmethod
+    def GetDataPath(cls):
+        assert cls.__DataPath is not None, 'IOC data path not yet defined'
+        return cls.__DataPath
+
+    @classmethod
     def CopyDataFiles(cls, targetDir):
         assert cls.__DataPath is not None, 'IOC data path not yet defined'
-        if targetDir is None:
-            targetDir = cls.__DataPath
+        targetDir = os.path.join(targetDir, cls.__DataPath)
+        os.makedirs(targetDir)
         for filename, file_object in cls.__DataFileList.items():
-            shutil.copyfile(file_object.source,
-                os.path.join(targetDir, cls.__DataPath, filename))
+            shutil.copyfile(
+                file_object.source, os.path.join(targetDir, filename))
 
         # Once the data files have been copied our work is done (so long as
         # this is done after database generation!)  Reset our internal state.

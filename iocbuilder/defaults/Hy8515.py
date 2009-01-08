@@ -37,8 +37,6 @@ class Hy8515(IpDevice):
 
 
 class _Hy8515channel(Device):
-    ModuleName = Hy8515.ModuleName
-    
     def __init__(self, card, channel, 
                  readbuf = 2500,
                  writebuf = 250,

@@ -7,8 +7,6 @@ __all__ = ['MonitorEvent', 'EvrAlive']
 # Templates for event statistics
 
 class MonitorEvent(Substitution, Device):
-    ModuleName = 'TimingTemplates'
-    
     # Template arguments:
     #   SYSTEM      Device name to use here.
     #   EVNAME      Name of event being monitored
@@ -46,8 +44,6 @@ class MonitorEvent(Substitution, Device):
 
         
 class EvrAlive(Substitution):
-    ModuleName = 'TimingTemplates'
-
     # Template arguments:
     #   SYSTEM      Device name
     #   EVENT       Event number to use for monitor

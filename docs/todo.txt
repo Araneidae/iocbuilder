@@ -4,9 +4,6 @@ To Do
 To do
 -----
 
-- Relocate `data` directory.  One suggestion is to put the `data` directory in
-the IOC, and Austen would like the data to then be copied at make time.  (TRAC
-#718).
 - Suggestions from Austen:
 . Fully commmented template build file (not quite sure what this means)
 . Example `build.py` for each supported module.
@@ -15,8 +12,6 @@ the IOC, and Austen would like the data to then be copied at make time.  (TRAC
 - Looks as if `calc` is a bit incomplete!
 - Integrate Austen's driver changes.
 - Create nice and simple boiler-plate IOC builder example.
-- Validate module names during ModuleVersion import -- or even replace
-ModuleName in this context, as it's redudant!
 - Rename `hardware` to `components`?
 - Parse `configure/RELEASE` to validate version consitencies.  Actually need
 entirely new VERSION mechanism!
@@ -42,4 +37,4 @@ Goals
 
 - Remove as much complexity as possible.
 - Implement dynamic loading of modules.  Done!
-- Implement outstanding TRAC requests.  Done #344.
+- Implement outstanding TRAC requests.  Done #344, #718.

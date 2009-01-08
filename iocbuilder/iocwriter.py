@@ -340,10 +340,6 @@ include $(TOP)/configure/RULES
         self.MakeDirectory('iocBoot')
         self.MakeDirectory('configure')
 
-        # Create the data directory
-#         self.MakeDirectory('data')
-        self.SetDataPath('data')
-        
         # Write the configure skeleton.
         for filename, content in self.IOC_configure_Skeleton.items():
             self.WriteFile(('configure', filename), content)
@@ -365,9 +361,9 @@ include $(TOP)/configure/RULES
         self.MakeDirectory(iocBootDir)
         self.MakeDirectory(iocAppDir)
 
-#         # The data path needs to be set before the database is expanded.
-#         self.SetDataPath(iocBootDir)
-
+        # Create the data directory
+        self.SetDataPath(os.path.join(iocAppDir, 'data'))
+        
         # Create the Db directory and its associated files.
         self.CreateDatabaseFiles(ioc, iocAppDir)
 
@@ -390,7 +386,6 @@ include $(TOP)/configure/RULES
         # If there are any data files to copy, create the data directory and
         # put them in place.
         if self.DataFileCount():
-            self.MakeDirectory('data')
             self.CopyDataFiles(self.iocRoot)
 
 
@@ -436,8 +431,6 @@ include $(TOP)/configure/RULES
             # The autosave directory needs to be configured before writing
             # the command file.
             hardware.Autosave.SetAutosaveDir(iocBootDir)
-#         # Copy any IOC specific files into the configured data directory.
-#         self.CopyDataFiles(self.iocRoot)
 
         if self.make_boot:
             self.WriteFile(

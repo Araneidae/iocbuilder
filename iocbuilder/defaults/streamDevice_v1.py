@@ -6,7 +6,6 @@ __all__ = ['streamProtocol_v1']
 
 
 class streamProtocol_v1(Device):
-    ModuleName = 'streamDevice_v1'
     LibFileList = ['streamDevice']
     DbdFileList = ['stream.dbd']
 
@@ -64,7 +63,7 @@ class streamProtocol_v1(Device):
         protocol_dirs = set(
             [os.path.dirname(file) for file in self.__ProtocolFiles])
         if self.__ForceCopy or len(protocol_dirs) > 1:
-            protocol_dir = 'data'
+            protocol_dir = IocDataFile.GetDataPath()
             for file in self.__ProtocolFiles:
                 # Grab a copy of each data file.
                 IocDataFile(file)

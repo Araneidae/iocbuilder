@@ -4,7 +4,6 @@ from iocbuilder.hardware import IpDevice
 
 # Digital to Analogue convert (DAC)
 class Hy8402(IpDevice):
-    ModuleName = 'Hy8402ip'
     DbdFileList = ['Hy8402ip.dbd']
     LibFileList = ['Hy8402ip']
     

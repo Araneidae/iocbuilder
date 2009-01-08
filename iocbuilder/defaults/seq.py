@@ -4,8 +4,6 @@ __all__ = ['Seq']
 
 
 class Seq(Device):
-    ModuleName = 'seq'
-
     LibFileList = ['seq', 'pv']
 
     def __init__(self):
