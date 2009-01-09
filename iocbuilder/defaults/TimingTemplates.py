@@ -21,7 +21,7 @@ class event_stats(Substitution, Device):
 
     Dependencies = (genSub,)
     LibFileList = ['timingfuncs']
-    DbdFileList = ['TimingTemplates.dbd']
+    DbdFileList = ['TimingTemplates']
 
 class evr_alive(Substitution):
     Arguments = ('SYSTEM', 'EVENT')

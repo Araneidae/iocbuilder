@@ -10,13 +10,13 @@ __all__ = ['Asyn', 'AsynSerial']
 
 class Asyn(Device):
     LibFileList = ['asyn']
-    DbdFileList = ['asyn.dbd']
+    DbdFileList = ['asyn']
 
     
 
 class AsynSerial(Device):
     Dependencies = (Asyn,)
-    DbdFileList = ['drvAsynSerialPort.dbd']
+    DbdFileList = ['drvAsynSerialPort']
 
     def __init__(self, port, name=None):
         self.__super.__init__()

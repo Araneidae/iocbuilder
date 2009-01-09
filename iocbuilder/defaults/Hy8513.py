@@ -3,7 +3,7 @@ from iocbuilder.hardware import IpDevice
 
 
 class Hy8513(IpDevice):
-    DbdFileList = ['Hy8513.dbd']
+    DbdFileList = ['Hy8513']
     LibFileList = ['Hy8513']
 
     def Initialise(self):

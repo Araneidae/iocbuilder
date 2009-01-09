@@ -33,7 +33,7 @@ def _ReadField(fields, key, param):
 
 class Hy8401(IpDevice):
     '''Hytec 8401 Analogue to Digital Converter (ADC).'''
-    DbdFileList = ['Hy8401ip.dbd']
+    DbdFileList = ['Hy8401ip']
     LibFileList = ['Hy8401ip']
         
     def __init__(self, carrier, ipslot, cardid=None,

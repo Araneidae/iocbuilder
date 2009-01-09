@@ -6,7 +6,7 @@ class Hy8505(IpDevice):
     '''16 bit digital IO device.'''
 
     LibFileList = ['Hy8505Lib']
-    DbdFileList = ['Hy8505.dbd']
+    DbdFileList = ['Hy8505']
 
     def __init__(self, carrier, ipslot, 
             direction=0,            # All bits inputs

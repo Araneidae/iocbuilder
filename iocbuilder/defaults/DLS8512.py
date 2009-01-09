@@ -6,7 +6,7 @@ class DLS8512(IpDevice):
     Dependencies = (Sscan,)
 
     LibFileList = ['DLS8512Support']
-    DbdFileList = ['DLS8512support.dbd']
+    DbdFileList = ['DLS8512support']
 
     def __init__(self, carrier, ipslot, cardid=None,
                  timer=False, ignoreoverflow=True):

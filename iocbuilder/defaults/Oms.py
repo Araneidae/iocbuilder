@@ -9,7 +9,7 @@ class MotorLib(Device):
     Dependencies = (Asyn, Seq)
     
     LibFileList = ['motor', 'softMotor']
-    DbdFileList = ['motorSupport.dbd', 'devSoftMotor.dbd']
+    DbdFileList = ['motorSupport', 'devSoftMotor']
 
 
 
@@ -27,7 +27,7 @@ class OmsVme58(Device):
     channels.  This convention is enforced by this class.
     '''
     Dependencies = (MotorLib,)
-    DbdFileList = ['devOms.dbd']
+    DbdFileList = ['devOms']
     LibFileList = ['oms']
         
         

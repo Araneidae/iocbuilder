@@ -4,7 +4,7 @@ from iocbuilder.hardware import IpDevice
 
 class Hy8515(IpDevice):
     LibFileList = ['drvHy8515']
-    DbdFileList = ['Hy8515.dbd']
+    DbdFileList = ['Hy8515']
     
     def __init__(self, carrier, ipslot, cardid=None,
             fifo_threshold = None, poll_delay = None,

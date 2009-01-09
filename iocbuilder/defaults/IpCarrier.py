@@ -11,7 +11,7 @@ __all__ = ['IpDevice']
 # library.  This device has no instances of its own.
 class ipacLib(Device):
     '''IP carrier support library.'''
-    DbdFileList = ['drvIpac.dbd']
+    DbdFileList = ['drvIpac']
     LibFileList = ['Ipac']
 
 

@@ -11,7 +11,7 @@ class vxStats(Substitution, Device):
     TemplateFile = 'vxStats.template'
     
     LibFileList = ['vxStatsLib']
-    DbdFileList = ['vxStats.dbd']
+    DbdFileList = ['vxStats']
 
     def __init__(self, iocname):
         '''Creates a vxStats expansion instance for the named ioc.'''

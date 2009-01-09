@@ -9,7 +9,7 @@ class IOCinfo(Substitution, Device):
     Arguments = ('device',)
     TemplateFile = 'IOCinfo.template'
     
-    DbdFileList = ['IOCinfo.dbd']
+    DbdFileList = ['IOCinfo']
     LibFileList = ['IOCinfo']
 
     def __init__(self, iocname):

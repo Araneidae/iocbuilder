@@ -7,4 +7,4 @@ class Transform(Device):
     '''Implementation of transform record type.'''
     Dependencies = (Sscan,)
     LibFileList = ['calc']
-    DbdFileList = ['calcSupport.dbd']
+    DbdFileList = ['calcSupport']

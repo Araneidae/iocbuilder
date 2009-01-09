@@ -124,17 +124,23 @@ class ModuleVersion:
 
         if load_file:
             ModuleFile = load_file
+            IsPackage = False
         else:
-            # Module definitions will be loaded from one of the following
-            # places:
-            #   1. <module-path>/data/builder.py
-            #   2. <module-path>/python/builder.py
+            # Module definitions will be loaded from the first found of the
+            # following  places:
+            #   1. <module-path>/builder/__init__.py
+            #   2. <module-path>/builder.py
             #   3. defaults/<name>.py
+            # If a builder/__init__.py file is found it will be imported as a
+            # Python "package", so local imports will work as expected, but if
+            # builder.py is imported it will not be possible to do relative
+            # imports.
+            default = SameDirFile(__file__, 'defaults', '%s.py' % self.__name)
             Places = [
-                os.path.join(self.LibPath(), 'data',   '__builder__.py'),
-                os.path.join(self.LibPath(), 'python', '__builder__.py'),
-                SameDirFile(__file__, 'defaults', '%s.py' % self.__name)]
-            for ModuleFile in Places:
+                (os.path.join(self.LibPath(), 'builder', '__init__.py'), True),
+                (os.path.join(self.LibPath(), 'builder.py'), False),
+                (default, True)]
+            for ModuleFile, IsPackage in Places:
                 if os.access(ModuleFile, os.R_OK):
                     break
             else:
@@ -142,14 +148,14 @@ class ModuleVersion:
 
         if ModuleFile:
             ModuleFile = os.path.abspath(ModuleFile)
-            ModuleDir  = os.path.dirname(ModuleFile)
-
-            # Convert the module into a package by setting up the file name
-            # and path so that it looks like a convincing Python package.  Now
-            # executing execfile has the desired effect of ensuring that all
-            # imports with ModuleFile are treated as local to ModuleFile.
             self.module.__file__ = ModuleFile
-            self.module.__path__ = [ModuleDir]
+            if IsPackage:
+                # Convert the module into a package by setting up the file
+                # name and path so that it looks like a convincing Python
+                # package.  Now executing execfile has the desired effect of
+                # ensuring that all imports with ModuleFile are treated as
+                # local to ModuleFile.
+                self.module.__path__ = [os.path.dirname(ModuleFile)]
             
             assert self._LoadingModule is None, \
                 'Calling ModuleVersion inside an EPICS module is a BAD idea!'
@@ -159,8 +165,10 @@ class ModuleVersion:
             
             if hasattr(self.module, '__all__'):
                 for name in self.module.__all__:
+                    assert not hasattr(hardware, name), \
+                        'Value %s.%s already in hardware module' % (
+                            self.__name, name)
                     setattr(hardware, name, getattr(self.module, name))
-
         else:
             print 'Module', self.__name, 'not found'
 
@@ -190,9 +198,9 @@ class ModuleBase(object):
     # symbol InheritModuleName is set to True.
     class __ModuleBaseMeta(autosuper):
         def __init__(cls, name, bases, dict):
-            # This could more simply be written as autosuper.__...,
-            # but then subclassing might go astray.  Module instances are
-            # already broadly subclassed, so we ought to play by the rules.
+            # This could more simply be written as autosuper.__..., but then
+            # subclassing might go astray.  Module instances are already
+            # broadly subclassed, so we ought to play by the rules.
             super(cls._ModuleBase__ModuleBaseMeta, cls).__init__(
                 name, bases, dict)
 
@@ -210,8 +218,8 @@ class ModuleBase(object):
                 if ModuleVersion._LoadingModule is None:
                     # Module is being defined as part of the build script, not
                     # in the module.  In this case if the class doesn't
-                    # already have a module name specified we'll
-                    # automatically name it after itself.
+                    # already have a module name specified we'll automatically
+                    # name it after itself.
                     if not hasattr(cls, 'ModuleName'):
                         cls.ModuleName = name
                 else:

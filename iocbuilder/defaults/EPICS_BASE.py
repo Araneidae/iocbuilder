@@ -7,7 +7,7 @@ from iocbuilder import Device
 
 
 class epicsBase(Device):
-    DbdFileList = ['base.dbd']
+    DbdFileList = ['base']
 
     # This *must* initialise before anything else!
     InitialisationPhase = Device.FIRST
@@ -19,7 +19,7 @@ class epicsBase(Device):
         dbd_name = self.ioc_name
         print 'cd homeDir'
         print 'ld < bin/%s/%s.munch' % (self.Arch(), self.ioc_name)
-        print 'dbLoadDatabase "dbd/%s.dbd"' % dbd_name
+        print 'dbLoadDatabase "dbd/%s"' % dbd_name
         print '%s_registerRecordDeviceDriver(pdbbase)'% \
             dbd_name.replace('-', '_')
 

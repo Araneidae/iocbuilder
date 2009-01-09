@@ -8,8 +8,6 @@ To do
 - Integrate Austen's driver changes.
 - Create nice and simple boiler-plate IOC builder example.
 - Rename `hardware` to `components`?
-- Rename `python/\_\_builder\_\_.py` to `builder/\_\_builder\_\_.py` or even
-`builder/\_\_init\_\_.py`?
 - Parse `configure/RELEASE` to validate version consitencies.  Actually need
 entirely new VERSION mechanism!
 - Suggestions from Austen:
@@ -94,10 +92,6 @@ Where do we manage the module globals?  Currently we have a rather tangled
 approach: `__init__.py` defines `_globals()` to provide access to the module
 globals, which is then injected into `Configure` as its private `__globals()`
 method.  It also define `_add_symbol` which adds to globals and to `_epics`.
-
-
-
-
 
 Goals
 -----

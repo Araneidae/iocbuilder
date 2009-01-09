@@ -4,4 +4,4 @@ __all__ = ['Sscan']
 
 class Sscan(Device):
     LibFileList = ['sscan']
-    DbdFileList = ['sscanSupport.dbd']
+    DbdFileList = ['sscanSupport']

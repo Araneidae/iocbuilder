@@ -8,7 +8,7 @@ __all__ = ['streamProtocol']
 
 
 class streamProtocol(Device):
-    DbdFileList = ['stream.dbd']
+    DbdFileList = ['stream']
     LibFileList = ['pcre', 'stream']
 
     # We'll need to post process the list of instances

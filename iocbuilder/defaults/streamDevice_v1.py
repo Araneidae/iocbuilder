@@ -7,7 +7,7 @@ __all__ = ['streamProtocol_v1']
 
 class streamProtocol_v1(Device):
     LibFileList = ['streamDevice']
-    DbdFileList = ['stream.dbd']
+    DbdFileList = ['stream']
 
     # We'll need to post process the list of instances
     __ProtocolFiles = set()

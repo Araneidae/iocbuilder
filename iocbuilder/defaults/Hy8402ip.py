@@ -4,7 +4,7 @@ from iocbuilder.hardware import IpDevice
 
 # Digital to Analogue convert (DAC)
 class Hy8402(IpDevice):
-    DbdFileList = ['Hy8402ip.dbd']
+    DbdFileList = ['Hy8402ip']
     LibFileList = ['Hy8402ip']
     
     def __init__(self, carrier, ipslot, cardid=None,

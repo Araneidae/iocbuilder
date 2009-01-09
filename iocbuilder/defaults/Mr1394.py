@@ -8,7 +8,7 @@ class Mr1394(Substitution, Device):
     TemplateFile = 'Mr1394.db'
     
     LibFileList = ['Mr1394']
-    DbdFileList = ['Mr1394.dbd']
+    DbdFileList = ['Mr1394']
     BinFileList = ['mr1394lib', 'ex1394']
 
     def InitialiseOnce(self):

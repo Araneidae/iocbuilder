@@ -113,7 +113,7 @@ class _EventMap:
 
 # Timing system event receiver
 class EventReceiver(Device):
-    DbdFileList = ['evgevr.dbd']
+    DbdFileList = ['evgevr']
     LibFileList = ['evgevr']
 
     # Ensure that the event receiver is initialised really quite early.  This

@@ -36,7 +36,7 @@ def _BinPath(file):
     return os.path.join('bin', _Arch(), file)
 
 def _DbdPath(file):
-    return os.path.join('dbd', file)
+    return os.path.join('dbd', '%s.dbd' % file)
 
 
 class _FIRST:
@@ -179,10 +179,9 @@ class Device(ModuleBase):
         if cls.DbdFileList:
             print 'cd "dbd"'
             for dbd in cls.DbdFileList:
-                print 'dbLoadDatabase "%s"' % dbd
+                print 'dbLoadDatabase "%s.dbd"' % dbd
                 if Configure.register_dbd:
-                    assert dbd[-4:] == '.dbd'
-                    print '%s_registerRecordDeviceDriver pdbbase' % dbd[:-4]
+                    print '%s_registerRecordDeviceDriver pdbbase' % dbd
         
 
     # Calls the initialisation method if present.
@@ -264,7 +263,7 @@ class Device(ModuleBase):
     @classmethod
     def __LoadDbdFiles(cls):
         for dbd in cls.DbdFileList:
-            LoadDbdFile(os.path.join(cls.LibPath(), 'dbd'), dbd)
+            LoadDbdFile(os.path.join(cls.LibPath(), 'dbd'), '%s.dbd' % dbd)
 
 
     # Each device can allocate any interrupt vectors it needs by asking the

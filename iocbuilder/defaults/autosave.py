@@ -26,7 +26,7 @@ class _AutosaveStatus(Substitution):
     
 class Autosave(Device):
     LibFileList = ['autosave']
-    DbdFileList = ['asSupport.dbd']
+    DbdFileList = ['asSupport']
 
     def __init__(self, iocName, debug=0):
         self.__super.__init__()
