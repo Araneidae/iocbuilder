@@ -113,7 +113,6 @@ class _EventMap:
 
 # Timing system event receiver
 class EventReceiver(Device):
-    InheritModuleName = True
     DbdFileList = ['evgevr.dbd']
     LibFileList = ['evgevr']
 

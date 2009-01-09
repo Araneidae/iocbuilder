@@ -114,6 +114,8 @@ class Substitution(ModuleBase):
             Name of template file to be loaded.  By default this will be
             looked for in the db subdirectory of the library.
     '''
+
+    BaseClass = True
     
     Arguments = ()
     TemplateFile = None

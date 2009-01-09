@@ -126,6 +126,7 @@ def ConfigureTemplate(record_names = None):
     import libversion
     import recordnames
     import iocwriter
+    import iocinit
     
     if record_names is None:
         record_names = recordnames.TemplateRecordNames()

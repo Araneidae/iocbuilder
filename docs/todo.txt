@@ -4,23 +4,87 @@ To Do
 To do
 -----
 
-- Suggestions from Austen:
-. Fully commmented template build file (not quite sure what this means)
-. Example `build.py` for each supported module.
-- Support `AsynOctec` (TRAC #717).
-- Ensure that `autosave` properly implements full autosave functionality.
-- Looks as if `calc` is a bit incomplete!
+- Push definitions out to individual modules.
 - Integrate Austen's driver changes.
 - Create nice and simple boiler-plate IOC builder example.
 - Rename `hardware` to `components`?
+- Rename `python/\_\_builder\_\_.py` to `builder/\_\_builder\_\_.py` or even
+`builder/\_\_init\_\_.py`?
 - Parse `configure/RELEASE` to validate version consitencies.  Actually need
 entirely new VERSION mechanism!
+- Suggestions from Austen:
+. Fully commmented template build file (not quite sure what this means)
+. Example `build.py` for each supported module.
+- Review module export mechanism.  What do we export and when?  How about
+automatically exporting all `ModuleBase` classes?
+- Typo in `TimingTemplates` `decode.template`.
 
-Current changes
----------------
+Functionality to extend
+~~~~~~~~~~~~~~~~~~~~~~~
+- Want more `AsynSerial` configuration options -- see `AsynOctet` (TRAC #717).
 
-Changing `Hy8515` from 3-9 to 3-7 for `ipac` version consistency.  Need to see
-what the changes are.
+- Ensure that `autosave` properly implements full autosave functionality
+(check wiki).
+- Looks as if `calc` is a bit incomplete!
+- `seq` doesn't do a damned thing.
+
+- Push `psc` from `pscBuilder/components/pscIp.py` to `psc` module.
+
+
+Austen's Extensions
+-------------------
+
+All in `~ajr78/epics3.14/iocs` and subdirectories `pscBuilder` and
+`idBuilder`.  Candidate files:
+
+`pscBuilder/components/pscIp.py`::
+Adds `ipmIrqCmd` to `Hy8002`.  Probably want to add this and other related
+commands to `IpCarrier` class.
++
+Declares `PSC` `IpDevice` together with associated templates `pcsTemplate`,
+`pscFuGTemplate`, `Hy8401Template` (in `psc`!) and `LockTemplate`.  Looks
+like `pscGroup` doesn't necessarly belong in the `psc` device.
+
+`pscBuilder/components/pscTiming.py`::
+Creates `TimingTemplates` based macros based on `evr_usec_calc` and `offset`
+templates, presmably need to add to `TimingTemplates.py`.
+
+`pscBuilder/components/IOCinfo.py`::
+A copy of `IOCinfo.py`, now redundant.
+
+`pscBuilder/components/pscAHU.py`::
+Template definition `StulzAHUTemplate` for `StulzAHU` module.
+
+`idBuilder/components/Hy8403.py`::
+Redundant copy of `Hy8403`.
+
+`idBuilder/components/idSupport.py`::
+Class `ID` for `insertionDevice` module.  Probably needs a better name (as the
+`components` namespace is widely shared).
++
+Uses `seq`, but fakes it up!  Need to look at making the `seq` module work
+properly.  Also defines replacement `seq` module.
++
+Defines `HostLink`, `calc`, `sscan`, `ip`, `Thermocouple`, `PT100` modules.
++
+Defines `AsynOctet` device which reimplements `AsynSerial`, but performs some
+extra initialisation.  Need to move this into `AsynSerial` device.
++
+Further definitions for `digitelMpc`, `mks937a`, `vacuumSpace`,
+`insertionDevice`, `psc`, `Hy8403ip`, `PT100`.  For example, there are 20
+templates in the `insertionDevice` module!
+
+`idBuilder/components/IOCinfo.py`::
+Redundant copy of `IOCinfo`.
+
+`idBuilder/components/MAXv.py`::
+`OmsMAXv` module.  Needs to be added to `motor` support module.  Need to check
+how this interacts with the original `Oms` device, for example: can the cards
+be mixed?
+
+`idBuilder/components/Oms.py`::
+Looks awfully like a copy of `Oms.py`.  Yes, it is: completely redundant,
+fortunately.
 
 
 Issues
@@ -30,6 +94,9 @@ Where do we manage the module globals?  Currently we have a rather tangled
 approach: `__init__.py` defines `_globals()` to provide access to the module
 globals, which is then injected into `Configure` as its private `__globals()`
 method.  It also define `_add_symbol` which adds to globals and to `_epics`.
+
+
+
 
 
 Goals

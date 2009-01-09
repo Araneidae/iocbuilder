@@ -104,6 +104,7 @@ class Device(ModuleBase):
     '''
 
     __metaclass__ = _AutoComment
+    BaseClass = True
 
     FIRST = _FIRST()
 
@@ -117,6 +118,10 @@ class Device(ModuleBase):
         self.__AddLibrary()
         # Add this instance to the list of devices to be configured
         Hardware.AddHardware(self)
+
+        # Support for commands specified during initialisation.
+        self.__Commands = []
+        self.__CommandsPostInit = []
 
     @classmethod
     def AddedToLibrary(cls):
@@ -184,7 +189,7 @@ class Device(ModuleBase):
     def CallInitialise(self):
         if self.comment or \
                 (self.InitialiseOnce and not self.__Once) or \
-                self.Initialise:
+                self.Initialise or self.__Commands:
             print
         if self.comment:
             for line in self.comment.split('\n'):
@@ -194,12 +199,24 @@ class Device(ModuleBase):
             self.__class__.__Once = True
         if self.Initialise:
             self.Initialise()
+        for command in self.__Commands:
+            print command
 
     # Similarly, call any post-iocInit initialisation
     def CallPostIocInitialise(self):
-        if self.PostIocInitialise:
+        if self.PostIocInitialise or self.__CommandsPostInit:
             print
+        if self.PostIocInitialise:
             self.PostIocInitialise()
+        for command in self.__CommandsPostInit:
+            print command
+
+
+    def AddCommand(self, command):
+        self.__Commands.append(command)
+        
+    def AddCommandPostInit(self, command):
+        self.__CommandsPostInit.append(command)
                 
 
     # Internal method to add at most one instance of this device class and

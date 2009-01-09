@@ -68,6 +68,36 @@ class IpCarrier(Device):
             print '%s = ipacEXTAddCarrier(&%s, "%s")' % (
                 self.IPACid, device, ' '.join(map(str, args)))
 
+    def ipmIrqCmd(self, ipslot, irq, command):
+        '''This generates a call to ipmIrqCmd for the given ipslot.'''
+        assert 0 <= ipslot < self.MaxIpSlots, 'Invalid IP slot: %d' % ipslot
+        assert irq in [0, 1], 'Invalid irq: %s' % irq
+
+        # Allow the command to be a string or a number in the right range.
+        try:
+            command = int(command)
+        except ValueError:
+            CommandTable = {
+                'irqLevel0':    0,  'irqLevel1':    1,
+                'irqLevel2':    2,  'irqLevel3':    3,
+                'irqLevel4':    4,  'irqLevel5':    5,
+                'irqLevel6':    6,  'irqLevel7':    7,
+#                'irqGetLevel':  8,
+                'irqEnable':    9,  'irqDisable':  10,
+#                'irqPoll':     11,
+                'irqSetEdge':  12,  'irqSetLevel': 13,
+#                'irqClear':    14,
+                'statUnused':  15,  'statActive':  16,
+                'slotReset':   17
+            }
+            command = CommandTable[command]
+        else:
+            assert 0 <= command <= 17, 'Invalid Irq command: %d' % command
+
+        self.AddCommand('ipmIrqCmd(%s, %d, %d, %d)' % (
+            self.IPACid, ipslot, irq, command))
+
+
 
 class IpDevice(Device):
     '''All the IP cards installed in a carrier card should be declared as
@@ -102,7 +132,12 @@ class IpDevice(Device):
         self.IPACid = carrier.IPACid
         self.ipslot = ipslot
         self.cardid = cardid
+        self.carrier = carrier
 
         # Allocate one or more interrupt vectors as required.
         if interrupts:
             self.vector = self.AllocateIntVector(interrupts)
+
+    def ipmIrqCmd(self, irq, cmd):
+        '''This generates a call to ipmIrqCmd for this slot.'''
+        self.carrier.ipmIrqCmd(self.ipslot, irq, cmd)

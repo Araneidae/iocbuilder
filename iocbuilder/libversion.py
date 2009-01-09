@@ -48,7 +48,8 @@ class ModuleVersion:
     _LoadingModule = None
     
     def __init__(self, libname,
-            version=None, home=None, override=False, use_name=True):
+            version=None, home=None, override=False, use_name=True,
+            suppress_import=False, load_file=None):
         # By default pick up each module from the prod support directory.  It
         # might be quite nice to extend this with a path search.
         if home is None:
@@ -78,7 +79,7 @@ class ModuleVersion:
 
         # Finally attempt to load any definitions associated with this
         # module.
-        self.__LoadModuleDefinitions()
+        self.__LoadModuleDefinitions(suppress_import, load_file)
         
 
     def LibPath(self, macro_name=False):
@@ -109,27 +110,35 @@ class ModuleVersion:
     def __cmp__(self, other):   return cmp(self.__name, other.__name)
 
 
-    def __LoadModuleDefinitions(self):
+    def __LoadModuleDefinitions(self, suppress_import, load_file):
         # Create the associated module and record it in our list of loaded
         # modules.  If we can find any module definitions then they will be
         # loaded into this module.
         ModuleName = 'iocbuilder.modules.%s' % self.__name
         self.module = CreateModule(ModuleName)
         setattr(modules, self.__name, self.module)
-        
-        # Module definitions will be loaded from one of the following places:
-        #   1. <module-path>/data/builder.py
-        #   2. <module-path>/python/builder.py
-        #   3. defaults/<name>.py
-        Places = [
-            os.path.join(self.LibPath(), 'data',   '__builder__.py'),
-            os.path.join(self.LibPath(), 'python', '__builder__.py'),
-            SameDirFile(__file__, 'defaults', '%s.py' % self.__name)]
-        for ModuleFile in Places:
-            if os.access(ModuleFile, os.R_OK):
-                break
+
+        if suppress_import:
+            print 'Import of %s skipped' % self.__name
+            return
+
+        if load_file:
+            ModuleFile = load_file
         else:
-            ModuleFile = None
+            # Module definitions will be loaded from one of the following
+            # places:
+            #   1. <module-path>/data/builder.py
+            #   2. <module-path>/python/builder.py
+            #   3. defaults/<name>.py
+            Places = [
+                os.path.join(self.LibPath(), 'data',   '__builder__.py'),
+                os.path.join(self.LibPath(), 'python', '__builder__.py'),
+                SameDirFile(__file__, 'defaults', '%s.py' % self.__name)]
+            for ModuleFile in Places:
+                if os.access(ModuleFile, os.R_OK):
+                    break
+            else:
+                ModuleFile = None
 
         if ModuleFile:
             ModuleFile = os.path.abspath(ModuleFile)
@@ -187,31 +196,41 @@ class ModuleBase(object):
             super(cls._ModuleBase__ModuleBaseMeta, cls).__init__(
                 name, bases, dict)
 
-            if ModuleVersion._LoadingModule is None:
-                # Module is being defined as part of the build script, not in
-                # the module.  In this case f the class hasn't defined its own
-                # ModuleName then unless InheritModuleName has been set to
-                # true then default ModuleName to the class name.
-                if 'ModuleName' not in cls.__dict__ and \
-                        not cls.InheritModuleName:
-                    cls.ModuleName = name
+            if hasattr(cls, 'BaseClass'):
+                # This is a base class, not designed for export from a module.
+                # We suppress the class attribute so that subclasses don't
+                # need special treatment.  In this case no module name should
+                # be specified.
+                assert not hasattr(cls, 'ModuleName'), \
+                    'Base classes cannot be tied to modules'
+                del cls.BaseClass
             else:
-                # If we're called while loading a module then force the module
-                # name to agree with the loading module: in other words, an
-                # EPICS module isn't allowed to create classes which belong to
-                # other modules.
-                name = ModuleVersion._LoadingModule.Name()
-                if 'ModuleName' in cls.__dict__:
-                    assert cls.__dict__['ModuleName'] == name, \
-                        'ModuleName must be %s' % name
-                    print 'Redundant ModuleName for', cls.__name__
-                cls.ModuleName = name
+                # A normal implementation class.  This needs to be tied to a
+                # particular module.
+                if ModuleVersion._LoadingModule is None:
+                    # Module is being defined as part of the build script, not
+                    # in the module.  In this case if the class doesn't
+                    # already have a module name specified we'll
+                    # automatically name it after itself.
+                    if not hasattr(cls, 'ModuleName'):
+                        cls.ModuleName = name
+                else:
+                    # If we're called while loading a module then force the
+                    # module name to agree with the loading module: in other
+                    # words, an EPICS module isn't allowed to create classes
+                    # which belong to other modules.
+                    name = ModuleVersion._LoadingModule.Name()
+                    if 'ModuleName' in cls.__dict__:
+                        assert cls.ModuleName == name, \
+                            'ModuleName must be %s' % name
+                        print 'Redundant ModuleName for', cls.__name__
+                    cls.ModuleName = name
+
 
     __metaclass__ = __ModuleBaseMeta
 
-
-    # By default the module name is not inherited
-    InheritModuleName = False
+    # Setting this attribute suppresses ModuleName assignment.
+    BaseClass = True
 
     @classmethod
     def LibPath(cls, macro_name=False):

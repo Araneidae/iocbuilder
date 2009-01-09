@@ -22,26 +22,26 @@ class Hardware(Singleton):
         # method which should write out the initialisation code required to
         # load this library.  The code generated via this list is executed
         # directly after ioc startup.
-        self._LibraryList = []
+        self.__LibraryList = []
         # Each entity on the hardware list should support the Initialise
         # method.  The code generated via this list is executed after the
         # libraries have been loaded but before iocInit is started and
         # databases are loaded.
-        self._HardwareList = []
+        self.__HardwareList = []
 
         # Interrupt vectors are allocated from a safe range determined by the
         # particular vxWorks configuration.
-        self._IntVector = 0xC0
+        self.__IntVector = 0xC0
 
 
     # The code below follows Pete Owen's algorithm as implemented in
     # support/utility/Rx-y/utilityApp/src/newInterruptVector.c.  This is used
     # to safely allocate interrupt vectors to hardware.
     def AllocateIntVector(self, count=1):
-        result = self._IntVector
+        result = self.__IntVector
         assert result + count <= 255, \
             'No more interrupt vectors left to allocate'
-        self._IntVector += count
+        self.__IntVector += count
         return result
 
 
@@ -57,7 +57,7 @@ class Hardware(Singleton):
         # Now load all the dependent libraries
         print '# Loading libraries'
         print '# -----------------'
-        for l in self._LibraryList:
+        for l in self.__LibraryList:
             # Generate the code to load the library.
             l.LoadLibraries()
 
@@ -68,7 +68,7 @@ class Hardware(Singleton):
         print '# Device initialisation'
         print '# ---------------------'
         phases = {}
-        for device in self._HardwareList:
+        for device in self.__HardwareList:
             phase = device.InitialisationPhase
             if phase not in phases:  phases[phase] = []
             phases[phase].append(device)
@@ -81,32 +81,32 @@ class Hardware(Singleton):
     def GetDbdList(self):
         '''Returns a list of all .dbd files.'''
         return [dbd
-            for library in self._LibraryList
+            for library in self.__LibraryList
             for dbd in library.DbdFileList]
 
     def GetLibList(self):
         '''Returns a list of all library files.'''
         return [lib
-            for library in self._LibraryList
+            for library in self.__LibraryList
             for lib in library.LibFileList]
 
             
     # Any devices which need post iocInit() initialisation can have their
     # code generation here
     def PrintPostIocInit(self):
-        for device in self._HardwareList:
+        for device in self.__HardwareList:
             device.CallPostIocInitialise()
 
 
     # Check whether the library is already known.
     def LibraryKnown(self, library):
-        return library in self._LibraryList
+        return library in self.__LibraryList
 
     # Add device library to list of libraries to be loaded.  Called from
     # Device class, which will be responsible for initialising it.
     def AddLibrary(self, library):
-        self._LibraryList.append(library)
+        self.__LibraryList.append(library)
 
     # Add device instance to list of hardware to be initialised.
     def AddHardware(self, device):
-        self._HardwareList.append(device)
+        self.__HardwareList.append(device)

@@ -56,6 +56,10 @@ class iocInit(Singleton):
         self.__DatabaseNameList = []
         self.__EnvList = dict(self.DefaultEnvironment)
 
+        # Extra commands (for bypassing device creation)
+        self.__IocCommands_PreInit = []
+        self.__IocCommands_PostInit = []
+
         
     def Initialise(self):
         # We can't import the IOC until we've finished importing (at least,
@@ -113,7 +117,21 @@ class iocInit(Singleton):
         for database in self.__DatabaseNameList:
             print 'dbLoadRecords "%s"' % database
 
+        if self.__IocCommands_PreInit:
+            print
+            print '# Extra IOC commands'
+            for command in self.__IocCommands_PreInit:
+                print command
+            print
+
         print 'iocInit'
+
+        if self.__IocCommands_PostInit:
+            print
+            print '# Extra post-init IOC commands'
+            for command in self.__IocCommands_PostInit:
+                print command
+            print
 
         
     def PrintIoc(self, ioc_root=None):
@@ -175,6 +193,14 @@ class iocInit(Singleton):
             print 'Changing environment variable %s from %s to %s' % (
                 key, self.__EnvList[key], value)
         self.__EnvList[key] = value
+
+    @export
+    def IocCommand(self, command):
+        self.__IocCommands_PreInit.append(command)
+
+    @export
+    def IocPostInit(self, command):
+        self.__IocCommands_PostInit.append(command)
 
 
         
