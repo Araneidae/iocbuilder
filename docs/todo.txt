@@ -7,14 +7,6 @@ To do
 - Push definitions out to individual modules.
 - Integrate Austen's driver changes.
 - Create nice and simple boiler-plate IOC builder example.
-- Rename `hardware` to `components`?
-- Parse `configure/RELEASE` to validate version consitencies.  Actually need
-entirely new VERSION mechanism!
-- Suggestions from Austen:
-. Fully commmented template build file (not quite sure what this means)
-. Example `build.py` for each supported module.
-- Review module export mechanism.  What do we export and when?  How about
-automatically exporting all `ModuleBase` classes?
 - Typo in `TimingTemplates` `decode.template`.
 
 Functionality to extend
@@ -27,6 +19,22 @@ Functionality to extend
 - `seq` doesn't do a damned thing.
 
 - Push `psc` from `pscBuilder/components/pscIp.py` to `psc` module.
+
+
+To do later
+~~~~~~~~~~~
+- Parse `configure/RELEASE` to validate version consitencies.  Actually need
+entirely new VERSION mechanism!
+
+
+To maybe not do?
+~~~~~~~~~~~~~~~~
+- Rename `hardware` to `components`?
+- Review module export mechanism.  What do we export and when?  How about
+automatically exporting all `ModuleBase` classes?
+- Suggestions from Austen:
+. Fully commmented template build file (not quite sure what this means)
+. Example `build.py` for each supported module.
 
 
 Austen's Extensions

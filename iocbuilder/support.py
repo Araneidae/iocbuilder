@@ -34,8 +34,8 @@ def ExportAllModules(globals):
 
 
 def CreateModule(module_name):
-    '''Creates a fully qualified module from thin air and ensures it's added
-    to the module table.'''
+    '''Creates a fully qualified module from thin air and adds it to the
+    module table.'''
     module = types.ModuleType(module_name)
     sys.modules[module_name] = module
     return module

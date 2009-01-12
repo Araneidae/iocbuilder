@@ -19,9 +19,23 @@ __all__ = ['ModuleVersion', 'ModuleBase', 'SetModulePath', 'modules']
 def SetModulePath(prod):
     '''Define the directory path for locating modules.  This works with the
     Diamond directory conventions.'''
-    
     global prodSupport
     prodSupport = prod
+
+
+def _CheckPythonModule(path, module):
+    # Checks for a Python module or package at path/module, returns the path
+    # to the python path to execute and a flag indicating whether the file is
+    # a package.
+    Places = [
+        # Follow Python by first trying for a package before a plain module.
+        (os.path.join(path, module, '__init__.py'), True),
+        (os.path.join(path, '%s.py' % module),      False)]
+    for ModuleFile, IsPackage in Places:
+        if os.access(ModuleFile, os.R_OK):
+            return (ModuleFile, IsPackage)
+    else:
+        return (None, False)
 
 
 
@@ -44,7 +58,7 @@ class ModuleVersion:
 
     # This is set while the module is being loaded so that we can detect
     # nested loads (really bad idea) and can treat the module name specially
-    # in  ModuleBase.
+    # in ModuleBase.
     _LoadingModule = None
     
     def __init__(self, libname,
@@ -123,28 +137,17 @@ class ModuleVersion:
             return
 
         if load_file:
-            ModuleFile = load_file
-            IsPackage = False
+            ModuleFile, IsPackage = _CheckPythonModule('', load_file)
         else:
-            # Module definitions will be loaded from the first found of the
-            # following  places:
-            #   1. <module-path>/builder/__init__.py
-            #   2. <module-path>/builder.py
-            #   3. defaults/<name>.py
-            # If a builder/__init__.py file is found it will be imported as a
-            # Python "package", so local imports will work as expected, but if
-            # builder.py is imported it will not be possible to do relative
-            # imports.
-            default = SameDirFile(__file__, 'defaults', '%s.py' % self.__name)
             Places = [
-                (os.path.join(self.LibPath(), 'builder', '__init__.py'), True),
-                (os.path.join(self.LibPath(), 'builder.py'), False),
-                (default, True)]
-            for ModuleFile, IsPackage in Places:
-                if os.access(ModuleFile, os.R_OK):
+                # First look for a builder package in the loaded EPICS module
+                (self.LibPath(), 'builder'),
+                # Failing that, try for a defaults entry.
+                (SameDirFile(__file__, 'defaults'), self.__name)]
+            for path, module in Places:
+                ModuleFile, IsPackage = _CheckPythonModule(path, module)
+                if ModuleFile:
                     break
-            else:
-                ModuleFile = None
 
         if ModuleFile:
             ModuleFile = os.path.abspath(ModuleFile)
@@ -213,6 +216,7 @@ class ModuleBase(object):
                     'Base classes cannot be tied to modules'
                 del cls.BaseClass
             else:
+                cls.ModuleSubClasses.append(cls)
                 # A normal implementation class.  This needs to be tied to a
                 # particular module.
                 if ModuleVersion._LoadingModule is None:
@@ -240,6 +244,11 @@ class ModuleBase(object):
     # Setting this attribute suppresses ModuleName assignment.
     BaseClass = True
 
+    ModuleSubClasses = []
+
+    # Set of instantiated modules as ModuleVersion instances
+    _ReferencedModules = set()
+
     @classmethod
     def LibPath(cls, macro_name=False):
         '''Returns the path to the module.  If macro_name is set then a macro
@@ -252,13 +261,6 @@ class ModuleBase(object):
         filename = os.path.join(cls.LibPath(), filename)
         assert os.access(filename, os.R_OK), 'File "%s" not found' % filename
         return filename
-
-    # Set of instantiated modules as ModuleVersion instances
-    _ReferencedModules = set()
-
-    # Ensures that this module is added to the list of instantiations.
-    def __init__(self):
-        self.UseModule()
 
     @classmethod
     def UseModule(cls):
@@ -275,12 +277,15 @@ class ModuleBase(object):
         '''Returns the ModuleVersion instance associated with this module.'''
         return _ModuleVersionTable[cls.ModuleName]
         
+    # Ensures that this module is added to the list of instantiations.
+    def __init__(self):
+        self.UseModule()
+
 
 
 # Dictionary of all modules with announced versions.  This will be
 # interrogated when modules are initialised.
 _ModuleVersionTable = {}
-
 
 # We maintain all loaded modules in a synthetic module.
 modules = CreateModule('iocbuilder.modules')

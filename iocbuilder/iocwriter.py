@@ -472,7 +472,7 @@ include $(TOP)/configure/RULES
         print
         print 'DBD += %s.dbd' % dbd
         for dbd_part in Hardware.GetDbdList():
-            print '%s_DBD += %s' % (dbd, dbd_part)
+            print '%s_DBD += %s.dbd' % (dbd, dbd_part)
         print
         print '%s_SRCS += %s_registerRecordDeviceDriver.cpp' % (ioc, dbd)
         print '%s_OBJS_vxWorks += $(EPICS_BASE_BIN)/vxComLibrary' % ioc
