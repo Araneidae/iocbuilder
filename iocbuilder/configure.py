@@ -99,7 +99,9 @@ def LoadVersionFile(filename):
     executed with execfile() with the ModuleVersion() function already in
     scope: no other calls or definitions should occur in the file.'''
     from libversion import ModuleVersion
-    execfile(filename, dict(ModuleVersion = ModuleVersion))
+    execfile(filename, dict(
+        ModuleVersion = ModuleVersion,
+        __file__ = filename))
 
 
 # Some sensible default configurations.

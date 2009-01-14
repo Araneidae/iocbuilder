@@ -29,7 +29,9 @@ class streamProtocol(Device):
 
         # The new stream device requires that the stream be wrapped as an
         # asyn device.  We do that wrapping here.
-        self.port = AsynSerial(port).DeviceName()
+        assert getattr(port, 'IsAsyn', False), \
+            'Stream Device port must be asyn port'
+        self.port = port
         # Pick up the protocol name from the file name.
         self.ProtocolName = os.path.basename(protocol_file)
 

@@ -1,9 +1,9 @@
 from iocbuilder import Device
 from iocbuilder.hardware import Sscan
 
-__all__ = ['Transform']
+__all__ = ['Calc']
 
-class Transform(Device):
+class Calc(Device):
     '''Implementation of transform record type.'''
     Dependencies = (Sscan,)
     LibFileList = ['calc']

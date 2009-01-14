@@ -20,7 +20,7 @@ class OmsMAXv(OmsVme):
             If a non default pollrate or intlevel are specified, then the same
         value must be specified for all cards.'''
 
-        assert axes == 8 or axes == 4, 'Invalid number of axes'
+        assert axis_count == 8 or axis_count == 4, 'Invalid number of axes'
 
         # For each valid choice of address map, the corresponding addressing
         # intervals are specified here.

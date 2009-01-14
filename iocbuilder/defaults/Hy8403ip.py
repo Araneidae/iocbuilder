@@ -1,5 +1,7 @@
-from iocbuilder import records, RecordFactory
+from iocbuilder import records, RecordFactory, Substitution
 from iocbuilder.hardware import IpDevice
+
+__all__ = ['Hy8403ipTemplate']
 
 
 # 24 bit serial ADC
@@ -57,3 +59,9 @@ class _ADCchannel:
         address = '#C%d S%d @' % (adc.cardid, channel)
         self.ai = RecordFactory(records.ai, 'Hy8403ai', 'INP', address)
         self.ao = RecordFactory(records.ao, 'Hy8403ao', 'OUT', address)
+
+
+class Hy8403ipTemplate(Substitution):
+    Arguments = ('device', 'card')
+    TemplateFile = 'Hy8403ip.template'
+

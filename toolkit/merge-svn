@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Script to merge updates into an existing svn directory.
+
+
+# Merge changes into svn
+#
+# This function performs the surprisingly difficult job of replacing an
+# existing SVN repository with files from another directory.
+#
+#   MergeSVN <working-svn-dir> <replacement-dir>
+#
+function MergeSVN()
+{
+    diff -r --brief --exclude='*.svn*' "$1" "$2" |
+    while read -r; do
+        # For each file diff will report either that it only exists in one of
+        # the two directories, or else that two corresponding files in the
+        # two directories differ.  The responses are of the form:
+        #
+        #   Only in $1/<subdirectory>: <filename>
+        #   Only in $2/<subdirectory>: <filename>
+        #   Files <svn-file> and <new-file> differ
+        #
+        # Careful use of sed is required to prise out desired filenames!
+        case "$REPLY" in
+        "Only in $1"*)
+            # If the file is only in the SVN directory then we can simply
+            # delete it from the subversion directory.
+            svn rm "$(sed <<<"$REPLY" 's/^Only in //; s.: ./.')"  ||
+                return
+            ;;
+        "Only in $2"*)
+            # If the file is only in the new directory then we can copy it
+            # into the svn directory and inform svn.  Fortunately, if we use
+            # `cp -r`, we can treat files and directories identically.
+            NEW_FILE="$(sed <<<"$REPLY" "s:^Only in $2::; s.: ./.")"  &&
+            cp -r "$2/$NEW_FILE" "$1/$NEW_FILE"  &&
+            svn add "$1/$NEW_FILE"  ||
+                return
+            ;;
+        "Files "*)
+            # This is the simplest case: just copy the file over.  It's a
+            # little harder to prise out the filenames, though.
+            # (Note that if any part of the filename contains the string 
+            # ' and ' then all bets are off: this just won't work.)
+            sed -r <<<"$REPLY" 's:^Files (.*) and (.*) differ$:\1\n\2:' |
+            (
+                IFS=$'\n'
+                read -r TARGET  &&
+                read -r SOURCE  &&
+                cp "$SOURCE" "$TARGET"
+            )  ||
+                return
+            ;;
+        *)  Error "Oops: don't understand response from diff:"$'\n' "$REPLY"
+            ;;
+        esac
+    done
+}
+
+
+
+case $# in
+    2)  MergeSVN "$1" "$2" ;;
+    *)  cat <<EOF
+Usage: $0 <working-svn-dir> <replacement-dir>
+
+Updates <working-svn-dir> with the complete <replacement-dir>, generating
+svn rm or add commands as appropriate.
+EOF
+        exit 1 ;;
+esac

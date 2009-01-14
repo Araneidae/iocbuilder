@@ -68,8 +68,8 @@ class OmsVme(Device):
             assert self.Allocated
             return (baseaddress - self.BaseAddress) / self.address_step
 
-        def CardSetDict(self):
-            return dict(self.__dict__, **self.attributes)
+        def CardSetDict(self, dictionary):
+            return dict(dictionary, **dict(self.__dict__, **self.attributes))
 
 
     _CardSet = None
@@ -92,7 +92,7 @@ class OmsVme(Device):
         self._CardSet.InitialiseBaseAddress()
 
     def CardSetDict(self):
-        return self._CardSet.CardSetDict()
+        return self._CardSet.CardSetDict(self.__dict__)
 
 
 

@@ -5,6 +5,7 @@ import os, os.path
 import sys
 import fnmatch
 import types
+import re
 
 __all__ = ['Singleton', 'autosuper', 'AutoRegisterClass', 'SameDirFile']
 
@@ -64,6 +65,28 @@ def choplist(list, size):
 def countChars(start='A', stop='Z'):
     '''Returns a sequence of letters.'''
     return iter(map(chr, range(ord(start), ord(stop) + 1)))
+
+
+unsafe_chars = re.compile(r'[\\"\1-\37]')
+
+def quote_c_string(s):
+    '''Converts a string into a form suitable for interpretation by the IOC
+    shell -- actually, all we do is ensure that dangerous characters are
+    quoted appropriately and enclose the whole thing in quotes.'''
+
+    def replace(match):
+        # Replaces dodgy characters with safe replacements
+        start, end = match.span()
+        ch = s[start:end]
+        try:
+            table = {
+                '\\': r'\\',    '"': r'\"',
+                '\t': r'\t',    '\n': r'\n',    '\r': r'\r' }
+            return table[ch]
+        except KeyError:
+            return r'\x%02x' % ord(ch)
+
+    return '"%s"' % unsafe_chars.sub(replace, s)
 
 
 

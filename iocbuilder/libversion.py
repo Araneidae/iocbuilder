@@ -63,7 +63,7 @@ class ModuleVersion:
     
     def __init__(self, libname,
             version=None, home=None, override=False, use_name=True,
-            suppress_import=False, load_file=None):
+            suppress_import=False, load_path=None):
         # By default pick up each module from the prod support directory.  It
         # might be quite nice to extend this with a path search.
         if home is None:
@@ -88,12 +88,15 @@ class ModuleVersion:
                'Module %s multiply defined' % libname
         assert override <= libDefined, 'Module %s not defined' % libname
         
-        # Add this to the list of module versions
+        # Add this to the list of module versions, create the associated
+        # module and finally attempt to load any definitions associated with
+        # this module.
         _ModuleVersionTable[libname] = self
-
-        # Finally attempt to load any definitions associated with this
-        # module.
-        self.__LoadModuleDefinitions(suppress_import, load_file)
+        self.__CreateVersionModule()
+        if suppress_import:
+            print 'Import of %s skipped' % self.__name
+        else:
+            self.__LoadModuleDefinitions(load_path)
         
 
     def LibPath(self, macro_name=False):
@@ -110,6 +113,12 @@ class ModuleVersion:
             path = os.path.join(path, self.version)
         return path
 
+    def ModuleFile(self, filename):
+        '''Returns an absolute path to a file within this module.'''
+        filename = os.path.join(self.LibPath(), filename)
+        assert os.access(filename, os.R_OK), 'File "%s" not found' % filename
+        return filename
+
     def Name(self, macro_name = False):
         '''Returns the module name.'''
         return self.__name
@@ -124,7 +133,7 @@ class ModuleVersion:
     def __cmp__(self, other):   return cmp(self.__name, other.__name)
 
 
-    def __LoadModuleDefinitions(self, suppress_import, load_file):
+    def __CreateVersionModule(self):
         # Create the associated module and record it in our list of loaded
         # modules.  If we can find any module definitions then they will be
         # loaded into this module.
@@ -132,12 +141,16 @@ class ModuleVersion:
         self.module = CreateModule(ModuleName)
         setattr(modules, self.__name, self.module)
 
-        if suppress_import:
-            print 'Import of %s skipped' % self.__name
-            return
+        # Create some useful module properties.
+        self.module.ModuleVersion = self
+        self.module.LibPath = self.LibPath
+        self.module.ModuleFile = self.ModuleFile
 
-        if load_file:
-            ModuleFile, IsPackage = _CheckPythonModule('', load_file)
+
+    def __LoadModuleDefinitions(self, load_path):
+        if load_path:
+            ModuleFile, IsPackage = _CheckPythonModule(
+                load_path, self.__name)
         else:
             Places = [
                 # First look for a builder package in the loaded EPICS module
@@ -237,6 +250,7 @@ class ModuleBase(object):
                             'ModuleName must be %s' % name
                         print 'Redundant ModuleName for', cls.__name__
                     cls.ModuleName = name
+                cls.ModuleVersion = _ModuleVersionTable[cls.ModuleName]
 
 
     __metaclass__ = __ModuleBaseMeta
@@ -253,18 +267,16 @@ class ModuleBase(object):
     def LibPath(cls, macro_name=False):
         '''Returns the path to the module.  If macro_name is set then a macro
         for the path is returned, otherwise the true path is returned.'''
-        return cls.ModuleVersion().LibPath(macro_name = macro_name)
+        return cls.ModuleVersion.LibPath(macro_name = macro_name)
 
     @classmethod
     def ModuleFile(cls, filename):
         '''Returns an absolute path to a file within this module.'''
-        filename = os.path.join(cls.LibPath(), filename)
-        assert os.access(filename, os.R_OK), 'File "%s" not found' % filename
-        return filename
+        return cls.ModuleVersion.ModuleFile(filename)
 
     @classmethod
     def UseModule(cls):
-        cls._ReferencedModules.add(cls.ModuleVersion())
+        cls._ReferencedModules.add(cls.ModuleVersion)
 
     @classmethod
     def ListModules(cls):
@@ -272,11 +284,6 @@ class ModuleBase(object):
         objects returned are ModuleVersion instances.'''
         return cls._ReferencedModules
 
-    @classmethod
-    def ModuleVersion(cls):
-        '''Returns the ModuleVersion instance associated with this module.'''
-        return _ModuleVersionTable[cls.ModuleName]
-        
     # Ensures that this module is added to the list of instantiations.
     def __init__(self):
         self.UseModule()
