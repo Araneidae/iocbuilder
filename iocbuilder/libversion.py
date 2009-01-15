@@ -186,7 +186,7 @@ class ModuleVersion:
                             self.__name, name)
                     setattr(hardware, name, getattr(self.module, name))
         else:
-            print 'Module', self.__name, 'not found'
+            print 'Module definitions for', self.__name, 'not found'
 
     
 
@@ -255,7 +255,8 @@ class ModuleBase(object):
 
     __metaclass__ = __ModuleBaseMeta
 
-    # Setting this attribute suppresses ModuleName assignment.
+    # Setting this attribute suppresses ModuleName and ModuleVersion
+    # assignment.
     BaseClass = True
 
     ModuleSubClasses = []
@@ -284,10 +285,18 @@ class ModuleBase(object):
         objects returned are ModuleVersion instances.'''
         return cls._ReferencedModules
 
-    # Ensures that this module is added to the list of instantiations.
-    def __init__(self):
-        self.UseModule()
+    __call_init_once = True
+    @classmethod
+    def __new__(cls, *args, **kargs):
+        if cls.__call_init_once:
+            cls.__call_init_once = False
+            cls.__init_once__()
+        
+        return super(ModuleBase, cls).__new__(cls, *args, **kargs)
 
+    @classmethod
+    def __init_once__(cls):
+        cls.UseModule()
 
 
 # Dictionary of all modules with announced versions.  This will be

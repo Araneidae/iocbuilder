@@ -10,6 +10,8 @@ To do
 - Common mechanism to support templates?  For example, how about `DTYP` and
 `Address` attributes on classes as appropriate.
 - Scan dependencies.
+- Should the default startup configuration use builder style boot path?  Which
+is the correct default?
 
 
 Functionality to extend
@@ -25,6 +27,10 @@ To do later
 - Parse `configure/RELEASE` to validate version consitencies.  Actually need
 entirely new VERSION mechanism!
 - Typo in `TimingTemplates` `decode.template`.
+- Attribute lookup overrides.  When looking for 'id', first look for
+'id'`\_\_`'ARCH' (where 'ARCH' is `vxWorks` or `linux_x86` etc), and when
+building in simulation mode, search in order for 'id'`\_\_sim__`'ARCH',
+'id'`\_\_sim`, 'id'`\_\_`'ARCH' and finally 'id'.
 
 
 To maybe not do?
@@ -60,37 +66,6 @@ A copy of `IOCinfo.py`, now redundant.
 
 `pscBuilder/components/pscAHU.py`::
 Template definition `StulzAHUTemplate` for `StulzAHU` module.
-
-`idBuilder/components/Hy8403.py`::
-Redundant copy of `Hy8403`.
-
-`idBuilder/components/idSupport.py`::
-Class `ID` for `insertionDevice` module.  Probably needs a better name (as the
-`components` namespace is widely shared).
-+
-Uses `seq`, but fakes it up!  Need to look at making the `seq` module work
-properly.  Also defines replacement `seq` module.
-+
-Defines `HostLink`, `calc`, `sscan`, `ip`, `Thermocouple`, `PT100` modules.
-+
-Defines `AsynOctet` device which reimplements `AsynSerial`, but performs some
-extra initialisation.  Need to move this into `AsynSerial` device.
-+
-Further definitions for `digitelMpc`, `mks937a`, `vacuumSpace`,
-`insertionDevice`, `psc`, `Hy8403ip`, `PT100`.  For example, there are 20
-templates in the `insertionDevice` module!
-
-`idBuilder/components/IOCinfo.py`::
-Redundant copy of `IOCinfo`.
-
-`idBuilder/components/MAXv.py`::
-`OmsMAXv` module.  Needs to be added to `motor` support module.  Need to check
-how this interacts with the original `Oms` device, for example: can the cards
-be mixed?
-
-`idBuilder/components/Oms.py`::
-Looks awfully like a copy of `Oms.py`.  Yes, it is: completely redundant,
-fortunately.
 
 
 Issues

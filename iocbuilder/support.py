@@ -166,8 +166,10 @@ class autosuper(type):
 
     def __init__(cls, name, bases, dict):
         super(autosuper, cls).__init__(name, bases, dict)
-        setattr(cls, "_%s__super" % name.lstrip('_'), super(cls))
-
+        name = name.lstrip('_')
+        setattr(cls, "_%s__super" % name, super(cls))
+        setattr(cls, "_%s__super_cls" % name,
+            classmethod(lambda subcls: super(cls, subcls)))
 
 
 def AutoRegisterClass(register, ignoreParent=True, superclass=type):

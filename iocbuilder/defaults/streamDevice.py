@@ -1,31 +1,30 @@
 import os.path
-from iocbuilder import Device, records, RecordFactory, IocDataFile
+from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase
+from iocbuilder import records, hardware
 
 from asyn import AsynSerial
 
 
-__all__ = ['streamProtocol']
+__all__ = [
+    'streamProtocol', 'ProtocolFile', 'AutoProtocol',
+    'streamDeviceVersion']
+
+
+assert not hasattr(hardware, 'streamDeviceVersion'), \
+    'Cannot mix stream device versions!'
+streamDeviceVersion = 2
 
 
 class streamProtocol(Device):
     DbdFileList = ['stream']
     LibFileList = ['pcre', 'stream']
 
-    # We'll need to post process the list of instances
-    __ProtocolFiles = set()
-    __ForceCopy = False
 
-    def __init__(self, port, protocol_file, force_copy=False):
+    def __init__(self, port, protocol):
         '''Each streamProtocol instance is constructed by binding a serial
         port to a protocol file.
         '''
         self.__super.__init__()
-
-        # Add to the set of protocol files and remember whether copying was
-        # demanded.
-        self.__ProtocolFiles.add(protocol_file)
-        if force_copy:
-            streamProtocol.__ForceCopy = True
 
         # The new stream device requires that the stream be wrapped as an
         # asyn device.  We do that wrapping here.
@@ -33,7 +32,7 @@ class streamProtocol(Device):
             'Stream Device port must be asyn port'
         self.port = port
         # Pick up the protocol name from the file name.
-        self.ProtocolName = os.path.basename(protocol_file)
+        self.ProtocolName = protocol.ProtocolName
 
         # Build the record factories for this channel
         for list, link in (
@@ -57,6 +56,28 @@ class streamProtocol(Device):
         'ao', 'bo', 'mbbo', 'mbboDirect', 'longout', 'stringout']
 
 
+class ProtocolFile(Device):
+    Dependencies = (streamProtocol,)
+
+    # We'll need to post process the list of instances
+    __ProtocolFiles = set()
+    __ForceCopy = False
+
+    @classmethod
+    def ForceCopy(cls):
+        cls.__ForceCopy = True
+
+    def __init__(self, protocol_file, force_copy=False):
+        self.__super.__init__()
+
+        # Add to the set of protocol files and remember whether copying was
+        # demanded.
+        self.__ProtocolFiles.add(protocol_file)
+        if force_copy:
+            streamProtocol.__ForceCopy = True
+        # Pick up the protocol name from the file name.
+        self.ProtocolName = os.path.basename(protocol_file)
+
     def InitialiseOnce(self):
         # Figure out whether we need to copy the files.  If any protocol
         # needs to be copied or if we are trying to use more than one
@@ -73,6 +94,16 @@ class streamProtocol(Device):
             protocol_dir = protocol_dirs.pop()
         print 'STREAM_PROTOCOL_DIR = "%s"' % protocol_dir
 
-        # Reset the global state in case we're reused.
-        self.__ProtocolFiles.clear()
-        streamProtocol.__ForceCopy = False
+    def __str__(self):
+        return self.ProtocolName
+
+
+class AutoProtocol(ModuleBase):
+    BaseClass = True
+
+    @classmethod
+    def __init_once__(cls):
+        cls.__super_cls().__init_once__()
+        cls.Protocols = [
+            ProtocolFile(cls.ModuleFile(os.path.join('data', file)))
+            for file in cls.ProtocolFiles]

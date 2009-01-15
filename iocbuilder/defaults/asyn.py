@@ -63,3 +63,6 @@ class AsynSerial(Device):
 
     def DeviceName(self):
         return self.asyn_name
+
+    def __str__(self):
+        return self.asyn_name

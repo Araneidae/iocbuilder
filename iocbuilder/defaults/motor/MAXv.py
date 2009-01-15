@@ -49,10 +49,6 @@ class OmsMAXv(OmsVme):
     
 
     def InitialiseOnce(self):
-        '''Internal method'''
-        # Only generate initialisation if this the first call to Initialise.
-        # Otherwise reset the state so that we can reuse this class for
-        # another IOC.
         self.InitialiseBaseAddress()
         print 'MAXvSetup(' \
             '%(CardCount)d, %(address_space)d, 0x%(BaseAddress)x, ' \
