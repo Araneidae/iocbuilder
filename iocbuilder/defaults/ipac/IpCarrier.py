@@ -68,7 +68,7 @@ class IpCarrier(Device):
             print '%s = ipacEXTAddCarrier(&%s, "%s")' % (
                 self.IPACid, device, ' '.join(map(str, args)))
 
-    def ipmIrqCmd(self, ipslot, irq, command):
+    def ipmIrqCmd(self, ipslot, irq, command, post_init=False):
         '''This generates a call to ipmIrqCmd for the given ipslot.'''
         assert 0 <= ipslot < self.MaxIpSlots, 'Invalid IP slot: %d' % ipslot
         assert irq in [0, 1], 'Invalid irq: %s' % irq
@@ -95,7 +95,7 @@ class IpCarrier(Device):
             assert 0 <= command <= 17, 'Invalid Irq command: %d' % command
 
         self.AddCommand('ipmIrqCmd(%s, %d, %d, %d)' % (
-            self.IPACid, ipslot, irq, command))
+            self.IPACid, ipslot, irq, command), post_init = post_init)
 
 
 
@@ -138,6 +138,6 @@ class IpDevice(Device):
         if interrupts:
             self.vector = self.AllocateIntVector(interrupts)
 
-    def ipmIrqCmd(self, irq, cmd):
+    def ipmIrqCmd(self, irq, cmd, post_init=False):
         '''This generates a call to ipmIrqCmd for this slot.'''
-        self.carrier.ipmIrqCmd(self.ipslot, irq, cmd)
+        self.carrier.ipmIrqCmd(self.ipslot, irq, cmd, post_init)

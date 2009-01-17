@@ -211,11 +211,11 @@ class Device(ModuleBase):
             print command
 
 
-    def AddCommand(self, command):
-        self.__Commands.append(command)
-        
-    def AddCommandPostInit(self, command):
-        self.__CommandsPostInit.append(command)
+    def AddCommand(self, command, post_init=False):
+        if post_init:
+            self.__CommandsPostInit.append(command)
+        else:
+            self.__Commands.append(command)
                 
 
     # Internal method to add at most one instance of this device class and
