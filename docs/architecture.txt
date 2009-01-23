@@ -1,6 +1,8 @@
 Builder Architecture Notes
 ==========================
 
+This file is *out* *of* *date*!
+
 Goals for Current Development
 -----------------------------
 

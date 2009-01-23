@@ -301,7 +301,7 @@ include $(TOP)/configure/RULES
         
 
         
-    def __init__(self, path, domain, techArea, id,
+    def __init__(self, path, domain, techArea, id = 1,
             make_boot = True, long_name = False):
         '''The Diamond style of IOC as supported by this writer is of the
         following form, where <ioc>=<domain>-<techArea>-IOC-<id> and <iocDir>

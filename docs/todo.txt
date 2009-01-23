@@ -5,13 +5,13 @@ To do
 -----
 
 - Push definitions out to individual modules.
-- Integrate Austen's driver changes.
 - Create nice and simple boiler-plate IOC builder example.
 - Common mechanism to support templates?  For example, how about `DTYP` and
 `Address` attributes on classes as appropriate.
 - Scan dependencies.
 - Should the default startup configuration use builder style boot path?  Which
 is the correct default?
+- Documentation.
 
 
 Functionality to extend
@@ -43,29 +43,34 @@ automatically exporting all `ModuleBase` classes?
 . Example `build.py` for each supported module.
 
 
-Austen's Extensions
--------------------
+Dependencies and Versions
+-------------------------
+Currently `Dependencies` is handled by `Device`, resulting in a variety of
+actions.  It makes sense to push this up to `ModuleBase`, but abstract the
+action.  Maybe override `UseModule`, and ensure that this is called in the
+right sequence.
 
-All in `~ajr78/epics3.14/iocs` and subdirectories `pscBuilder` and
-`idBuilder`.  Candidate files:
+The idea would be that `UseModule` is called either just before the first time
+a class is instantiated or in response to a `Dependencies` entry. 
 
-`pscBuilder/components/pscIp.py`::
-Adds `ipmIrqCmd` to `Hy8002`.  Probably want to add this and other related
-commands to `IpCarrier` class.
-+
-Declares `PSC` `IpDevice` together with associated templates `pcsTemplate`,
-`pscFuGTemplate`, `Hy8401Template` (in `psc`!) and `LockTemplate`.  Looks
-like `pscGroup` doesn't necessarly belong in the `psc` device.
+How would this interact with `\_\_init_once\_\_`?  One quirk is that it's
+possible for a class to be ``used'' without being instantiated -- would it be
+correct to call `\_\_init_once\_\_` in this case?
 
-`pscBuilder/components/pscTiming.py`::
-Creates `TimingTemplates` based macros based on `evr_usec_calc` and `offset`
-templates, presmably need to add to `TimingTemplates.py`.
+Would it make any sense to also add `Device` type support to a support module?
+The cleanest way would be to designate a dependent class which is
+automatically marked as dependent.
 
-`pscBuilder/components/IOCinfo.py`::
-A copy of `IOCinfo.py`, now redundant.
+A useful trick is to make `Dependencies` dynamic: if it is callable on first
+use then invoke it before using the result.  Something like:
+----
+    if callable(cls.Dependencies):
+        cls.Dependencies = cls.Dependencies()
+----
 
-`pscBuilder/components/pscAHU.py`::
-Template definition `StulzAHUTemplate` for `StulzAHU` module.
+Finally, how does this interact with `configure/RELEASE`?  It's difficult to
+see how it usefully can, though.
+
 
 
 Issues
@@ -85,4 +90,4 @@ Goals
 
 - Remove as much complexity as possible.
 - Implement dynamic loading of modules.  Done!
-- Implement outstanding TRAC requests.  Done #344, #718.
+- Implement outstanding TRAC requests.  Done

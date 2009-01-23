@@ -17,7 +17,7 @@ class BasicRecordNames(RecordNamesBase):
 
     __VersionInfo = { '3.13' : 29, '3.14' : 61 }
     
-    def __init__(self, version='3.13'):
+    def __init__(self, version='3.14'):
         '''The version parameter specifies the EPICS version: this determines
         the maximum name length.'''
         self.maxLength = self.__VersionInfo[version]
@@ -95,8 +95,12 @@ class DiamondRecordNames(RecordNamesBase):
         self.__TechnicalArea = area
 
 
-    def SetDevice(self, component, id):
+    def SetDevice(self, component, id, domain=None, ta=None):
         '''Sets the component and its id before records are created.'''
+        if domain is not None:
+            self.__Domain = domain
+        if ta is not None:
+            self.__TechnicalArea = ta
         assert self.__TechnicalArea != None and self.__Domain != None, \
             'Must set domain and area before creating records'
         assert 0 < len(component) <= 5, 'Invalid component name %s' % component

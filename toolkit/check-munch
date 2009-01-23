@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Simple minded script: checks whether the munch file for the specified IOC
+# will actually load successfully.  If any output is generated then the
+# answer is no.
+
+TORNADO=/dls_sw/targetOS/vxWorks/Tornado-2.2
+SYMBOLS_FILE=$TORNADO/target/config/mv5500/vxWorks.sym
+MUNCH="$1"/bin/vxWorks-ppc604_long/*.munch
+
+which nmpcc 2>/dev/null  ||
+PATH="$PATH:$TORNADO/host/x86-linux/bin"
+
+comm -13 <(
+    nm $SYMBOLS_FILE | cut -d' ' -f3 |sort) <(
+    nmppc $MUNCH | sed -n '/^ *U /{s///;p;}' | sort)

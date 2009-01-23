@@ -11,7 +11,7 @@ from configure import Configure
 import hardware
 
 
-__all__ = ['ModuleVersion', 'ModuleBase', 'SetModulePath', 'modules']
+__all__ = ['ModuleVersion', 'ModuleBase', 'modules']
 
 
 
@@ -62,12 +62,15 @@ class ModuleVersion:
     _LoadingModule = None
     
     def __init__(self, libname,
-            version=None, home=None, override=False, use_name=True,
-            suppress_import=False, load_path=None):
-        # By default pick up each module from the prod support directory.  It
-        # might be quite nice to extend this with a path search.
+            version=None, home=None, use_name=True,
+            suppress_import=False, load_path=None, override=False):
         if home is None:
+            # By default pick up each module from the prod support directory.
+            # It might be quite nice to extend this with a path search.
             home = prodSupport
+        else:
+            # Normalise the path for safety.
+            home = os.path.realpath(home)
 
         assert set(libname) <= set(self.__ValidNameChars), \
             'Module name %s must be a valid identifier' % libname
@@ -149,8 +152,7 @@ class ModuleVersion:
 
     def __LoadModuleDefinitions(self, load_path):
         if load_path:
-            ModuleFile, IsPackage = _CheckPythonModule(
-                load_path, self.__name)
+            ModuleFile, IsPackage = _CheckPythonModule(load_path, self.__name)
         else:
             Places = [
                 # First look for a builder package in the loaded EPICS module

@@ -195,12 +195,11 @@ class iocInit(Singleton):
         self.__EnvList[key] = value
 
     @export
-    def IocCommand(self, command):
-        self.__IocCommands_PreInit.append(command)
-
-    @export
-    def IocPostInit(self, command):
-        self.__IocCommands_PostInit.append(command)
+    def IocCommand(self, command, post_init=False):
+        if post_init:
+            self.__IocCommands_PostInit.append(command)
+        else:
+            self.__IocCommands_PreInit.append(command)
 
 
         

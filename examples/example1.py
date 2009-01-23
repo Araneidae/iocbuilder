@@ -9,9 +9,9 @@ import iocbuilder
 
 iocbuilder.ConfigureIOC()
 
-from iocbuilder import hardware
-from iocbuilder import modules
-from iocbuilder import ModuleVersion, Substitution, WriteIoc
+from iocbuilder import ModuleVersion, WriteIoc
+from iocbuilder import SetDomain, SetDevice, GetDevice
+from iocbuilder import hardware, records
 
 ModuleVersion('ipac',           '2-8dls4-3')
 ModuleVersion('Hy8515',         '3-7')
@@ -27,15 +27,18 @@ card4 = hardware.Hy8002(4)
 serial1 = card4.Hy8515(0)
 serial2 = card4.Hy8515(1)
 
+SetDomain('TEST', 'TS')
+SetDevice('DEV', 1)
 
 for ch in range(2):
     asyn = hardware.AsynSerial(serial1.channel(ch))
     hardware.NSC200(
-        M = 'blah', P = 'blah', PORT = asyn.DeviceName(), CH = ch)
+        M = GetDevice(), P = '', PORT = asyn.DeviceName(), CH = ch)
 
-hardware.cmsIon('TEST-BLAH-BLAH', 
+hardware.cmsIon(GetDevice(),
     hardware.AsynSerial(serial2.channel(0)), high = 2, hihi = 4)
 
+records.stringin('VERSION', VAL = 'Testing')
 
 
-WriteIoc('iocs', 'BLAH', 'BLAH', 1)
+WriteIoc('iocs', 'TS', 'TEST', 1)

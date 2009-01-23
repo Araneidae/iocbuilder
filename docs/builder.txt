@@ -1,7 +1,855 @@
-Notes on the builder system
-===========================
+How to use the IOC Builder
+==========================
 Michael Abbott
+:toc:
+:toclevels: 3
 
+// Unfortunately, the built-in toc mechanism doesn't actually appear to work.
+// This included file is derived from this message:
+// http://www.mail-archive.com/asciidoc-discuss@metaperl.com/msg00021.html
+include::toc.inc[]
+
+
+Introduction
+------------
+
+The IOC builder is a Python library designed to help with the generation of
+EPICS IOCs.  The IOC builder definitions capture as much information as
+possible about the various components that make up an EPICS IOC.
+
+The IOC builder supports three kinds of definitions: hardware initialisation,
+template expansion and explicit record definitions.  Complete building IOCs
+are generated with a correctly configured `configure/RELEASE` and full
+linking.  If the builder successfully generates an IOC there is a good chance
+that it will run correctly.
+
+In an alternative mode, the IOC builder can be used to generate `.db` files,
+either as templates, or fully substituted.  This mode is used, for example, in
+the Libera IOC.
+
+
+A Simple Example
+~~~~~~~~~~~~~~~~
+
+A simple example is the following:
+
+.`example.py`
+----
+import iocbuilder
+
+iocbuilder.ConfigureIOC()
+
+from iocbuilder import ModuleVersion, WriteIoc
+from iocbuilder import hardware
+
+ModuleVersion('ipac',           '2-8dls4-3')
+ModuleVersion('Hy8515',         '3-7')
+ModuleVersion('asyn',           '4-9')
+ModuleVersion('streamDevice',   '2-4dls2')
+ModuleVersion('newstep',        '1-3',  load_path = 'defaults')
+
+card4 = hardware.Hy8002(4)
+serial1 = card4.Hy8515(0)
+
+for ch in range(8):
+    asyn = hardware.AsynSerial(serial1.channel(ch))
+    hardware.NSC200(
+        M = 'blah', P = 'blah', PORT = asyn.DeviceName(), CH = ch)
+
+WriteIoc('iocs', 'TS', 'BLAH', 1)
+----
+
+We'll now work our way through this line by line.
+
+
+Initial import
+^^^^^^^^^^^^^^
+----
+import iocbuilder
+----
+This example assumes that `iocbuilder` is on `PYTHONPATH`.  This can be
+arranged by one of the following three mechanisms:
+
+1. Explicitly add the path to the IOC builder to `PYTHONPATH` before calling
+`example.py`:
+
+    PYTHONPATH=/home/mga83/epics/iocbuilder example.py
+
+2. Add the path to the IOC builder to `sys.path` before importing
+`iocbuilder`:
++
+----
+import sys
+sys.path.append('/home/mga83/epics/iocbuilder')
+import iocbuilder
+----
+
+3. Use `pkg_resources` to specify a released IOC builder version before
+importing:
++
+----
+from pkg_resources import require
+require('iocbuilder==1.7')
+import iocbuilder
+----
+
+
+Builder configuration
+^^^^^^^^^^^^^^^^^^^^^
+----
+iocbuilder.ConfigureIOC()
+----
+
+The builder should be configured for its precise mode of operation before any
+further imports are done.  By default `ConfigureIOC()` will configure the
+builder to generate a complete IOC directory tree for vxWorks.  An alternative
+target architecture can be specified, or `ConfigureTemplate()` can be
+specified if only databases are to be generated.
+
+
+Builder imports
+^^^^^^^^^^^^^^^
+----
+from iocbuilder import ModuleVersion, WriteIoc
+from iocbuilder import hardware
+----
+
+We can now import the individual builder resources that will be used.  Of
+course, this step is not strictly necessary, as all the names imported here
+can be referenced directly -- for example, `hardware` is simply an alias for
+`iocbuilder.hardware`.  The names imported here have the following
+significance:
+
+`ModuleVersion`::
+Nearly all resources required to build an IOC are packaged into EPICS
+modules.  These are released under version control -- the `ModuleVersion`
+function is used to specify which EPICS modules are to be used, and which
+version.
+
+`hardware`::
+A number of resources imported from EPICS modules will appear as attributes of
+the `iocbuilder.hardware` Python module.
+
+`WriteIoc`::
+Once all the resources required by an IOC have been specified this command
+will write out the entire IOC as a complete EPICS IOC directory.  This can
+then be built (by running `make` in the created directory `iocs/TS/TEST`) and
+run as an IOC.
+
+
+`ModuleVersion` imports
+^^^^^^^^^^^^^^^^^^^^^^^
+----
+ModuleVersion('ipac',           '2-8dls4-3')
+ModuleVersion('Hy8515',         '3-7')
+ModuleVersion('asyn',           '4-9')
+ModuleVersion('streamDevice',   '2-4dls2')
+ModuleVersion('newstep',        '1-3',  load_path = 'defaults')
+----
+
+Each of these lines specifies that a particular support module will be used to
+build the IOC, for example the first line specifies that the directory
+
+    /dls_sw/prod/R3.14.8.2/support/ipac/2-8dls4-3
+
+will be specified for looking up `ipac` resources.  In this particular example
+the following resources are needed:
+
+`ipac`:: Hardware carrier card required to install IP modules.
+`Hy8515`:: Provides serial ports used to communicate with external hardware.
+`asyn`:: A dependency of the `streamDevice` module.
+`streamDevice`:: This module is used to wrap the serial devices.
+`newstep`:: A simple example of an EPICS support module combining a template
+with protocol files.  
+
+In this particular example, the builder definitions for `newstep` are not
+found in the `newstep` release directory, and so a special `load_path` option
+is used to specify a path to the appropriate definitions.  We'll revisit this
+in a moment.
+
+
+Defining hardware resources
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----
+card4 = hardware.Hy8002(4)
+serial1 = card4.Hy8515(0)
+----
+
+In this example we have a Hytec 8002 carrier card installed in VME slot 4 with
+a Hytec 8515 (serial card) IP module loaded into IP slot A.  The
+`hardware.Hy8002` attribute was loaded by the `ipac` `ModuleVersion` call,
+while the `Hy8515` call loaded the `Hy8515` attribute into the `Hy8002` class
+(and thus all its instances).
+
+These two lines ensure that the necessary startup commands are generated in
+the IOC startup script, and provide resources that can be used to generate
+further components.  In this particular case the following two lines are
+generated in the `.cmd` startup script:
+----
+IPAC4 = ipacEXTAddCarrier(&EXTHy8002, "4 2 192")
+CARD40 = Hy8515Configure(40, IPAC4, 0, 193, 625, 0, 0)
+----
+Later we'll see where these lines come from.
+
+
+Generating records
+^^^^^^^^^^^^^^^^^^
+----
+for ch in range(8):
+    asyn = hardware.AsynSerial(serial1.channel(ch))
+    hardware.NSC200(
+        M = 'blah', P = 'blah', PORT = asyn.DeviceName(), CH = ch)
+----
+
+Finally we generate a template substitution.  The `newstep` EPICS module
+defines one template file, `NSC200.template1`, together with a stream device
+protocol file.  This is all automatically handled by the `hardware.NSC200`
+class -- which requires four arguments, as illustrated.
+
+The main complication is that the `PORT` argument needs to name a serial
+device which has been wrapped by the `asyn` module -- this is done using the
+`hardware.AsynSerial` class.
+
+Finally note that the serial device card, here named `serial1`, supports eight
+serial channels, so here we have instantiated `NSC200` for each available
+channel.
+
+Each `serial1.channel` call adds lines similar to the following to the `.cmd`
+script, but with appropriate sequential numbering (this is of course
+automatically handled by the builder):
+----
+PORT40_0 = tyHYOctalDevCreate("/ty/40/0", CARD40, 0, 2500, 250)
+tyHYOctalConfig(PORT40_0, 9600, 'N', 1, 8, 'N')
+----
+
+Each `hardware.AsynSerial` call adds lines similar to the following:
+----
+drvAsynSerialPortConfigure("ty_40_0", "/ty/40/0", 0, 0, 0)
+----
+and the following line is present once:
+----
+STREAM_PROTOCOL_DIR = "/dls_sw/prod/R3.14.8.2/support/newstep/1-3/data"
+----
+
+Finally, a substitutions file is created with an entry for each
+`hardware.NSC200` call.  All these entries together add up to the definition
+of a complete IOC.
+
+
+
+Writing it all out
+^^^^^^^^^^^^^^^^^^
+----
+WriteIoc('iocs', 'TS', 'BLAH', 1)
+----
+
+Finally the IOC needs to be written.  Up to this point all definitions have
+been prepared in memory, now a complete IOC is written to the directory
+`iocs/TS/BLAH`.
+
+At this point all work with IOC builder is complete, and the builder
+application should exit.
+
+
+A Simple EPICS Module
+~~~~~~~~~~~~~~~~~~~~~
+
+The example above loads its `newstep` definitions from a file named
+`defaults/newstep.py` -- this file contains the following lines:
+----
+from iocbuilder import Substitution
+from iocbuilder.hardware import AutoProtocol
+
+__all__ = ['NSC200']
+
+class NSC200(Substitution, AutoProtocol):
+    Arguments = ['P', 'M', 'CH', 'PORT']
+    TemplateFile = 'NSC200.template'
+    ProtocolFiles = ['NSC200.proto']
+----
+
+A line by line analysis follows.
+
+Imports
+^^^^^^^
+----
+from iocbuilder import Substitution
+from iocbuilder.hardware import AutoProtocol
+----
+
+Two classes are used here.
+
+`Substitution`::
+All templates should be wrapped by subclassing the `Substitution` base class.
+Instances will then automatically generate substitutions as appropriate.
+
+`AutoProtocol`::
+As this template requires the presence of a protocol file, we need this class
+to enable use of the `ProtocolFiles` attribute.  This will ensure that the
+protocol file is automatically made available to the IOC.
+
+
+Exports
+^^^^^^^
+----
+__all__ = ['NSC200']
+----
+
+All names defined in this file and listed in the `\_\_all\_\_` list will be
+automatically exported to the `iocbuilder.hardware` module.
+
+
+Definition
+^^^^^^^^^^
+----
+class NSC200(Substitution, AutoProtocol):
+    Arguments = ['P', 'M', 'CH', 'PORT']
+    TemplateFile = 'NSC200.template'
+    ProtocolFiles = ['NSC200.proto']
+----
+
+By subclassing `Substitution` we ensure that we can generate a template
+definition, and by including `AutoProtocol` we can include protocol files.
+The following three attributes now need to be defined before this subclass can
+be used:
+
+`Arguments`::
+This enumerates all the template arguments required by this template.  When
+instantiating this class, precisely these arguments must be passed, as keyword
+arguments -- these values are then used to instantiate the template.
+
+`TemplateFile`::
+Defines the template file which will be substituted.
+
+`ProtocolFiles`::
+This is only processed if `AutoProcotol` is specified.  All named listed will
+be looked up as files in the `data` directory of the module, and made
+available to the IOC (either by copying into a data directory in the IOC, or
+by configuring the startup script).
+
+
+Generating Records
+~~~~~~~~~~~~~~~~~~
+
+Individual records can easily be added to an IOC definition, either as
+standalone records, or bound to hardware resources.  For example, the
+following builder script generates 'ai' and 'waveform' records on an 8401 ADC
+card.
+
+----
+import iocbuilder
+iocbuilder.ConfigureIOC()
+from iocbuilder import *
+
+ModuleVersion('ipac',       '2-8dls4-3')
+ModuleVersion('Hy8401ip',   '3-11')
+
+card4 = hardware.Hy8002(4)
+adc = card4.Hy8401(0)
+
+SetDomain('TS', 'XX')
+SetDevice('DEV', 1)
+
+recs = []
+for i in range(8):
+    ch = adc.channel(i)
+    recs.extend([
+        ch.ai('AI%d' % (i+1), EGU = 'V', PREC = 4),
+        ch.waveform('WF%d' % (i+1), NELM = 1024, FTVL = 'FLOAT')])
+fan = create_fanout('TRIGGER', SCAN = '1 second', *recs)
+records.bo('GO', FLNK = fan)
+
+WriteIoc('iocs', 'TS', 'XX', 1)
+----
+
+We've already seen what the first lines do, so let's start with the following
+new definitions.
+
+
+Record naming
+^^^^^^^^^^^^^
+----
+SetDomain('TS', 'XX')
+SetDevice('DEV', 1)
+----
+
+The default record naming convention (as configured by `ConfigureIOC()`, as it
+happens) strictly follows the Diamond naming convention, where every record
+name is of the form
+----
+<domain>-<ta>-<component>-<id>:<name>
+----
+Here we specify the first four components in the same order -- all records
+will then assume this ``device'' name -- thus in this case we will be
+generating records named `TS-XX-DEV-01:<name>`, where `<name>` is specified
+when we generate the record.
+
+
+Hardware bound records
+^^^^^^^^^^^^^^^^^^^^^^
+----
+    ch = adc.channel(i)
+    ch.ai('AI%d' % (i+1), EGU = 'V', PREC = 4)
+    ch.waveform('WF%d' % (i+1), NELM = 1024, FTVL = 'FLOAT')
+----
+
+This part of the code above simply extracts one of the eight ADC channels and
+then generates an ai record named `AI1` for the first channel (and so on up to
+`AI8`), and similarly waveform records named `WF1` to `WF8`.
+
+The true record name is then generated from the device configured above to
+construct records with full names of the form `TS-XX-DEV-01:AI1` and so on.
+
+Individual fields in each record can be specified during construction of the
+record (or fields can be assigned after construction).  All fields and values
+are validated against the dbd file where the record type is defined.  The
+`DTYP` and `INP` fields are automatically assigned, as these records are bound
+to hardware entities.
+
+
+Generating fanout records
+^^^^^^^^^^^^^^^^^^^^^^^^^
+----
+recs = []
+for i in range(8):
+    recs.extend([ ... ])
+fan = create_fanout('TRIGGER', SCAN = '1 second', *recs)
+----
+
+All the records generated in the loop are gathered together into a single list
+-- and then `create_fanout` is used to create a chain of fanout records.  This
+idiom allows the records to be processed together in a controlled way.
+
+
+Generating unbound records
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+----
+records.bo('GO', FLNK = fan)
+----
+
+The `records` object contains an attribute for each record type (automatically
+populated from dbd files), and can be used to create arbitrary records.  In
+this case we are generating a record named `TS-XX-DEV-01:GO` with its forward
+link set to the previously created fanout -- thus processing `GO` will trigger
+all the records in this example.
+
+
+
+Builder Reference
+-----------------
+
+
+Builder Configuration
+~~~~~~~~~~~~~~~~~~~~~
+
+----
+Configure(
+    module_path  = None,
+    record_names = None,
+    ioc_writer   = None,
+    dynamic_load = True,
+    architecture = None,
+    register_dbd = False)
+----
+This routine (or one of its simplified aliases, `ConfigureIOC` or
+`ConfigureTemplate`) must be called before doing anything else with the
+builder.  Typically the `ioc_writer` and `record_names` fields will amend the
+names exported by `iocbuilder`.
+
+The arguments passed have the following meaning.
+
+`module_path`::
+This defines the directory where EPICS support modules are found.  The default
+location, currently `/dls_sw/proc/R3.14.8.2/support`, is defined in the
+`paths` module, which is where it should be permanently overridden.  Per
+module overrides should be done via the `ModuleVersion` call.
+
+`record_names`::
+This specifies a protocol for generating and validating record names, and if
+specified this should be an instance of a subclass of
+`recordnames.RecordNamesBase`.  The default is to specify record names
+directly.
++
+If this value has an `\_\_all\_\_` attribute then all names listed will be
+exported directly to the `iocbuilder` namespace.  See the documentation for
+`DiamondRecordNames` below for details.
+
+`ioc_writer`::
+This defines a protocol for writing iocs.  The value passed should have an
+`\_\_all\_\_` attribute, and all listed named will be exported into the
+`iocbuilder` namespace.  See the documentation for `SimpleIocWriter` and
+`DiamondIocWriter`.
+
+`dynamic_load`, `architecture`, `register_dbd`::
+These are internal parameters that aren't well documented (or particularly
+well behaved) yet.
+
+
+----
+ConfigureIOC(
+    architecture = 'vxWorks-ppc604_long',
+    module_path = paths.module_path)
+----
+This packages up a simpler interface to `Configure` with sensible defaults.
+The `DiamondRecordNames` and `DiamondIocWriter` components are loaded: these
+add the following names to the `iocbuilder` namespace: `SetDomain`,
+`SetTechnicalArea`, `SetDevice`, `GetDevice`, `UnsetDevice`, `RecordName`,
+`WriteIoc`.
+
+
+----
+ConfigureTemplate(record_names = None)
+----
+This is used to configure a highly simplified mode of operation used for
+generating only databases.  
+
+
+----
+ModuleVersion(
+    libname,
+    version=None, 
+    home=None, 
+    use_name=True,
+    suppress_import=False,
+    load_path=None)
+----
+Each EPICS module that will be used to build an IOC needs to be loaded by
+calling `ModuleVersion`.  The first argument is the name of the module being
+loaded, and this should normally be the directory name of the module -- note
+that this is also required to be a valid Python identifier.
+
+The remaining optional arguments have the following meaning:
+
+`version`:: Specifies which version of the module will be loaded from the
+configured modules directory.  If this is not specified then the module is
+assumed not to have version subdirectories.
+`home`:: This can be used to specify a different directory to search for this
+module configuration.  This can be combined with `use_name == False` to point
+directly the module to be specified.
+`use_name`:: If this is set to `False` then `home` is assumed to name the path
+to the module (and `version` should also probably not be set).
+`suppress_import`:: Prevents loading of module definitions.  Not normally
+useful.
+`load_path`:: Can be used to specify an alternative path to module
+definitions, see below.
+
+In the text below the expression <`libname`> stands for the actual string
+value passed as the `libname` argument, eg if `ModuleVersion(\'ipac\', ...)`
+was called then <`libname`> means `ipac`, and similarly for other uses of this
+syntax.
+
+Calling this routine will automatically create a module named
+`modules.`<`libname`> (so `libname` is required to be a valid Python
+identifer), and a module definitions file will be searched for in the root of
+the module, and failing that in the `defaults` directory of the `iocbuilder`
+sources.  Alternatively, `load_path` can be used to specify an alternative
+directory to search, in which case the module and `defaults` directory are not
+searched.
+
+In all three cases (module root, `defaults` directory or <`load_path`>
+directory) the builder will look for either a Python package (a directory
+containing a file named `\_\_init\_\_.py`) or a Python module (file with name
+ending in `.py`).  When searching the module root, the package or module must
+be named `builder`, but when searching the `defaults` or <`load_path`>
+directory the name should be <`libname`>.
+
+If a package or module is found its definitions will be loaded into the newly
+created module `modules.`<`libname`>, after which it can be imported into
+subsequent scripts.  Also, if the newly loaded module defines the symbol
+`\_\_all\_\_` then it will be treated as a list of names, all of which will be
+loaded into the `hardware` module.
+
+Thus the order in which `ModuleVersion` calls are made can be quite important:
+certain EPICS module definitions contain explicit imports of definitions from
+other modules (for example, all IP module definitions depend on the `ipac`
+module), and so the these definitions must be loaded first (so, for example,
+`ModuleVersion(\'ipac\', ...)` must occur before any IP modules are loaded).
+
+
+----
+LoadVersionFile(filename, **context)
+----
+It is often convenient to collect all `ModuleVersion` definitions into a
+single file which can be managed as a single unit, and it can be convenient to
+be able to load this file with a different semantics for the `ModuleVersion`
+call (for example, for version consistency checking).  The `LoadVersionFile`
+routine helps with this: it executes the given file in a context where
+`ModuleVersion` (only) has been defined. 
+
+If any extra context is wanted, any extra keyword arguments are also passed
+through to the loaded file -- however, this feature should not normally be
+used.
+
+
+IOC Writers
+~~~~~~~~~~~
+
+The `ioc_writer` parameter to the `Configure` function specifies how the data
+generated by an IOC builder script will be written out.  At present two quite
+different IOC writers are defined within the builder, and others can readily
+be defined:
+
+`DiamondIocWriter`::  This adds one function to the IOC builder, `WriteIoc` --
+this writes out a complete bootable IOC directory following Diamond
+conventions.
+
+`SimpleIocWriter`::  This adds two functions to the IOC builder,
+`WriteRecords` and `WriteHardware`, but at present only `WriteRecords` is
+useful -- this is used to generate a standalone database or template.
+
+----
+WriteIoc(
+    path, domain, techArea, id,
+    make_boot = True, long_name = False)
+----
+A complete IOC is written out to the directory named by `path`.  The IOC
+itself is named <`domain`>`-`<`techArea`>`-IOC-`<`id`>.  The full path written
+to is either
+
+    <path>/<domain>/<techArea>
+
+if `long_name` is not set, or if `long_name` is `True`, the IOC is written to
+
+    <path>/<domain>/<domain>-<techArea>-IOC-<id>
+
+This second form is required if more than one IOC with the same `domain` and
+`techArea` need to be created -- note however, that the IOC builder can only
+create one IOC at a time!
+
+The `make_boot` flag controls whether the startup script is copied into the
+the appropriate `bin` subdirectory.
+
+
+----
+WriteRecords(filename)
+----
+All record definitions (including expanded template substitutions) are written
+out to the specified file in `.db` format.
+
+----
+WriteRecords(filename)
+----
+This writes out a standalone startup script, but unfortunately this is
+currently incompatible with statically linked IOCs, and so is no longer
+useful.  With dynamically linked EPICS 3.13 IOCs it was possible to generate a
+complete IOC using just the `SimpleIocWriter`.
+
+
+
+Record Names
+~~~~~~~~~~~~
+
+The IOC builder supports a number of mechanisms for generating record names.
+There are three mechanisms provided, and this can easily be extended --
+basically anything with a `RecordName` attribute can be passed as a
+`record_names` to `Configure`.  The following are supported.
+
+`BasicRecordNames`::  This class ensures that names are not too long, but
+otherwise records are named as they are created: ie, a call to
+`records.ai(\'TEST\')` creates a record named `TEST`.
+
+`DiamondRecordNames`:: This enforces the Diamond record naming convention and
+provides a mechanism where the device part of the name can be specified
+separately from the rest of the name.  Thus
++
+----
+SetDevice('TESTI', 1, 'TS', 'DEV')
+records.ai('TEST')
+----
++
+generates a record named `TS-DEV-TESTI-01:TEST`
+
+`TemplateRecordNames`:: This is used for very simple template generation.  A
+call to `records.ai(\'TEST\')` generates a record named `$(DEVICE):TEST`.
+
+If `DiamondRecordNames` is configured (the default if `ConfigureIoc()` has
+been called) then the following extra functions are exported by `iocbuilder`.
+
+----
+SetDomain(domain, area=None)
+SetTechnicalArea(area)
+SetDevice(self, component, id, domain=None, ta=None)
+----
+Before a named record can be generated, its associated 'device' must be
+configured.  Because records are generally generated in blocks for a
+particular domain and technical area, a number of mechanisms are supported.
+The most common approach is to call `SetDomain` once to set the domain and
+technical area, and then repeatedly call `SetDevice` to set the component and
+id part before generating records.
+
+Records names are generated as
+
+    <domain>-<ta>-<component>-<id>:<name>
+
+where `name` is the argument passed to the record constructor, and the other
+components are set up as above.
+
+----
+GetDevice()
+----
+This returns the currently configured device prefix, namely the
+<`domain`>-<`ta`>-<`component`>-<`id`> string configured as above (or fails if
+the device is not set).
+
+----
+UnsetDevice()
+----
+This can be used to guard the creation of blocks of records to ensure that
+a configured device name doesn't accidentially leak into another block.  It
+cancels the action of `SetDevice` without forgetting the configured `domain`
+and `ta` values.
+
+----
+RecordName(record, device=None)
+----
+Returns <`domain`>-<`ta`>-<`component`>-<`id`>:<`record`> or
+<`device`>:<`record`> as appropriate.
+
+
+IOC Configuration
+~~~~~~~~~~~~~~~~~
+The routines listed here modify the startup script, mostly by setting
+environment variables.  Some of these are vxWorks specific.
+
+`SetClockRate`:: Sets the IOC clock rate (in Hz) under vxWorks.
+`SetEpicsLogging`:: Passed an ethernet address and port, sets the logging
+server by setting `EPICS_IOC_LOG_INET` and `EPICS_IOC_LOG_PORT` variables.
+`SetEpicsPort`:: Configures the server and repeater port.
+`SetGateway`:: Configures the network gateway
+`SetNtpServer`:: Configures NT server.
+`EpicsEnvSet`:: Can be used to set any EPICS environment variable.
+
+`SetTargetDir`:: \
+By default (if this is not called) the IOC startup script will start with a
+`cd` command to the directory in which it is created.  Although useful for
+testing, this behaviour is not normally useful, and so this routine should be
+called.
++
+If `SetTargetDir(None)` is called, then the IOC should be started through the
+redirector, or through some other mechanism which ensures that it starts with
+the working directory set to the directory containing the startup script.  The
+startup script will rely on this being set.
++
+Otherwise `SetTargetDir(\''some-path'\')` can be called to explicitly set
+the startup path seen by the IOC.  This shouldn't normally be used, because
+the resulting IOC will not be relocatable.
+
+
+Creating Records
+~~~~~~~~~~~~~~~~
+
+`records`::
+The `records` class collects together record constructors for each record type
+known to the builder.  Record type definitions are loaded from `.dbd` files,
+which are normally specified as part of `Device` definitions, and definitions
+for EPICS base are loaded from `base.dbd`.
++
+To create a record, simply invoke the appropriate record constructor with the
+record name as its first argument.  For example, `records.ai(\'TEST\')` will
+generate a record named `\'TEST\'`.
++
+Each field supported by the record type can be given a value, either by
+specifying extra keywork arguments to the record constructor, or by assigning
+to the appropriately named field.  For example, a counter can be constructed
+by the following code:
++
+----
+ctr = records.calc('COUNTER', CALC = 'A+1', VAL = 0, SCAN = '1 second')
+ctr.INPA = ctr
+----
++
+All assignment to fields is validated against the `.dbd` definitions.  Reading
+a field from a record returns a link to the record which can be assigned to
+any other record field.
+
+
+`CP`, `MS`, `NP`, `PP`::
+These four routines can be used to wrap record links with the appropriate
+processing modifier:
++
+`CP`;;  ``Channel Process'': monitor link for updates and trigger record
+processing.  Only effective on certain fields.
+`MS`;;  ``Maximise Severity'': forces processing record to inherit severity of
+linked record.
+`NP`;;  ``No Process'': suppresses processing of target record.
+`PP`;;  ``Process Passive'': trigger processing of target record.
+
+
+`Parameter`:: 
+A helper class for generating templates, used to generate a
+template parameter.
+
+
+----
+create_fanout(name, *records, **fields)
+----
+This creates a fanout record to trigger sequential processing on a list of
+records.  Fanout records are daisy-chained together as necessary to ensure
+that all records are processed.  Keyword arguments can be used to set field
+values for all records.  The first fanout record in the list is returned (this
+is the record that needs to be processed).  The selection mode is forced to
+`SELM=\'All\'`.
+
+----
+create_dfanout(name, *records, **fields)
+----
+Similar to `create_fanout`, but creates dfanout records instead.
+
+
+Building IOCs
+~~~~~~~~~~~~~
+
+`modules`::
+`hardware`::
+`ImportRecord`::
+`IocDataFile`::
+`LookupRecord`::
+`IocCommand`::
+
+`SameDirFile`::
+
+
+
+Defining Modules
+~~~~~~~~~~~~~~~~
+
+`Device`::
+`Substitution`::
+`IocWriter`::
+`ModuleBase`::
+`RecordFactory`::
+
+blah
+
+Defined Modules
+---------------
+
+A number of modules provide important facilities, others are good examples.
+
+asyn
+autosave
+calc
+cmsIon
+DLS8512
+EPICS_BASE
+genSub
+Hy8401ip
+Hy8402ip
+Hy8403ip
+Hy8505
+Hy8513
+Hy8515
+IOCinfo
+ipac
+motor
+Mr1394
+seq
+sscan
+streamDevice
+streamDevice_v1
+Timing
+TimingTemplates
+vxStats
 
 
 
