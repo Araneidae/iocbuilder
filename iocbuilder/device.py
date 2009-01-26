@@ -114,8 +114,6 @@ class Device(ModuleBase):
         be initialised.'''
         self.__super.__init__()
         
-        # Add this class to the list of libraries in use
-        self.__AddLibrary()
         # Add this instance to the list of devices to be configured
         Hardware.AddHardware(self)
 
@@ -123,17 +121,6 @@ class Device(ModuleBase):
         self.__Commands = []
         self.__CommandsPostInit = []
 
-    @classmethod
-    def AddedToLibrary(cls):
-        '''Hook for catching device added to library event.  This can be used
-        for initialising class specific resources.'''
-        pass
-
-
-    # List of extra libraries on which this device depends.  This list should
-    # be overwritten by subclasses if they have libraries which need to be
-    # loaded first.
-    Dependencies = ()
 
     # List of libraries to be loaded as part of the initialisation or
     # preconditions of this device.  This should be overridden by subclasses.
@@ -218,31 +205,17 @@ class Device(ModuleBase):
             self.__Commands.append(command)
                 
 
-    # Internal method to add at most one instance of this device class and
-    # its dependencies to the list of libraries to be loaded at start up.
-    # All dependencies are loaded before this library.
+    # This routine is called immediately before the first instance of cls is
+    # created.  We add ourselves to the library and load our resources.
     @classmethod
-    def __AddLibrary(cls):
-        # Don't do anything if we already know this library.
-        if not Hardware.LibraryKnown(cls):
-            # Deal with any dependencies: it's up to the library to let us
-            # know if it has any.  Note that circular dependencies will result
-            # in looping (and stack overflow): that's just too bad.
-            for lib in cls.Dependencies:
-                lib.__AddLibrary()
+    def UseModule(cls):
+        cls.__super.UseModule()
 
-            # Mark this module as used
-            cls.UseModule()
-                
-            # Let this class know that it has been added, add it to the
-            # library, and finally invoke a pass 1 load library.
-            cls.AddedToLibrary()
-            Hardware.AddLibrary(cls)
-            
-            # Check all our files.
-            cls.__CheckResources()
-            # Finally load the dbd files
-            cls.__LoadDbdFiles()
+        # Add to list of libraries, check that all our resources exist, and
+        # finally load the dbd files.
+        Hardware.AddLibrary(cls)
+        cls.__CheckResources()
+        cls.__LoadDbdFiles()
 
 
     # Checks all the resources associated with this device

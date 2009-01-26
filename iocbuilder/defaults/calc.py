@@ -8,3 +8,4 @@ class Calc(Device):
     Dependencies = (Sscan,)
     LibFileList = ['calc']
     DbdFileList = ['calcSupport']
+    AutoInstantiate = True

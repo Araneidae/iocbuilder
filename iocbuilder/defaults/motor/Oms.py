@@ -7,9 +7,9 @@ __all__ = ['MotorLib', 'OmsVme58']
 
 class MotorLib(Device):
     Dependencies = (Asyn, Seq)
-    
     LibFileList = ['motor', 'softMotor']
     DbdFileList = ['motorSupport', 'devSoftMotor']
+    AutoInstantiate = True
 
 
 class OmsVme(Device):

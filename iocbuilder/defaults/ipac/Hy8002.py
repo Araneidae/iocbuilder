@@ -24,12 +24,13 @@ class Hy8002(IpCarrier):
 
 
     @classmethod
-    def AddedToLibrary(cls):
+    def UseModule(cls):
+        cls.__super.UseModule()
         # In general we share the hot-swap interrupt for the 8002 among all
         # instances: this interrupt isn't actually used (no real driver
         # support) but must be allocated anyway to avoid an error message.
         cls.defaultSwapInterrupt = cls.AllocateIntVector()
-    
+
 
     # Loading the ipac library is enough to load the libraries for this
     # card.

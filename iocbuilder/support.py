@@ -164,12 +164,23 @@ class autosuper(type):
     appears more than once in the class hierarchy, and b) if the class name
     is changed after it has been constructed.'''
 
+    __super = property(lambda subcls: super(autosuper, subcls))
+
     def __init__(cls, name, bases, dict):
-        super(autosuper, cls).__init__(name, bases, dict)
-        name = name.lstrip('_')
-        setattr(cls, "_%s__super" % name, super(cls))
-        setattr(cls, "_%s__super_cls" % name,
-            classmethod(lambda subcls: super(cls, subcls)))
+        cls.__super.__init__(name, bases, dict)
+        
+        super_name = '_%s__super' % name.lstrip('_')
+        setattr(cls, super_name, super(cls))
+
+        # To support __super for classes, if we want the extra magic of
+        # attribute calling then we need to attach the __super attribute to
+        # the parent class of cls.  Unfortunately, this results in further
+        # name clashes.
+        parent = cls.__class__
+        assert not hasattr(parent, super_name), \
+            'autosuper can\'t handle another class named %s' % name
+        setattr(parent, super_name, 
+            property(lambda subcls: super(cls, subcls)))
 
 
 def AutoRegisterClass(register, ignoreParent=True, superclass=type):

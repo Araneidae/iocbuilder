@@ -98,13 +98,10 @@ class Hardware(Singleton):
             device.CallPostIocInitialise()
 
 
-    # Check whether the library is already known.
-    def LibraryKnown(self, library):
-        return library in self.__LibraryList
-
     # Add device library to list of libraries to be loaded.  Called from
     # Device class, which will be responsible for initialising it.
     def AddLibrary(self, library):
+        assert library not in self.__LibraryList
         self.__LibraryList.append(library)
 
     # Add device instance to list of hardware to be initialised.

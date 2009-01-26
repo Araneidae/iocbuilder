@@ -8,10 +8,7 @@ class Seq(Device):
     # The order here matters!  seq depends on symbols in pv, so pv needs to
     # appear first.
     LibFileList = ['pv', 'seq']
-
-    def __init__(self):
-        '''Not supported yet.'''
-        assert False, 'Don\'t create instances of Seq until it works!'
+    AutoInstantiate = True
 
 
 class Sequencer(Device):

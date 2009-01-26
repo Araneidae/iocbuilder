@@ -1,5 +1,5 @@
 import os.path
-from iocbuilder import Device, ModuleBase, RecordFactory, IocDataFile
+from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase
 from iocbuilder import records, hardware
 
 
@@ -13,9 +13,14 @@ assert not hasattr(hardware, 'streamDeviceVersion'), \
 streamDeviceVersion = 1
 
 
-class streamProtocol(Device):
+class streamDevice(Device):
     LibFileList = ['streamDevice']
     DbdFileList = ['stream']
+    AutoInstantiate = True
+
+
+class streamProtocol(Device):
+    Dependencies = (streamDevice,)
 
     def __init__(self, port, protocol):
         '''Each streamProtocol instance is constructed by binding a serial
@@ -56,7 +61,7 @@ class streamProtocol(Device):
         
 
 class ProtocolFile(Device):
-    Dependencies = (streamProtocol,)
+    Dependencies = (streamDevice,)
 
     # We'll need to post process the list of instances
     __ProtocolFiles = set()
@@ -100,8 +105,10 @@ class AutoProtocol(ModuleBase):
     BaseClass = True
 
     @classmethod
-    def __init_once__(cls):
-        cls.__super_cls().__init_once__()
+    def UseModule(cls):
+        # Automatically convert all protocol files into protocol instances
+        # before the class is actually instantiated.
         cls.Protocols = [
             ProtocolFile(cls.ModuleFile(os.path.join('data', file)))
             for file in cls.ProtocolFiles]
+        cls.__super.UseModule()

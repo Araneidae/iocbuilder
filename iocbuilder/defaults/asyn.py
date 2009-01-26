@@ -12,7 +12,7 @@ __all__ = ['Asyn', 'AsynSerial']
 class Asyn(Device):
     LibFileList = ['asyn']
     DbdFileList = ['asyn']
-
+    AutoInstantiate = True
     
 
 class AsynSerial(Device):

@@ -13,6 +13,7 @@ class ipacLib(Device):
     '''IP carrier support library.'''
     DbdFileList = ['drvIpac']
     LibFileList = ['Ipac']
+    AutoInstantiate = True
 
 
 # All IpDevice instances are automatically registered and announced to all

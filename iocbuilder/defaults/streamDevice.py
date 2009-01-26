@@ -15,19 +15,22 @@ assert not hasattr(hardware, 'streamDeviceVersion'), \
 streamDeviceVersion = 2
 
 
-class streamProtocol(Device):
-    DbdFileList = ['stream']
+class streamDevice(Device):
     LibFileList = ['pcre', 'stream']
+    DbdFileList = ['stream']
+    AutoInstantiate = True
 
+
+class streamProtocol(Device):
+    Dependencies = (streamDevice,)
 
     def __init__(self, port, protocol):
         '''Each streamProtocol instance is constructed by binding a serial
-        port to a protocol file.
-        '''
+        port to a protocol file.'''
         self.__super.__init__()
 
         # The new stream device requires that the stream be wrapped as an
-        # asyn device.  We do that wrapping here.
+        # asyn device.  We validate that wrapping here.
         assert getattr(port, 'IsAsyn', False), \
             'Stream Device port must be asyn port'
         self.port = port
@@ -41,7 +44,6 @@ class streamProtocol(Device):
             for record in list:
                 setattr(self, record, RecordFactory(
                     getattr(records, record), 'stream', link, self._address))
-
 
     # Record factory support
     def _address(self, fields, command, *protocol_args):
@@ -57,7 +59,7 @@ class streamProtocol(Device):
 
 
 class ProtocolFile(Device):
-    Dependencies = (streamProtocol,)
+    Dependencies = (streamDevice,)
 
     # We'll need to post process the list of instances
     __ProtocolFiles = set()
@@ -69,7 +71,6 @@ class ProtocolFile(Device):
 
     def __init__(self, protocol_file, force_copy=False):
         self.__super.__init__()
-
         # Add to the set of protocol files and remember whether copying was
         # demanded.
         self.__ProtocolFiles.add(protocol_file)
@@ -102,8 +103,10 @@ class AutoProtocol(ModuleBase):
     BaseClass = True
 
     @classmethod
-    def __init_once__(cls):
-        cls.__super_cls().__init_once__()
+    def UseModule(cls):
+        # Automatically convert all protocol files into protocol instances
+        # before the class is actually instantiated.
         cls.Protocols = [
             ProtocolFile(cls.ModuleFile(os.path.join('data', file)))
             for file in cls.ProtocolFiles]
+        cls.__super.UseModule()

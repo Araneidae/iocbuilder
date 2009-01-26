@@ -11,7 +11,7 @@ from configure import Configure
 import hardware
 
 
-__all__ = ['ModuleVersion', 'ModuleBase', 'modules']
+__all__ = ['ModuleVersion', 'ModuleBase', 'modules', 'autodepends']
 
 
 
@@ -218,20 +218,17 @@ class ModuleBase(object):
         def __init__(cls, name, bases, dict):
             # This could more simply be written as autosuper.__..., but then
             # subclassing might go astray.  Module instances are already
-            # broadly subclassed, so we ought to play by the rules.
-            super(cls._ModuleBase__ModuleBaseMeta, cls).__init__(
-                name, bases, dict)
+            # heavily subclassed, so we ought to play by the rules.
+            super(cls._ModuleBase__ModuleBaseMeta, cls).\
+                __init__(name, bases, dict)
 
-            if hasattr(cls, 'BaseClass'):
-                # This is a base class, not designed for export from a module.
-                # We suppress the class attribute so that subclasses don't
-                # need special treatment.  In this case no module name should
-                # be specified.
+            if cls.__dict__.get('BaseClass'):
+                # This is a base class, not designed for export from a
+                # module.  We suppress the ModuleName attribute.
                 assert not hasattr(cls, 'ModuleName'), \
                     'Base classes cannot be tied to modules'
-                del cls.BaseClass
             else:
-                cls.ModuleSubClasses.append(cls)
+                cls.BaseClass = False
                 # A normal implementation class.  This needs to be tied to a
                 # particular module.
                 if ModuleVersion._LoadingModule is None:
@@ -254,18 +251,65 @@ class ModuleBase(object):
                     cls.ModuleName = name
                 cls.ModuleVersion = _ModuleVersionTable[cls.ModuleName]
 
+            cls._Instantiated = False
+
+            # Finally, aggregate dependencies from subclasses.
+            Dependencies = cls.__dict__.get('Dependencies')
+            if Dependencies:
+                for base in bases:
+                    dependency = base.__dict__.get('Dependencies')
+                    if dependency:
+                        # Note that it's important that the base class
+                        # dependencies are instantiated first.
+                        Dependencies = dependency + Dependencies
+                cls.Dependencies = Dependencies
 
     __metaclass__ = __ModuleBaseMeta
 
-    # Setting this attribute suppresses ModuleName and ModuleVersion
-    # assignment.
+    # The BaseClass attribute should be set to True in classes which are
+    # intended to be base classes for other classes, and which are not
+    # indended to be instantiated.
     BaseClass = True
 
-    ModuleSubClasses = []
+    # Dependencies are used to trigger relationships between classes.
+    # Dependencies are triggered when the class is first instantiated.
+    Dependencies = ()
+    # If this flag is set it allows this class to be automatically
+    # instantiated if necessary.
+    AutoInstantiate = False
 
     # Set of instantiated modules as ModuleVersion instances
     _ReferencedModules = set()
 
+    @classmethod
+    def _AutoInstantiate(cls):
+        '''This can be called to ensure that an instance of the invoked class
+        exists.'''
+        # Note that, as the metaclass constructor ensures each class has its
+        # own instance of this flag, we're always checking our own status,
+        # not that of a base class!
+        if not cls._Instantiated:
+            assert cls.AutoInstantiate, \
+                'Class %s cannot be automatically instantiated' % cls.__name__
+            cls()
+
+    @classmethod
+    def UseModule(cls):
+        '''This method is designed as a hook to be called exactly once before
+        any instances of this class are created.  It will also walk the
+        Dependencies list, ensuring that all the depencencies are also
+        instantiated.'''
+        for dependency in cls.Dependencies:
+            dependency._AutoInstantiate()
+        cls._ReferencedModules.add(cls.ModuleVersion)
+
+    def __new__(cls, *args, **kargs):
+        if not cls.__dict__['_Instantiated']:
+            cls._Instantiated = True
+            cls.UseModule()
+        return cls.__super.__new__(cls, *args, **kargs)
+
+        
     @classmethod
     def LibPath(cls, macro_name=False):
         '''Returns the path to the module.  If macro_name is set then a macro
@@ -278,27 +322,39 @@ class ModuleBase(object):
         return cls.ModuleVersion.ModuleFile(filename)
 
     @classmethod
-    def UseModule(cls):
-        cls._ReferencedModules.add(cls.ModuleVersion)
-
-    @classmethod
     def ListModules(cls):
         '''Returns the set of all modules that have been instantiated.  The
         objects returned are ModuleVersion instances.'''
         return cls._ReferencedModules
 
-    __call_init_once = True
-    @classmethod
-    def __new__(cls, *args, **kargs):
-        if cls.__call_init_once:
-            cls.__call_init_once = False
-            cls.__init_once__()
-        
-        return super(ModuleBase, cls).__new__(cls, *args, **kargs)
 
-    @classmethod
-    def __init_once__(cls):
-        cls.UseModule()
+def autodepends(*devices):
+    '''This is a decorator helper function designed to be used with functions
+    which require resources from one or more ModuleBase subclasses.  This is
+    designed to be used as shown in the following exampe
+
+        class resampleLib(Device):
+            Dependencies = (genSub,)
+            LibFileList = ['diagToolsResample']
+            AutoInstantiate = True
+
+        @autodepends(resampleLib)
+        def ResampleWaveform(name, ...):
+            return records.genSub(name,
+                INAM = 'initResampleWaveform', ...)
+
+    Here resampleLib wraps a library of calls designed to be used with genSub
+    (hence the genSub dependency).  The autodepends(...) decoration ensures
+    that records.genSub is available, as is the INAM argument.'''
+    def device_wrapper(f):
+        def wrapped_function(*args, **kargs):
+            for device in devices:
+                device._AutoInstantiate()
+            return f(*args, **kargs)
+        wrapped_function.__name__ = f.__name__
+        wrapped_function.__doc__  = f.__doc__
+        return wrapped_function
+    return device_wrapper
 
 
 # Dictionary of all modules with announced versions.  This will be
