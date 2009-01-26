@@ -7,13 +7,6 @@ from iocbuilder import Device, Substitution
 __all__ = ['Autosave', 'SetAutosaveServer']
 
 
-def SetAutosaveServer(server, ip, path):
-    global _AutosaveServer, _AutosaveIp, _AutosavePath
-    _AutosaveServer = server
-    _AutosaveIp = ip
-    _AutosavePath = path
-
-
 class _AutosaveFile(Substitution):
     Arguments = ('device', 'file',)
     TemplateFile = 'dlssrfile.template'
@@ -41,11 +34,11 @@ class Autosave(Device):
 
     def Initialise(self):
         print '# Autosave and restore initialisation'
-        print 'hostAdd "%s", "%s"' % (_AutosaveServer, _AutosaveIp)
+        print 'hostAdd "%s", "%s"' % (self.AutosaveServer, self.AutosaveIp)
         print 'nfsAuthUnixSet "%s", %d, %d, 0, 0' % (
-            _AutosaveServer, 1015, 500)  # gid for mga83, pid for dcs
+            self.AutosaveServer, 1015, 500)  # gid for mga83, pid for dcs
         print 'nfsMount "%s", "%s", "/autosave"' % (
-            _AutosaveServer, _AutosavePath)
+            self.AutosaveServer, self.AutosavePath)
         print
         print 'save_restoreSet_status_prefix "%s"' % self.__iocName
         print 'save_restoreSet_Debug %d' % self.__debug
@@ -71,3 +64,11 @@ class Autosave(Device):
     @classmethod
     def SetAutosaveDir(cls, autosave_dir):
         cls.autosave_dir = autosave_dir
+
+    @classmethod
+    def SetAutosaveServer(cls, server, ip, path):
+        cls.AutosaveServer = server
+        cls.AutosaveIp = ip
+        cls.AutosavePath = path
+
+SetAutosaveServer = Autosave.SetAutosaveServer

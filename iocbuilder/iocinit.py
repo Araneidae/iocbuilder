@@ -148,7 +148,7 @@ class iocInit(Singleton):
 
         
     @export
-    def SetTargetDir(self, targetDir):
+    def SetTargetDir(self, targetDir=None):
         '''Sets the working directory for the IOC.  This path will be assigned
         to the homeDir environment variable, and all other IOC files will be
         loaded relative to this directory.
@@ -218,11 +218,6 @@ class IocDataFile:
     __DataFileList = {}
 
     @classmethod
-    def Reset(cls):
-        cls.__DataPath = None
-        cls.__DataFileList = {}
-
-    @classmethod
     def SetDataPath(cls, DataPath):
         '''Assigns the path to the data directory as seen by the IOC.'''
         cls.__DataPath = DataPath
@@ -241,16 +236,13 @@ class IocDataFile:
             shutil.copyfile(
                 file_object.source, os.path.join(targetDir, filename))
 
-        # Once the data files have been copied our work is done (so long as
-        # this is done after database generation!)  Reset our internal state.
-        cls.Reset()
-
     @classmethod
     def DataFileCount(cls):
         return len(cls.__DataFileList)
             
 
     def __init__(self, source_file):
+        source_file = os.path.abspath(source_file)
         _, self.name = os.path.split(source_file)
         self.source = source_file
         assert os.access(self.source, os.R_OK), \

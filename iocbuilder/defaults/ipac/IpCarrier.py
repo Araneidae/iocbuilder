@@ -44,6 +44,7 @@ class IpCarrier(Device):
         _IpRegistry.RegisterCarrier, superclass=Device.__metaclass__)
 
     Dependencies = (ipacLib,)
+    BaseClass = True
 
     def __init__(self, slot, ip_support=True):
         self.__super.__init__()
@@ -109,6 +110,7 @@ class IpDevice(Device):
         _IpRegistry.RegisterDevice, superclass=Device.__metaclass__)
         
     Dependencies = (ipacLib,)
+    BaseClass = True
 
     @classmethod
     def Clone(cls, newName):
