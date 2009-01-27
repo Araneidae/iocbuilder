@@ -1176,5 +1176,83 @@ following.
 
 `motor`::  Support for motors, currently very incomplete.
 `Mr1394`:: Minimal support for a firewire camera driver.
-`Timing`:: This provides full and detailed support for the timing module.
-`TimingTemplates`:: Support for a number of templates associated with timing.
+
+
+Event Receiver Modules
+~~~~~~~~~~~~~~~~~~~~~~
+The `Timing` and `TimingTemplates` modules provide interfaces to the event
+receiver card.
+
+Timing
+^^^^^^
+The event receiver defines three new record types, 'er', 'erevent' and
+'event', used to program the event receiver card.  The `Timing` module
+supports hardware initialisation for both VME and PMC event receivers, and
+provides the `EventReceiver` class for high level event receiver programming.
+
+Hardware Initialisation::
++
+----
+EventReceiverVME(slot = 3, address = 0x1800, intLevel = 5)
+EventReceiverPMC(cardid = 0, card_index = 0)
+----
++
+These both initialise an event receiver with the given configuration.  These
+are `Device` subclasses with the attributes shown below.  Note that these
+would not normally be used directly, instead an `EventReceiver` class can be
+used to generate and configure suitable event records. 
+
+`er`, `erevent`, `event`;;
+Bound record constructors for the three record types defined by this module.
+
+`cardid`;;
+This is the EPICS identification for the event receiver -- in the
+case of a VME card the `slot` doubles as the EPICS `cardid`.  
+
+
+`EventReceiver(device, name='SET_HW', component='EVR', id=1)`::
+This provides a high level interface to program the event receiver, with the
+following methods.
+
+`EventMap(name, event, *enables)`;;
+Given an event number `event` (in the range 0 to 255) and a list `enables` of
+internal event codes (in the range 0 to 13), the event receiver is configured
+to fire all enabled internal events in response to the given external event.
+
+`DBUS(*enables)`;;
+This configures the listed DBUS signals to appear on the outputs of the
+EVR-TTB transition card.
+
+`OTL(*enables)`;;
+This enables the listed OTL (latched outputs) to operate.
+
+`TEV(*enables)`;;
+Enables the listed TEV (trigger event) signals.
+
+`PDP(signal, name, delay, width, prescaler, inverted=False)`;;
+Enables and configures the selected programmable pulse.  `signal` must be in
+the range 0 to 3, and the `delay` and `width` are in event receiver ticks
+(roughly 8ns steps).
+
+`OTP(signal, name, delay, width, inverted=False, enabled=True)`;;
+Enables and configures the selected OTP pulse.  `signal` must be in the range
+0 to 13, and `delay` and `width` are in receiver ticks.
+
+`FPS_TTL(output, signal)`, `FPS_ECL(output, signal)`;;
+Routes an internal signal to one of the front panel TTL or ECL outputs.  See
+the `FPSLookup` table in the `Timing` module for details of the possible
+values for `signal` (this can be a string or a number).
+
+
+TimingTemplates
+^^^^^^^^^^^^^^^
+Mostly this module simply wraps the templates provided by this support module.
+The following two classes provide extra functionality.
+
+`MonitorEvent(eventMap)`::
+This wraps the `event_stats` template to automatically provide support for
+monitoring the event received by the given `eventMap`.
+
+`EvrAlive(er)`::
+This wraps the `evr_alive` template to automatically monitor the ``Linac
+heartbeat'' event.  The argumend `er` must be an `EventReceiver` instance.

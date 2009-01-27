@@ -2,7 +2,7 @@
 
 from iocbuilder import *
 
-__all__ = ['EventReceiver']
+__all__ = ['EventReceiverVME', 'EventReceiverPMC', 'EventReceiver']
 
 
 
@@ -111,29 +111,21 @@ class _EventMap:
         self.SoftEvent(**kargs).Bind(record)
 
 
-# Timing system event receiver
-class EventReceiver(Device):
+class _EventReceiverCore(Device):
     DbdFileList = ['evgevr']
     LibFileList = ['evgevr']
-
+    
     # Ensure that the event receiver is initialised really quite early.  This
     # is needed so that the appropriate timestamps are functioning.
     InitialisationPhase = -1
     
-    def __init__(self, name = 'SET_HW',
-            slot = 3, address = 0x1800, intLevel = 5,
-            component = 'EVR', id = 1):
+    def __init__(self, cardid, configure_command):
         self.__super.__init__()
-        self.slot = slot
-        self.address = address
-        self.intLevel = intLevel
-        self.vector = self.AllocateIntVector()
-        self.__component = component
-        self.__id = id
-        self.__EventMap = {}
+        self.cardid = cardid
+        self.__configure_command = configure_command
 
         # Bind event receiver records to card.
-        address = '#C%d S0 @' % slot
+        address = '#C%d S0 @' % cardid
         self.er = RecordFactory(
             records.er, 'APS event receiver', 'OUT', address)
         self.erevent = RecordFactory(
@@ -141,6 +133,47 @@ class EventReceiver(Device):
         self.event = RecordFactory(
             records.event, 'APS event receiver', 'INP',
             self.__event_address)
+
+    # Helper routine for computing the address of an event record.  This
+    # requires that an event field be included in the arguments.  We output
+    # the event number in hex to be friendly to anyone reading the database.
+    def __event_address(self, fields):
+        address = '#C%d S0x%x @' % (self.cardid, fields.pop('event'))
+        fields['SCAN'] = 'I/O Intr'
+        return address
+
+    def Initialise(self):
+        print self.__configure_command
+        print 'iocClockRegister ErGetTime, ErGetEventTime'
+
+
+class EventReceiverVME(_EventReceiverCore):
+    def __init__(self, slot = 3, address = 0x1800, intLevel = 5):
+        vector = self.AllocateIntVector()
+        self.__super.__init__(slot,
+            'ErConfigure(%(slot)d, 0x%(address)x, %(vector)d, %(intLevel)d)' %
+                locals())
+
+class EventReceiverPMC(_EventReceiverCore):
+    def __init__(self, cardid = 0, card_index = 0):
+        self.__super.__init__(cardid,
+            'EvrPMCconfigure(%(cardid)d, %(card_index)d)' % locals())
+
+
+# Timing system event receiver
+class EventReceiver(ModuleBase):
+    def __init__(self, device, name = 'SET_HW', component = 'EVR', id = 1):
+        self.__super.__init__()
+
+        # Pick up the record factories from the device.  That's all we
+        # actually need from it.
+        self.er      = device.er
+        self.erevent = device.erevent
+        self.event   = device.event
+        
+        self.__component = component
+        self.__id = id
+        self.__EventMap = {}
 
         # Create basic event receiver record with all fields initialised to
         # sensible disabled defaults.
@@ -156,22 +189,6 @@ class EventReceiver(Device):
         self.__Disabled('DG%XE', 4)     # Disable basic programmable pulses
         self.__Disabled('FPS%X', 7, 0)  # Disable front panel outputs
             
-
-    # Helper routine for computing the address of an event record.  This
-    # requires that an event field be included in the arguments.  We output
-    # the event number in hex to be friendly to anyone reading the database.
-    def __event_address(self, fields):
-        address = '#C%d S%s @' % (self.slot, _FormatEvent(fields['event']))
-        del fields['event']
-        fields['SCAN'] = 'I/O Intr'
-        return address
-
-    def Initialise(self):
-        print 'ErConfigure(' \
-            '%(slot)d, 0x%(address)x, %(vector)d, %(intLevel)d)' % \
-                self.__dict__
-        print 'iocClockRegister ErGetTime, ErGetEventTime'
-
 
     # The following methods are used to add event receiver definitions to the
     # event receiver.
