@@ -14,5 +14,6 @@ setup(
     description = 'IOC builder',
     author = 'Michael Abbott',
     author_email = 'Michael.Abbott@diamond.ac.uk',
-    packages = ['iocbuilder', 'iocbuilder.defaults'],
+    packages = ['iocbuilder'],
+    package_data = { 'iocbuilder': ['defaults/*.py'] },
     zip_safe = False)
