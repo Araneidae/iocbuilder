@@ -122,7 +122,7 @@ class ModuleVersion:
         assert os.access(filename, os.R_OK), 'File "%s" not found' % filename
         return filename
 
-    def Name(self, macro_name = False):
+    def Name(self):
         '''Returns the module name.'''
         return self.__name
 
@@ -143,6 +143,8 @@ class ModuleVersion:
         ModuleName = 'iocbuilder.modules.%s' % self.__name
         self.module = CreateModule(ModuleName)
         setattr(modules, self.__name, self.module)
+        self.ClassesList = []
+        modules.LoadedModules[self.__name] = self.ClassesList
 
         # Create some useful module properties.
         self.module.ModuleVersion = self
@@ -250,6 +252,7 @@ class ModuleBase(object):
                         print 'Redundant ModuleName for', cls.__name__
                     cls.ModuleName = name
                 cls.ModuleVersion = _ModuleVersionTable[cls.ModuleName]
+                cls.ModuleVersion.ClassesList.append(cls)
 
             cls._Instantiated = False
 
@@ -363,3 +366,4 @@ _ModuleVersionTable = {}
 
 # We maintain all loaded modules in a synthetic module.
 modules = CreateModule('iocbuilder.modules')
+modules.LoadedModules = {}
