@@ -48,21 +48,6 @@ class _FIRST:
             return -1
 
 
-class _AutoComment(ModuleBase.__metaclass__):
-    '''This implements auto-comment support for devices.'''
-    def __new__(cls, name, bases, dict):
-        if '__init__' in dict:
-            init = dict['__init__']
-            # Define a wrapper for __init__ which hacks a special comment
-            # parameter.
-            def __init__(self, *args, **kargs):
-                comment = kargs.pop('comment', None)
-                init(self, *args, **kargs)
-                self.comment = comment
-            dict['__init__'] = __init__
-        return ModuleBase.__metaclass__.__new__(cls, name, bases, dict)
-
-
 class Device(ModuleBase):
     '''This class should be subclassed to implement devices.  Each instance of
     this class will automatically announce itself as a device to be
@@ -103,7 +88,6 @@ class Device(ModuleBase):
 
     '''
 
-    __metaclass__ = _AutoComment
     BaseClass = True
 
     FIRST = _FIRST()
@@ -173,13 +157,9 @@ class Device(ModuleBase):
 
     # Calls the initialisation method if present.
     def CallInitialise(self):
-        if self.comment or \
-                (self.InitialiseOnce and not self.__Once) or \
+        if (self.InitialiseOnce and not self.__Once) or \
                 self.Initialise or self.__Commands:
             print
-        if self.comment:
-            for line in self.comment.split('\n'):
-                print '#', line
         if self.InitialiseOnce and not self.__Once:
             self.InitialiseOnce()
             self.__class__.__Once = True
