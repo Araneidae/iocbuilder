@@ -144,6 +144,7 @@ class Substitution(ModuleBase):
         
         # Check that all the required arguments have been given: we can't do
         # template expansion unless every argument is specified.
+        assert self.TemplateFile, 'Must specify template file'
         assert set(args) == set(self.Arguments), \
             'Arguments %s missing or not recognised' % \
                 list(set(args).symmetric_difference(set(self.Arguments)))
