@@ -202,7 +202,7 @@ class DiamondIocWriter(IocWriter):
         'CONFIG':
 '''include $(TOP)/configure/CONFIG_APP
 
-BUILD_ARCHS = vxWorks-ppc604_long
+BUILD_ARCHS = %(ARCH)s
 ''',
 
     'CONFIG_APP':
@@ -235,7 +235,7 @@ include $(TOP)/configure/CONFIG
 
 # Set the following to NO to disable consistency checking of
 # the support applications defined in $(TOP)/configure/RELEASE
-CHECK_RELEASE = YES
+CHECK_RELEASE = %(CHECK_RELEASE)s
 
 TARGETS = $(CONFIG_TARGETS)
 CONFIGS += $(subst ../,,$(wildcard $(CONFIG_INSTALLS)))
@@ -302,7 +302,7 @@ include $(TOP)/configure/RULES
 
         
     def __init__(self, path, domain, techArea, id = 1,
-            make_boot = True, long_name = False):
+            make_boot = True, long_name = False, check_release = False):
         '''The Diamond style of IOC as supported by this writer is of the
         following form, where <ioc>=<domain>-<techArea>-IOC-<id> and <iocDir>
         is either <techArea> or <ioc> depending on whether long_name is set.
@@ -341,8 +341,11 @@ include $(TOP)/configure/RULES
         self.MakeDirectory('configure')
 
         # Write the configure skeleton.
+        config_dict = dict(
+            ARCH = configure.Configure.architecture,
+            CHECK_RELEASE = check_release and 'YES' or 'NO')
         for filename, content in self.IOC_configure_Skeleton.items():
-            self.WriteFile(('configure', filename), content)
+            self.WriteFile(('configure', filename), content % config_dict)
 
         self.TopMakefileList = ['configure']
         self.ModuleList = set()
