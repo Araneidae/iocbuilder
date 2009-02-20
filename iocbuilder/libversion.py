@@ -3,15 +3,18 @@
 import sys
 import os
 import string
+import re
 from types import ModuleType
 
-from support import autosuper, SameDirFile, CreateModule
+from support import autosuper_meta, SameDirFile, CreateModule
 from configure import Configure
 
 import hardware
 
 
-__all__ = ['ModuleVersion', 'ModuleBase', 'modules', 'autodepends']
+__all__ = [
+    'ModuleVersion', 'ModuleBase', 'modules',
+    'autodepends', 'annotate_args']
 
 
 
@@ -38,6 +41,21 @@ def _CheckPythonModule(path, module):
         return (None, False)
 
 
+_ValidNameChars = re.compile(
+    '[^' + 
+    string.ascii_uppercase + string.ascii_lowercase +
+    string.digits + '_' + ']')
+
+def PythonIdentifier(name):
+    '''Converts an arbitrary string into a valid Python identifier.'''
+
+    name = _ValidNameChars.sub('_', name)
+    if len(name) == 0 or name[0] in set(string.digits):
+        name = '_' + name
+    return name
+
+    
+
 
 # Module version information specifying:
 #   name     Directory name of module
@@ -46,12 +64,6 @@ def _CheckPythonModule(path, module):
 class ModuleVersion:
     '''Create instances of this class to declare the version of each module
     to be used.'''
-
-    # Restrict module names to names which can be used as identifiers.  This
-    # helps a lot when generating EPICS14 IOCs.
-    __ValidNameChars = set(
-        string.ascii_uppercase + string.ascii_lowercase +
-        string.digits + '_')
 
     # Set of module macro names already allocated, used to ensure no clashes.
     __MacroNames = set()
@@ -72,9 +84,8 @@ class ModuleVersion:
             # Normalise the path for safety.
             home = os.path.realpath(home)
 
-        assert set(libname) <= set(self.__ValidNameChars), \
-            'Module name %s must be a valid identifier' % libname
         self.__name = libname
+        self.__module_name = PythonIdentifier(libname)
         self.version = version
         self.home = home
         self.use_name = use_name
@@ -123,11 +134,16 @@ class ModuleVersion:
         return filename
 
     def Name(self):
-        '''Returns the module name.'''
+        '''Returns the EPICS module name.'''
         return self.__name
 
     def MacroName(self):
         return self.__macroname
+
+    def ModuleName(self):
+        '''Returns the Python identifier naming this module.  This is the
+        EPICS module name converted to a valid Python identifier.'''
+        return self.__module_name
 
     # The following definitions ensure that when hashed and when compared
     # this class behaves exactly like its name: this ensures that sets and
@@ -140,11 +156,11 @@ class ModuleVersion:
         # Create the associated module and record it in our list of loaded
         # modules.  If we can find any module definitions then they will be
         # loaded into this module.
-        ModuleName = 'iocbuilder.modules.%s' % self.__name
+        ModuleName = 'iocbuilder.modules.%s' % self.__module_name
         self.module = CreateModule(ModuleName)
-        setattr(modules, self.__name, self.module)
+        setattr(modules, self.__module_name, self.module)
         self.ClassesList = []
-        modules.LoadedModules[self.__name] = self.ClassesList
+        modules.LoadedModules[self.__module_name] = self.ClassesList
 
         # Create some useful module properties.
         self.module.ModuleVersion = self
@@ -216,15 +232,28 @@ class ModuleBase(object):
     # 
     # Optionally the ModuleName can be inherited from the base class if the
     # symbol InheritModuleName is set to True.
-    class __ModuleBaseMeta(autosuper):
+    class __ModuleBaseMeta(autosuper_meta):
         def __init__(cls, name, bases, dict):
-            # This could more simply be written as autosuper.__..., but then
-            # subclassing might go astray.  Module instances are already
+            # This could more simply be written as autosuper_meta.__..., but
+            # then subclassing might go astray.  Module instances are already
             # heavily subclassed, so we ought to play by the rules.
             super(cls._ModuleBase__ModuleBaseMeta, cls).\
                 __init__(name, bases, dict)
 
-            if cls.__dict__.get('BaseClass'):
+            # Bind to the module context.
+            cls.__BindModule(name, dict)
+            # Aggregate dependencies from subclasses.
+            cls.__AggregateDependencies(bases, dict.get('Dependencies'))
+            # Implement ArgInfo support: if ArgInfo specified, use it to
+            # automatically annotate the __init__ method.
+            if 'ArgInfo' in dict:
+                cls.__init__ = annotate_args(cls.ArgInfo)(cls.__init__)
+            # Finally mark this instance as not yet instantiated.
+            cls._Instantiated = False
+            
+
+        def __BindModule(cls, name, dict):
+            if dict.get('BaseClass'):
                 # This is a base class, not designed for export from a
                 # module.  We suppress the ModuleName attribute.
                 assert not hasattr(cls, 'ModuleName'), \
@@ -246,7 +275,7 @@ class ModuleBase(object):
                     # words, an EPICS module isn't allowed to create classes
                     # which belong to other modules.
                     name = ModuleVersion._LoadingModule.Name()
-                    if 'ModuleName' in cls.__dict__:
+                    if 'ModuleName' in dict:
                         assert cls.ModuleName == name, \
                             'ModuleName must be %s' % name
                         print 'Redundant ModuleName for', cls.__name__
@@ -254,10 +283,7 @@ class ModuleBase(object):
                 cls.ModuleVersion = _ModuleVersionTable[cls.ModuleName]
                 cls.ModuleVersion.ClassesList.append(cls)
 
-            cls._Instantiated = False
-
-            # Finally, aggregate dependencies from subclasses.
-            Dependencies = cls.__dict__.get('Dependencies')
+        def __AggregateDependencies(cls, bases, Dependencies):
             if Dependencies:
                 for base in bases:
                     dependency = base.__dict__.get('Dependencies')
@@ -358,6 +384,53 @@ def autodepends(*devices):
         wrapped_function.__doc__  = f.__doc__
         return wrapped_function
     return device_wrapper
+
+
+def annotate_args(arg_info):
+    '''This is a decorator helper function designed to add argument
+    meta-information to a function.  The given arg_info is a list of arguments
+    with associated name, type, description and optional default value, for
+    example:
+
+        @annotate_args((
+            ('arg1', int, 'First argument'),
+            ('arg2', bool, 'Last argument', False)))
+        def function(arg1, arg2):
+            print arg1, arg2
+    '''
+    def maybe_call(f, v):
+        if f is None:
+            return v
+        else:
+            return f(v)
+    
+    def annotater(f):
+        def wrapped_function(*args, **kargs):
+            call_args = {}
+            # First the unnamed arguments, take them from the start of the
+            # arg_info list.
+            for arg, value in zip(arg_info, args):
+                call_args[arg[0]] = maybe_call(arg[1], value)
+            # Then the remaining arguments, defaulting any as appropriate.
+            for arg in arg_info[len(call_args):]:
+                try:
+                    value = kargs.pop(arg[0])
+                except KeyError:
+                    if len(arg) > 3:
+                        # If default available use the default, otherwise
+                        # ignore this argument.
+                        call_args[arg[0]] = maybe_call(arg[1], arg[3])
+                else:
+                    call_args[arg[0]] = maybe_call(arg[1], value)
+            assert not kargs, 'Unexpected arguments: %s' % kargs.keys()
+
+            return f(**call_args)
+            
+        wrapped_function.__name__ = f.__name__
+        wrapped_function.__doc__  = f.__doc__
+        wrapped_function.ArgInfo = arg_info
+        return wrapped_function
+    return annotater
 
 
 # Dictionary of all modules with announced versions.  This will be

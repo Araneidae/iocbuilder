@@ -116,9 +116,9 @@ class IocWriter:
         self.AddDatabase = iocinit.iocInit.AddDatabaseName
         
         # Copies all files bound to IOC into given location
-        self.SetDataPath = iocinit.IocDataFile.SetDataPath
-        self.CopyDataFiles = iocinit.IocDataFile.CopyDataFiles
-        self.DataFileCount = iocinit.IocDataFile.DataFileCount
+        self.SetDataPath = iocinit.IocDataSet.SetDataPath
+        self.CopyDataFiles = iocinit.IocDataSet.CopyDataFiles
+        self.DataFileCount = iocinit.IocDataSet.DataFileCount
 
 
     def SetIocName(self, ioc_name):

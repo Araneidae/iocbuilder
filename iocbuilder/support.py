@@ -7,7 +7,7 @@ import fnmatch
 import types
 import re
 
-__all__ = ['Singleton', 'autosuper', 'AutoRegisterClass', 'SameDirFile']
+__all__ = ['Singleton', 'AutoRegisterClass', 'SameDirFile']
 
 
 def ExportModules(globals, *modulenames):
@@ -137,13 +137,13 @@ class Singleton(object):
 
 # This class definition is taken from
 #   http://www.python.org/2.2.3/descrintro.html#metaclass_examples
-class autosuper(type):
+class autosuper_meta(type):
     '''Meta-class to implement __super attribute in all subclasses.  To use
     this define the metaclass of the appropriate base class to be autosuper
     thus:
 
         class A:
-            __metaclass__ = autosuper
+            __metaclass__ = autosuper_meta
 
     Then in any sub-class of A the __super attribute can be used instead of
     writing super(cls,name) thus:
@@ -164,7 +164,7 @@ class autosuper(type):
     appears more than once in the class hierarchy, and b) if the class name
     is changed after it has been constructed.'''
 
-    __super = property(lambda subcls: super(autosuper, subcls))
+    __super = property(lambda subcls: super(autosuper_meta, subcls))
 
     def __init__(cls, name, bases, dict):
         cls.__super.__init__(name, bases, dict)
@@ -178,10 +178,15 @@ class autosuper(type):
         # name clashes.
         parent = cls.__class__
         assert not hasattr(parent, super_name), \
-            'autosuper can\'t handle another class named %s' % name
+            'autosuper_meta can\'t handle another class named %s' % name
         setattr(parent, super_name, 
             property(lambda subcls: super(cls, subcls)))
 
+
+class autosuper_object(object):
+    '''Class that can be subclassed to inherit autosuper behaviour.'''
+    __metaclass__ = autosuper_meta
+        
 
 def AutoRegisterClass(register, ignoreParent=True, superclass=type):
     '''This returns a meta-class which will call the given register function

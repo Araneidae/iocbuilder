@@ -31,7 +31,7 @@
 import os
 import shutil
 
-from support import Singleton
+from support import Singleton, autosuper_object
 from liblist import Hardware
 from libversion import ModuleVersion
 import paths
@@ -203,78 +203,111 @@ class iocInit(Singleton):
 
 
         
-class IocDataFile:
+class IocDataSet(Singleton):
+    '''This class gathers together files to be placed in the IOC's data
+    directory.'''
+    
+    # The following global state is managed as class variables.
+    __DataPath = None
+    __DataFileList = {}
+
+    def SetDataPath(self, DataPath):
+        '''Assigns the path to the data directory as seen by the IOC.'''
+        self.__DataPath = DataPath
+
+    def GetDataPath(self):
+        assert self.__DataPath is not None, 'IOC data path not yet defined'
+        return self.__DataPath
+
+    def CopyDataFiles(self, targetDir):
+        assert self.__DataPath is not None, 'IOC data path not yet defined'
+        targetDir = os.path.join(targetDir, self.__DataPath)
+        os.makedirs(targetDir)
+        for filename, file_object in self.__DataFileList.items():
+            file_object._CopyFile(os.path.join(targetDir, filename))
+
+    def DataFileCount(self):
+        return len(self.__DataFileList)
+
+    def _AddDataFile(self, file_object, name):
+        try:
+            file_entry = self.__DataFileList[name]
+        except KeyError:
+            # New entry: just add ourself to the list of files
+            self.__DataFileList[name] = file_object
+        else:
+            # Existing entry: check that we're actually handling exactly the
+            # same underlying file (this is handled by the override of cmp).
+            assert file_object == file_entry, \
+                'File %s already added to IOC with different path' % name
+
+
+class _IocDataBase(autosuper_object):
+    # Ensure that when this class is used as a database field it isn't
+    # validated on assignment: this can be too early for path resolution!
+    ValidateLater = True
+
+    # A convenient alias.
+    GetDataPath = IocDataSet.GetDataPath
+                
+    def __init__(self, name):
+        self.name = name
+        IocDataSet._AddDataFile(self, name)
+
+    def Path(self):
+        return os.path.join(IocDataSet.GetDataPath(), self.name)
+
+    def __str__(self):
+        return self.Path()
+
+
+
+class IocDataFile(_IocDataBase):
     '''This class is used to package files which need to be copied into the
     IOC.  The target directory is set by the IOC writer,  relative to homeDir;
     the source file is set by the constructor.
     '''
 
-    # Ensure that when this class is used as a database field it isn't
-    # validated on assignment: this can be too early for path resolution!
-    ValidateLater = True
-
-    # The following global state is managed as class variables.
-    __DataPath = None
-    __DataFileList = {}
-
-    @classmethod
-    def SetDataPath(cls, DataPath):
-        '''Assigns the path to the data directory as seen by the IOC.'''
-        cls.__DataPath = DataPath
-
-    @classmethod
-    def GetDataPath(cls):
-        assert cls.__DataPath is not None, 'IOC data path not yet defined'
-        return cls.__DataPath
-
-    @classmethod
-    def CopyDataFiles(cls, targetDir):
-        assert cls.__DataPath is not None, 'IOC data path not yet defined'
-        targetDir = os.path.join(targetDir, cls.__DataPath)
-        os.makedirs(targetDir)
-        for filename, file_object in cls.__DataFileList.items():
-            shutil.copyfile(
-                file_object.source, os.path.join(targetDir, filename))
-
-    @classmethod
-    def DataFileCount(cls):
-        return len(cls.__DataFileList)
-            
-
     def __init__(self, source_file):
         source_file = os.path.abspath(source_file)
-        _, self.name = os.path.split(source_file)
+        _, name = os.path.split(source_file)
         self.source = source_file
-        assert os.access(self.source, os.R_OK), \
-            'File "%s" not readable' % self.source
+        assert os.access(source_file, os.R_OK), \
+            'File "%s" not readable' % source_file
 
-        try:
-            file_entry = self.__DataFileList[self.name]
-        except KeyError:
-            # New entry: just add ourself to the list of files
-            self.__DataFileList[self.name] = self
-        else:
-            # Existing entry: check that we're actually handling exactly the
-            # same underlying file (this is handled by the override of cmp).
-            assert self == file_entry, \
-                'File %s already added to IOC with different path %s' % (
-                    self.source, file_entry.source)
+        self.__super.__init__(name)
 
-    def Path(self):
-        assert self.__DataPath is not None, 'IOC data path not yet defined'
-        return os.path.join(self.__DataPath, self.name)
+    def _CopyFile(self, filename):
+        shutil.copyfile(self.source, filename)
 
-    def __str__(self):
-        return self.Path()
-
-    # Hash this object by the full source filename
-    def __hash__(self):         return hash(self.source)
+    # Treat two instances wrapping the same file as equal.
     def __cmp__(self, other):   return cmp(self.source, other.source)
 
 
+class IocDataStream(_IocDataBase):
+    '''This is used to package up a data stream which will be written to a
+    freshly generated file at the end of the IOC build process.'''
+
+    def __init__(self, name):
+        self.content = []
+        self.__super.__init__(name)
+        self.written = False
+
+    def write(self, text):
+        assert not self.written, \
+            'Content of %s already written out' % self.name
+        self.content.append(text)
+
+    def _CopyFile(self, filename):
+        output = file(filename, 'w')
+        for content in self.content:
+            output.write(content)
+        output.close()
+        self.written = True
+
     
 # Export all the names exported by iocInit()
-__all__ = ['IocDataFile']
+__all__ = ['IocDataFile', 'IocDataStream']
 for name in _ExportList:
     __all__.append(name)
     globals()[name] = getattr(iocInit, name)
