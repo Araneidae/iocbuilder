@@ -247,7 +247,7 @@ class ModuleBase(object):
             # Implement ArgInfo support: if ArgInfo specified, use it to
             # automatically annotate the __init__ method.
             if 'ArgInfo' in dict:
-                cls.__init__ = annotate_args(cls.ArgInfo)(cls.__init__)
+                cls.__init__ = annotate_args(cls.ArgInfo, True)(cls.__init__)
             # Finally mark this instance as not yet instantiated.
             cls._Instantiated = False
             
@@ -386,7 +386,7 @@ def autodepends(*devices):
     return device_wrapper
 
 
-def annotate_args(arg_info):
+def annotate_args(arg_info, method=False):
     '''This is a decorator helper function designed to add argument
     meta-information to a function.  The given arg_info is a list of arguments
     with associated name, type, description and optional default value, for
@@ -406,6 +406,9 @@ def annotate_args(arg_info):
     
     def annotater(f):
         def wrapped_function(*args, **kargs):
+            if method:
+                self = args[0]
+                args = args[1:]
             call_args = {}
             # First the unnamed arguments, take them from the start of the
             # arg_info list.
@@ -419,17 +422,21 @@ def annotate_args(arg_info):
                     if len(arg) > 3:
                         # If default available use the default, otherwise
                         # ignore this argument.
-                        call_args[arg[0]] = maybe_call(arg[1], arg[3])
+                        call_args[arg[0]] = arg[3]
                 else:
                     call_args[arg[0]] = maybe_call(arg[1], value)
             assert not kargs, 'Unexpected arguments: %s' % kargs.keys()
 
-            return f(**call_args)
+            if method:
+                return f(self, **call_args)
+            else:
+                return f(**call_args)
             
         wrapped_function.__name__ = f.__name__
         wrapped_function.__doc__  = f.__doc__
         wrapped_function.ArgInfo = arg_info
         return wrapped_function
+
     return annotater
 
 

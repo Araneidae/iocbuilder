@@ -35,7 +35,7 @@ function TOC_EL(el, text, level) {
 
 function getHeadlines(el) {
   var l = new Array;
-  var rx = /[hH]([2-3])/;
+  var rx = /[hH]([2-4])/;
   // internal recursive function that scans the DOM tree
   var rec = function (el) {
     for (var i = el.firstChild; i != null; i = i.nextSibling) {

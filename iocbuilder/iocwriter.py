@@ -195,7 +195,7 @@ class DiamondIocWriter(IocWriter):
 
     '''
 
-    __all__ = ['WriteIoc']
+    __all__ = ['WriteIoc', 'WriteNamedIoc']
     
 
     IOC_configure_Skeleton = {
@@ -275,34 +275,8 @@ include $(TOP)/configure/RULES
 '''    
 
     @classmethod
-    def WriteIoc(cls, *argv, **argk):
-        cls(*argv, **argk)
-
-    def MakeDirectory(self, *dir_names):
-        os.makedirs(os.path.join(self.iocRoot, *dir_names))
-
-        
-    def __DeleteIocDirectory(self, domain, techArea):
-        # Checks that the newly computed iocBoot directory is a plausible IOC
-        # directory.  This prevents any unfortunate accidents caused by
-        # accidentially pointing at some other directory by mistake...
-        #    The only files we can absolutely expect to be present are the
-        # configure and iocBoot directories (as these are created by
-        # __init__), and we allow for all the built directories and our App
-        # directories.  Anything else is suspicious!
-        dirlist = os.listdir(self.iocRoot)
-        require_list = ['configure', 'iocBoot']
-        ignore_list = ['bin', 'db', 'dbd', 'Makefile', 'data'] + \
-            fnmatch.filter(dirlist, '%s-%s-IOC-??App' % (domain, techArea))
-        assert set(dirlist) - set(ignore_list) == set(require_list), \
-            'Directory %s doesn\'t appear to be an IOC directory' % \
-                self.iocRoot
-        shutil.rmtree(self.iocRoot)
-        
-
-        
-    def __init__(self, path, domain, techArea, id = 1,
-            make_boot = True, long_name = False, check_release = False):
+    def WriteIoc(cls,
+            path, domain, techArea, id = 1, long_name = False, **argk):
         '''The Diamond style of IOC as supported by this writer is of the
         following form, where <ioc>=<domain>-<techArea>-IOC-<id> and <iocDir>
         is either <techArea> or <ioc> depending on whether long_name is set.
@@ -318,24 +292,53 @@ include $(TOP)/configure/RULES
              Db/            Directory containing substitutions and other files
                <ioc>.db     Generated database file
                <ioc>.substitutions   Substitutions file
-
-        The Makefile will create a db/ directory, copy the <ioc>.db file into
-        it, and create an expanded <ioc>.expanded.db file.'''
-        
+        '''
+        ioc_name = '%s-%s-IOC-%02d' % (domain, techArea, id)
         if long_name:
-            iocDir = '%s-%s-IOC-%02d' % (domain, techArea, id)
+            iocDir = ioc_name
         else:
             iocDir = techArea
-        IocWriter.__init__(self, os.path.join(path, domain, iocDir))
+        cls(os.path.join(path, domain, iocDir), ioc_name, **argk)
 
-        self.domain = domain
-        self.techArea = techArea
+    @classmethod
+    def WriteNamedIoc(cls, path, ioc_name, **argk):
+        cls(path, ioc_name, **argk)
+        
+
+    def MakeDirectory(self, *dir_names):
+        os.makedirs(os.path.join(self.iocRoot, *dir_names))
+
+        
+    def __DeleteIocDirectory(self):
+        # Checks that the newly computed iocBoot directory is a plausible IOC
+        # directory.  This prevents any unfortunate accidents caused by
+        # accidentially pointing at some other directory by mistake...
+        #    The only files we can absolutely expect to be present are the
+        # configure and iocBoot directories (as these are created by
+        # __init__), and we allow for all the built directories and our App
+        # directories.  Anything else is suspicious!
+        dirlist = os.listdir(self.iocRoot)
+        require_list = ['configure', 'iocBoot']
+        ignore_list = ['bin', 'db', 'dbd', 'Makefile', 'data'] + \
+            fnmatch.filter(dirlist, '%sApp' % (self.ioc_name))
+        assert set(dirlist) - set(ignore_list) == set(require_list), \
+            'Directory %s doesn\'t appear to be an IOC directory' % \
+                self.iocRoot
+        shutil.rmtree(self.iocRoot)
+        
+
+        
+    def __init__(self, path, ioc_name,
+            make_boot = True, check_release = False):
+        
+        IocWriter.__init__(self, path)
+
+        self.ioc_name = ioc_name
         self.make_boot = make_boot
-        self.id = id
         
         self.iocBoot = os.path.join(self.iocRoot, 'iocBoot')
         if os.access(self.iocRoot, os.F_OK):
-            self.__DeleteIocDirectory(domain, techArea)
+            self.__DeleteIocDirectory()
         self.MakeDirectory('')
         self.MakeDirectory('iocBoot')
         self.MakeDirectory('configure')
@@ -355,7 +358,7 @@ include $(TOP)/configure/RULES
 
             
     def __WriteIoc(self):
-        ioc = '%s-%s-IOC-%02d' % (self.domain, self.techArea, self.id)
+        ioc = self.ioc_name
         self.SetIocName(ioc)
 
         # Create the core directories for this ioc
