@@ -2,7 +2,7 @@ import os.path
 
 from iocbuilder import Device
 from iocbuilder.support import quote_c_string
-
+from iocbuilder.validators import strOrNone, intOrNone
 
 # These devices are used directly, while the others are loaded as part of
 # other devices
@@ -25,11 +25,20 @@ class AsynSerial(Device):
     # Flag used to identify this as an asyn device.
     IsAsyn = True
 
-    ValidSetOptionKeys = set([
-        'baud', 'bits', 'parity', 'stop', 'clocal', 'crtscts'])
-
-    def __init__(self, port,
-            name=None, input_eos=None, output_eos=None, **options):
+    ArgInfo = [
+        ('port', None, 'Serial port'),
+        ('name', strOrNone, 'Override name', None),
+        ('input_eos', strOrNone, 'Input end of string (terminator)', None),
+        ('output_eos', strOrNone, 'Output end of string (terminator)', None),
+        ('baud', int, 'Baud Rate'),
+        ('bits', int, 'Bits'),
+        ('parity', str, 'Parity'),
+        ('stop', int, 'Stop Bits'),
+        ('clocal', None, 'clocal?'), 
+        ('crtscts', None, 'crtscts?')
+    ]
+    XMLObjects = ['port']
+    def __init__(self, port, name, input_eos, output_eos, **options):
         self.__super.__init__()
 
         self.port = port
@@ -42,8 +51,6 @@ class AsynSerial(Device):
         self.__Ports.add(name)
         self.asyn_name = name
 
-        assert set(options.keys()) <= self.ValidSetOptionKeys, \
-            'Invalid argument to asynSetOption'
         self.options = options
         self.input_eos = input_eos
         self.output_eos = output_eos

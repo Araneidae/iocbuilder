@@ -23,14 +23,20 @@ class Hy8001(IpCarrier):
     # An 8002 supports two IP slots.  Note that using these for IP cards is
     # mutually exclusive with using ports A and B for digital I/O.
     MaxIpSlots = 2
-    
-    def __init__(self, slot, direction, cardid = None,
-                 intLevel = 0,
-                 clock = 0,
-                 scan = 0,
-                 invertin = 0,
-                 invertout = 0,
-                 ip_support = False):
+    ArgInfo = [
+        ('slot', int, 'VME Slot number'),
+        ('direction', int, '0 for input, 1 for output, 2 for mixed'),
+        ('cardid', int, 'cardid?', None),
+        ('intLevel', int, 'intLevel?', 0),
+        ('clock', int, 'clock?', 0),
+        ('scan', int, 'scan?', 0),
+        ('invertin', int, 'invertin?', 0),
+        ('invertout', int, 'invertout?', 0),
+        ('ip_support', bool, 'ip_support?', False)
+    ]    
+    def __init__(self,
+            slot, direction, cardid, intLevel, clock, scan, invertin,
+            invertout, ip_support):
         self.__super.__init__(slot, ip_support)
 
         if not cardid: cardid = 10 * slot

@@ -1,15 +1,21 @@
 from iocbuilder import Device
 from iocbuilder.hardware import IpDevice
 
-
 class Hy8515(IpDevice):
     LibFileList = ['drvHy8515']
     DbdFileList = ['Hy8515']
-    
-    def __init__(self, carrier, ipslot, cardid=None,
-            fifo_threshold = None, poll_delay = None,
-#            intdelay = -32,
-            halfduplex = 0, delay845 = 0):
+    ArgInfo = [
+        ('carrier', None, 'Carrier card'),
+        ('ipslot', int, 'IP slot in carrier'),
+        ('cardid', int, 'cardid?', None),
+        ('fifo_threshold', int, 'fifo_threshold?', None),
+        ('poll_delay', int, 'poll_delay?', None),
+        ('halfduplex', int, 'halfduplex?', 0),
+        ('delay845', int, 'delay845?', 0)
+    ]
+    XMLObjects = ['carrier']    
+    def __init__(self, carrier, ipslot, cardid, fifo_threshold, poll_delay,
+            halfduplex, delay845):
         self.__super.__init__(carrier, ipslot, cardid)
 
         assert fifo_threshold is None or poll_delay is None, \
@@ -37,14 +43,20 @@ class Hy8515(IpDevice):
 
 
 class _Hy8515channel(Device):
-    def __init__(self, card, channel, 
-                 readbuf = 2500,
-                 writebuf = 250,
-                 speed = 9600,
-                 parity = 'N',
-                 stopbits = 1,
-                 numbits = 8,
-                 flowctrl = 'N'):
+    ArgInfo = [
+        ('card', None, 'Hy8515 card'),
+        ('channel', int, 'Channel number'),
+        ('readbuf', int, 'Read buffer', 2500),
+        ('writebuf', int, 'Write buffer', 2500),
+        ('speed', int, 'Speed', 9600),
+        ('parity', str, 'Parity: N,E,O', 'N'),
+        ('stopbits', int, 'Stop bits', 1),
+        ('numbits', int, 'Number of bits', 8),
+        ('flowctrl', str, 'Flow Control', 'N')
+    ]   
+    XMLObjects=['card']  
+    def __init__(self, card, channel, readbuf, writebuf, speed, parity,
+                 stopbits, numbits, flowctrl):
 
         self.__super.__init__()
         assert 0 <= channel  and  channel < 8, 'Channel out of range'
@@ -76,7 +88,7 @@ class _Hy8515channel(Device):
 
     def Initialise(self):
         print '%(portname)s = tyHYOctalDevCreate(' \
-            '"%(device)s", %(cardname)s, %(channel)d, ' \
+            ''%(device)s', %(cardname)s, %(channel)d, ' \
             '%(readbuf)d, %(writebuf)d)' % self.__dict__
         print 'tyHYOctalConfig(' \
             '%(portname)s, %(speed)d, \'%(parity)c\', %(stopbits)d, ' \

@@ -20,6 +20,23 @@ CLOCK_20kHz = 13
 CLOCK_50kHz = 14
 CLOCK_100kHz = 15
 
+_rates = '''
+CLOCK_1Hz = 0
+CLOCK_2Hz = 1
+CLOCK_5Hz = 2
+CLOCK_10Hz = 3
+CLOCK_20Hz = 4
+CLOCK_50Hz = 5
+CLOCK_100Hz = 6
+CLOCK_200Hz = 7
+CLOCK_500Hz = 8
+CLOCK_1kHz = 9
+CLOCK_2kHz = 10
+CLOCK_5kHz = 11
+CLOCK_10kHz = 12
+CLOCK_20kHz = 13
+CLOCK_50kHz = 14
+CLOCK_100kHz = 15'''
 
 # Helper routine for consuming optional parameters.
 def _ReadField(fields, key, param):
@@ -35,21 +52,19 @@ class Hy8401(IpDevice):
     '''Hytec 8401 Analogue to Digital Converter (ADC).'''
     DbdFileList = ['Hy8401ip']
     LibFileList = ['Hy8401ip']
-        
-    def __init__(self, carrier, ipslot, cardid=None,
-                 intEnable = 0,              # No interrupts
-                 externalClock = 0,          # Use internal clock
-                 clockRate = CLOCK_100kHz,   #  running at 100kHz
-                 inhibit = 0,                # Ignore front panel inhibit
-                 sampleSize = 0):            # Disable triggered capture
-        '''Optional arguments are:
-        intEnable     Set to 1 to enable interrupts
-        externalClock Set to 1 for external clock
-        clockRate     Set clock rate (default 15), 0 => 1Hz, 15 => 100kHz
-        inhibit       Set to 1 to enable front panel inhibit signal
-        sampleSize    Set to number of samples for triggered capture
-        '''
-
+    ArgInfo = [
+        ('carrier', None, 'Carrier card'),
+        ('ipslot', int, 'IP slot in carrier'),
+        ('cardid', int, 'cardid?', None),
+        ('intEnable', int, 'Set to 1 to enable interrupts', 0),
+        ('externalClock', int, 'Set to 1 for external clock', 0),
+        ('clockRate', int, 'Set clock rate: %s' % _rates, CLOCK_100kHz),
+        ('inhibit', int, 'Set to 1 to enable front panel inhibit signal',0),
+        ('sampleSize', int, 'Set to number of samples for triggered capture',0)
+    ]
+    XMLObjects = ['carrier']         
+    def __init__(self, carrier, ipslot, cardid, intEnable, externalClock,
+                 clockRate, inhibit, sampleSize):
         assert intEnable in [0, 1], 'Invalid intEnable value'
         assert externalClock in [0, 1], 'Invalid externalClock value'
         assert clockRate in range(16), 'Invalid clock rate'

@@ -14,14 +14,13 @@ class Hy8002(IpCarrier):
     # This device supports up to 4 IP cards.
     MaxIpSlots = 4
     
-    def __init__(self, slot, intLevel = 2, swapint = None):
+    ArgInfo = [
+        ('slot',     int, 'VME Slot number'),
+        ('intLevel', int, 'VME Interrupt Level', 2),
+    ]
+    def __init__(self, slot, intLevel):
         self.__super.__init__(slot)
-
         self.intLevel = intLevel
-        if swapint is None:
-            swapint = self.defaultSwapInterrupt
-        self.swapint = swapint
-
 
     @classmethod
     def UseModule(cls):
@@ -29,8 +28,7 @@ class Hy8002(IpCarrier):
         # In general we share the hot-swap interrupt for the 8002 among all
         # instances: this interrupt isn't actually used (no real driver
         # support) but must be allocated anyway to avoid an error message.
-        cls.defaultSwapInterrupt = cls.AllocateIntVector()
-
+        cls.swapint = cls.AllocateIntVector()
 
     # Loading the ipac library is enough to load the libraries for this
     # card.
