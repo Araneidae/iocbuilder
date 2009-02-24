@@ -39,8 +39,9 @@ class mks937aImgTemplate(_ProtocolBase):
 class mks937aPirgTemplate(mks937aImgTemplate):
     # Substitution attributes
     TemplateFile = 'mks937aPirg.template'
-mks937aPirgTemplate.ArgInfo[2]=(
-    'channel', int, 'Channel number, normally 4 or 5')    
+    ArgInfo = mks937aImgTemplate.ArgInfo
+    ArgInfo[2]=(
+        'channel', int, 'Channel number, normally 4 or 5')    
             
 class mks937aGaugeTemplate(Substitution):
     # __init__ arguments

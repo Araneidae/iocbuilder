@@ -47,7 +47,7 @@ class _Hy8515channel(Device):
         ('card', None, 'Hy8515 card'),
         ('channel', int, 'Channel number'),
         ('readbuf', int, 'Read buffer', 2500),
-        ('writebuf', int, 'Write buffer', 2500),
+        ('writebuf', int, 'Write buffer', 250),
         ('speed', int, 'Speed', 9600),
         ('parity', str, 'Parity: N,E,O', 'N'),
         ('stopbits', int, 'Stop bits', 1),

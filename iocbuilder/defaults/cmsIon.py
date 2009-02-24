@@ -9,8 +9,8 @@ class cmsIon(Substitution, AutoProtocol):
     ArgInfo = [
         ('device', str, 'Device Prefix'),
         ('port', None, 'Asyn port'),
-        ('high', int, 'Integrated dose (since reset) HIGH value', 50),
-        ('hihi', int, 'Integrated dose (since reset) HIHI value', 100)        
+        ('high', float, 'Integrated dose (since reset) HIGH value', 50),
+        ('hihi', float, 'Integrated dose (since reset) HIHI value', 100)        
     ]    
     XMLObjects = ['port']    
     # Substitution attributes        

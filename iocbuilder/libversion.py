@@ -248,6 +248,7 @@ class ModuleBase(object):
             # automatically annotate the __init__ method.
             if 'ArgInfo' in dict:
                 cls.__init__ = annotate_args(cls.ArgInfo, True)(cls.__init__)
+                DecoratedCallables.append(cls)
             # Finally mark this instance as not yet instantiated.
             cls._Instantiated = False
             
@@ -435,9 +436,15 @@ def annotate_args(arg_info, method=False):
         wrapped_function.__name__ = f.__name__
         wrapped_function.__doc__  = f.__doc__
         wrapped_function.ArgInfo = arg_info
+        if not method:
+            DecoratedCallables.append(wrapped_function)
         return wrapped_function
 
     return annotater
+
+
+# List all the decorated callables.
+DecoratedCallables = []
 
 
 # Dictionary of all modules with announced versions.  This will be
