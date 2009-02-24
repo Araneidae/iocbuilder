@@ -88,7 +88,7 @@ class _Hy8515channel(Device):
 
     def Initialise(self):
         print '%(portname)s = tyHYOctalDevCreate(' \
-            ''%(device)s', %(cardname)s, %(channel)d, ' \
+            '"%(device)s", %(cardname)s, %(channel)d, ' \
             '%(readbuf)d, %(writebuf)d)' % self.__dict__
         print 'tyHYOctalConfig(' \
             '%(portname)s, %(speed)d, \'%(parity)c\', %(stopbits)d, ' \
