@@ -247,7 +247,8 @@ class ModuleBase(object):
             # Implement ArgInfo support: if ArgInfo specified, use it to
             # automatically annotate the __init__ method.
             if 'ArgInfo' in dict:
-                cls.__init__ = annotate_args(cls.ArgInfo, True)(cls.__init__)
+                cls.__init__ = annotate_args(cls)(cls.__init__)
+            if hasattr(cls, 'ArgInfo'):
                 DecoratedCallables.append(cls)
             # Finally mark this instance as not yet instantiated.
             cls._Instantiated = False
@@ -407,16 +408,22 @@ def annotate_args(arg_info, method=False):
     
     def annotater(f):
         def wrapped_function(*args, **kargs):
+            if is_class:
+                ArgInfo = arg_info.ArgInfo                    
+            else:
+                ArgInfo = arg_info
+                
             if method:
                 self = args[0]
                 args = args[1:]
+                
             call_args = {}
             # First the unnamed arguments, take them from the start of the
-            # arg_info list.
-            for arg, value in zip(arg_info, args):
+            # ArgInfo list.
+            for arg, value in zip(ArgInfo, args):
                 call_args[arg[0]] = maybe_call(arg[1], value)
             # Then the remaining arguments, defaulting any as appropriate.
-            for arg in arg_info[len(call_args):]:
+            for arg in ArgInfo[len(call_args):]:
                 try:
                     value = kargs.pop(arg[0])
                 except KeyError:
@@ -435,11 +442,15 @@ def annotate_args(arg_info, method=False):
             
         wrapped_function.__name__ = f.__name__
         wrapped_function.__doc__  = f.__doc__
-        wrapped_function.ArgInfo = arg_info
-        if not method:
+        
+        if not is_class:
+            wrapped_function.ArgInfo = arg_info
             DecoratedCallables.append(wrapped_function)
         return wrapped_function
 
+    is_class = isinstance(arg_info, type)
+    if is_class:
+        method = True
     return annotater
 
 
