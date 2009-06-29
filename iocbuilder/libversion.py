@@ -12,9 +12,7 @@ from configure import Configure
 import hardware
 
 
-__all__ = [
-    'ModuleVersion', 'ModuleBase', 'modules',
-    'autodepends', 'annotate_args']
+__all__ = ['ModuleVersion', 'ModuleBase', 'modules', 'autodepends']
 
 
 
@@ -244,12 +242,8 @@ class ModuleBase(object):
             cls.__BindModule(name, dict)
             # Aggregate dependencies from subclasses.
             cls.__AggregateDependencies(bases, dict.get('Dependencies'))
-            # Implement ArgInfo support: if ArgInfo specified, use it to
-            # automatically annotate the __init__ method.
-            if 'ArgInfo' in dict:
-                cls.__init__ = annotate_args(cls)(cls.__init__)
-            if hasattr(cls, 'ArgInfo'):
-                DecoratedCallables.append(cls)
+            # Remember this new class
+            cls._ModuleBaseClasses.append(cls)
             # Finally mark this instance as not yet instantiated.
             cls._Instantiated = False
             
@@ -311,6 +305,8 @@ class ModuleBase(object):
 
     # Set of instantiated modules as ModuleVersion instances
     _ReferencedModules = set()
+    # Set of subclasses (direct or indirect)
+    _ModuleBaseClasses = []
 
     @classmethod
     def _AutoInstantiate(cls):
@@ -388,74 +384,51 @@ def autodepends(*devices):
     return device_wrapper
 
 
-def annotate_args(arg_info, method=False):
-    '''This is a decorator helper function designed to add argument
-    meta-information to a function.  The given arg_info is a list of arguments
-    with associated name, type, description and optional default value, for
-    example:
+def makeArgInfo(init, **descs):
+    '''This function produces an ArgInfo list for the xml frontend to 
+    iocbuilder. It uses the arguments and defaults from the supplied init
+    method and annotates them with types and descriptions. Example:
 
-        @annotate_args((
-            ('arg1', int, 'First argument'),
-            ('arg2', bool, 'Last argument', False)))
-        def function(arg1, arg2):
-            print arg1, arg2
-    '''
-    def maybe_call(f, v):
-        if f is None:
-            return v
-        else:
-            return f(v)
+    class mybase(ModuleBase):
+        def __init__(self, arg1, arg2=1):
+            # make arg appear as self.arg for all __init__ arguments
+            self.__dict__.update(locals())
+            ModuleBase.__init__(self)
+
+        ArgInfo = makeArgInfo(__init__,
+            arg1 = ('Description for arg1', str),
+            arg2 = ('Description for arg2', int)
+        )    
     
-    def annotater(f):
-        def wrapped_function(*args, **kargs):
-            if is_class:
-                ArgInfo = arg_info.ArgInfo                    
-            else:
-                ArgInfo = arg_info
-                
-            if method:
-                self = args[0]
-                args = args[1:]
-                
-            call_args = {}
-            # First the unnamed arguments, take them from the start of the
-            # ArgInfo list.
-            for arg, value in zip(ArgInfo, args):
-                call_args[arg[0]] = maybe_call(arg[1], value)
-            # Then the remaining arguments, defaulting any as appropriate.
-            for arg in ArgInfo[len(call_args):]:
-                try:
-                    value = kargs.pop(arg[0])
-                except KeyError:
-                    if len(arg) > 3:
-                        # If default available use the default, otherwise
-                        # ignore this argument.
-                        call_args[arg[0]] = arg[3]
-                else:
-                    call_args[arg[0]] = maybe_call(arg[1], value)
-            assert not kargs, 'Unexpected arguments: %s' % kargs.keys()
+    ArgInfo has the format:
+    
+    ArgInfo = [
+        ('arg1', str, 'Description for arg1'),
+        ('arg2', int, 'Description for arg2', 1)
+    ]'''
+    # First drag the names and defaults from the init method
+    names, _, _, defaults = inspect.getargspec(init)
+    result = []
+    # def_start is the first argument with a default
+    def_start = len(names) - len(defaults)
+    # strip off self
+    if names[0] == 'self':
+        names = names[1:]
+    # now construct ArgInfo
+    for i, name in enumerate(names):
+        # make sure we have been given a desc and type for each of init's args
+        assert descs.has_key(name), \
+            'No description and type supplied for "%s" in:\n%s' % (name, descs)
+        desc, type = descs[name]
+        del descs[name]
+        if i >= def_start:
+            result.append((name, type, desc, defaults[i - def_start]))
+        else:
+            result.append((name, type, desc))
+    # make sure we have no extra arguments
+    assert not descs, 'Arguments not valid for __init__ function:\n%s' % descs
+    return result
 
-            if method:
-                return f(self, **call_args)
-            else:
-                return f(**call_args)
-            
-        wrapped_function.__name__ = f.__name__
-        wrapped_function.__doc__  = f.__doc__
-        
-        if not is_class:
-            wrapped_function.ArgInfo = arg_info
-            DecoratedCallables.append(wrapped_function)
-        return wrapped_function
-
-    is_class = isinstance(arg_info, type)
-    if is_class:
-        method = True
-    return annotater
-
-
-# List all the decorated callables.
-DecoratedCallables = []
 
 
 # Dictionary of all modules with announced versions.  This will be

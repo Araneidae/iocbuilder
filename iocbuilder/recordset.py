@@ -115,17 +115,9 @@ class Substitution(ModuleBase):
             looked for in the db subdirectory of the library.
     '''
 
-    class __SubstitutionMeta(ModuleBase.__metaclass__):
-        def __init__(cls, name, bases, dict):
-            super(cls._Substitution__SubstitutionMeta, cls).\
-                __init__(name, bases, dict)
-            if not hasattr(cls, 'Arguments') and 'ArgInfo' in dict:
-                cls.Arguments = [arg[0] for arg in cls.ArgInfo]
-
-    __metaclass__ = __SubstitutionMeta
-
     BaseClass = True
-
+    
+    Arguments = ()
     TemplateFile = None
 
     @classmethod
