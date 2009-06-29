@@ -1,21 +1,13 @@
-from iocbuilder import Device
-from iocbuilder.hardware import IpDevice
+from iocbuilder import Device, makeArgInfo
+from iocbuilder.modules.ipac import IpDevice, IpCarrier
 
 class Hy8515(IpDevice):
     LibFileList = ['drvHy8515']
     DbdFileList = ['Hy8515']
-    ArgInfo = [
-        ('carrier', None, 'Carrier card'),
-        ('ipslot', int, 'IP slot in carrier'),
-        ('cardid', int, 'cardid?', None),
-        ('fifo_threshold', int, 'fifo_threshold?', None),
-        ('poll_delay', int, 'poll_delay?', None),
-        ('halfduplex', int, 'halfduplex?', 0),
-        ('delay845', int, 'delay845?', 0)
-    ]
-    XMLObjects = ['carrier']    
-    def __init__(self, carrier, ipslot, cardid, fifo_threshold, poll_delay,
-            halfduplex, delay845):
+    
+    def __init__(self, carrier, ipslot, cardid=None,
+            fifo_threshold = None, poll_delay = None,
+            halfduplex = 0, delay845 = 0):
         self.__super.__init__(carrier, ipslot, cardid)
 
         assert fifo_threshold is None or poll_delay is None, \
@@ -32,6 +24,16 @@ class Hy8515(IpDevice):
         self.delay845 = delay845
         
         self.cardname = 'CARD%d' % self.cardid
+        
+    ArgInfo = makeArgInfo(__init__,
+        carrier        = (IpCarrier, 'Carrier card'),
+        ipslot         = (int, 'IP slot in carrier'),
+        cardid         = (int, 'cardid?'),
+        fifo_threshold = (int, 'fifo_threshold?'),
+        poll_delay     = (int, 'poll_delay?'),
+        halfduplex     = (int, 'halfduplex?'),
+        delay845       = (int, 'delay845?'))
+    
 
     def Initialise(self):
         print '%(cardname)s = Hy8515Configure(' \
@@ -43,20 +45,14 @@ class Hy8515(IpDevice):
 
 
 class _Hy8515channel(Device):
-    ArgInfo = [
-        ('card', None, 'Hy8515 card'),
-        ('channel', int, 'Channel number'),
-        ('readbuf', int, 'Read buffer', 2500),
-        ('writebuf', int, 'Write buffer', 250),
-        ('speed', int, 'Speed', 9600),
-        ('parity', str, 'Parity: N,E,O', 'N'),
-        ('stopbits', int, 'Stop bits', 1),
-        ('numbits', int, 'Number of bits', 8),
-        ('flowctrl', str, 'Flow Control', 'N')
-    ]   
-    XMLObjects=['card']  
-    def __init__(self, card, channel, readbuf, writebuf, speed, parity,
-                 stopbits, numbits, flowctrl):
+    def __init__(self, card, channel, 
+                 readbuf = 2500,
+                 writebuf = 250,
+                 speed = 9600,
+                 parity = 'N',
+                 stopbits = 1,
+                 numbits = 8,
+                 flowctrl = 'N'):
 
         self.__super.__init__()
         assert 0 <= channel  and  channel < 8, 'Channel out of range'
@@ -76,6 +72,17 @@ class _Hy8515channel(Device):
         self.device = '/ty/%d/%d' % (card.cardid, channel)
 
         self.port = self
+        
+    ArgInfo = makeArgInfo(__init__,
+        card     = (Hy8515, 'Hy8515 card'),
+        channel  = (int, 'Channel number'),
+        readbuf  = (int, 'Read buffer'),
+        writebuf = (int, 'Write buffer'),
+        speed    = (int, 'Speed'),
+        parity   = (str, 'Parity: N,E,O'),
+        stopbits = (int, 'Stop bits'),
+        numbits  = (int, 'Number of bits'),
+        flowctrl = (str, 'Flow Control'))
 
     def SetParameters(self,
             speed=None, parity=None, stopbits=None,

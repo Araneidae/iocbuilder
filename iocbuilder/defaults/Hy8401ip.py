@@ -1,5 +1,5 @@
-from iocbuilder import records, RecordFactory
-from iocbuilder.hardware import IpDevice
+from iocbuilder import records, RecordFactory, makeArgInfo
+from iocbuilder.modules.ipac import IpDevice, IpCarrier
 
 
 # Clock sample rates for ADC
@@ -52,19 +52,13 @@ class Hy8401(IpDevice):
     '''Hytec 8401 Analogue to Digital Converter (ADC).'''
     DbdFileList = ['Hy8401ip']
     LibFileList = ['Hy8401ip']
-    ArgInfo = [
-        ('carrier', None, 'Carrier card'),
-        ('ipslot', int, 'IP slot in carrier'),
-        ('cardid', int, 'cardid?', None),
-        ('intEnable', int, 'Set to 1 to enable interrupts', 0),
-        ('externalClock', int, 'Set to 1 for external clock', 0),
-        ('clockRate', int, 'Set clock rate: %s' % _rates, CLOCK_100kHz),
-        ('inhibit', int, 'Set to 1 to enable front panel inhibit signal',0),
-        ('sampleSize', int, 'Set to number of samples for triggered capture',0)
-    ]
-    XMLObjects = ['carrier']         
-    def __init__(self, carrier, ipslot, cardid, intEnable, externalClock,
-                 clockRate, inhibit, sampleSize):
+
+    def __init__(self, carrier, ipslot, cardid=None,
+                 intEnable = 0,              # No interrupts
+                 externalClock = 0,          # Use internal clock
+                 clockRate = CLOCK_100kHz,   #  running at 100kHz
+                 inhibit = 0,                # Ignore front panel inhibit
+                 sampleSize = 0):            # Disable triggered capture
         assert intEnable in [0, 1], 'Invalid intEnable value'
         assert externalClock in [0, 1], 'Invalid externalClock value'
         assert clockRate in range(16), 'Invalid clock rate'
@@ -83,6 +77,17 @@ class Hy8401(IpDevice):
 
         self.bo = RecordFactory(
             records.bo, 'Hy8401ip', 'OUT', '#C%d S0' % self.cardid)
+        
+    ArgInfo = makeArgInfo(__init__,
+        carrier    = (IpCarrier, 'Carrier card'),
+        ipslot     = (int, 'IP slot in carrier'),
+        cardid     = (int, 'cardid?'),
+        intEnable  = (int, 'Set to 1 to enable interrupts'),
+        externalClock = (int, 'Set to 1 for external clock'),
+        clockRate  = (int, 'Set clock rate: %s' % _rates),
+        inhibit    = (int, 'Set to 1 to enable front panel inhibit signal'),
+        sampleSize = (int, 'Set to number of samples for triggered capture'))
+
 
     def InitialiseOnce(cls):
         print 'Hy8401ip32bit()'

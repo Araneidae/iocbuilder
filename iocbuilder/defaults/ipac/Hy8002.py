@@ -1,6 +1,6 @@
 # Hardware definitions for 8002 and IP cards
 
-from IpCarrier import IpCarrier
+from IpCarrier import IpCarrier, makeArgInfo
 
 __all__ = ['Hy8002']
 
@@ -14,13 +14,13 @@ class Hy8002(IpCarrier):
     # This device supports up to 4 IP cards.
     MaxIpSlots = 4
     
-    ArgInfo = [
-        ('slot',     int, 'VME Slot number'),
-        ('intLevel', int, 'VME Interrupt Level', 2),
-    ]
-    def __init__(self, slot, intLevel):
+    def __init__(self, slot, intLevel=2):
         self.__super.__init__(slot)
         self.intLevel = intLevel
+    ArgInfo = makeArgInfo(__init__,
+        slot     = (int, 'VME Slot number'),
+        intLevel = (int, 'VME Interrupt Level'))
+        
 
     @classmethod
     def UseModule(cls):

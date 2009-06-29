@@ -89,5 +89,68 @@ Goals
 -----
 
 - Remove as much complexity as possible.
-- Implement dynamic loading of modules.  Done!
-- Implement outstanding TRAC requests.  Done
+
+
+Integrating Tom's Changes
+-------------------------
+
+`dbd.py`
+~~~~~~~~
+
+Aggregates all paths as dbd files are read.  Really don't like this, need to
+try and see what problem Tom was orginally addressing here.
+
+
+`iocinit.py`
+~~~~~~~~~~~~
+
+Some special case handling of architecture specific IOC support.  It would
+probably be a good idea to try and abstract this into an architecture class
+which can be subclassed for each specific architecture.  Have the following
+quirks:
+
+* For `linux-x86` architecture have `#!` line with explicit path to IOC.
+Possibly could use a shell script instead if we can figure out how to pass the
+rest of the script over to the IOC -- or just as well, have a separate script
+for the IOC itself to execute in this case.
+
+* Tom's patch loses the redirector specific `homeDir` hack.
+
+* Handling of data files seems to have changed.  Not sure why, need to
+understand role of `path` parameter here.
+
+
+`screen.py`
+~~~~~~~~~~~
+
+Completely new script here!  This is hooked into `\_\_init\_\_.py` and
+`iocwriter.py`, as well as some of the new `defaults` entries.
+
+
+`iocwriter.py`
+~~~~~~~~~~~~~~
+
+* New `PrintDisclaimerC` function.  Need to think of some mechanism to handle
+change detection that works with this and the original version.
+
+* An architecture specific entry: writes 'app'`Main.cpp`.
+
+* Support for screens.
+
+* Modules are no longer written out sorted.  Not happy with this.
+
+
+`validators.py`
+~~~~~~~~~~~~~~~
+
+New validators, no issues here.  Tom has suggested simplifying the automatic
+application of validators if we can find some way to automatically create the
+`\_\_init\_\_` arguments.
+
+
+`libversion.py`
+~~~~~~~~~~~~~~~
+
+Need to look at this rather closely.  Tom would like a list of instances of
+subclasses, indexable by name -- so need some way to specify the name of an
+instance!  Eg, `MyClass(name='xyzzy')`

@@ -4,6 +4,7 @@ import sys
 import os
 import string
 import re
+import inspect
 from types import ModuleType
 
 from support import autosuper_meta, SameDirFile, CreateModule
@@ -12,7 +13,8 @@ from configure import Configure
 import hardware
 
 
-__all__ = ['ModuleVersion', 'ModuleBase', 'modules', 'autodepends']
+__all__ = [
+    'ModuleVersion', 'ModuleBase', 'modules', 'autodepends', 'makeArgInfo']
 
 
 
@@ -407,10 +409,12 @@ def makeArgInfo(init, **descs):
         ('arg2', int, 'Description for arg2', 1)
     ]'''
     # First drag the names and defaults from the init method
-    names, _, _, defaults = inspect.getargspec(init)
+    names, _, varkw, defaults = inspect.getargspec(init)
     result = []
     # def_start is the first argument with a default
-    def_start = len(names) - len(defaults)
+    def_start = len(names)
+    if defaults:
+        def_start -= len(defaults)
     # strip off self
     if names[0] == 'self':
         names = names[1:]
@@ -419,14 +423,20 @@ def makeArgInfo(init, **descs):
         # make sure we have been given a desc and type for each of init's args
         assert descs.has_key(name), \
             'No description and type supplied for "%s" in:\n%s' % (name, descs)
-        desc, type = descs[name]
+        type, desc = descs[name]
         del descs[name]
         if i >= def_start:
             result.append((name, type, desc, defaults[i - def_start]))
         else:
             result.append((name, type, desc))
-    # make sure we have no extra arguments
-    assert not descs, 'Arguments not valid for __init__ function:\n%s' % descs
+    # Make sure we only have extra arguments if a varkw argument has been
+    # specified.
+    assert varkw or not descs, \
+        'Arguments not valid for __init__ function: %s' % descs.keys()
+    # Finally generate the extra arguments
+    for name, (type, desc) in descs.items():
+        result.append((name, type, desc))
+    
     return result
 
 

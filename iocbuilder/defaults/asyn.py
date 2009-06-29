@@ -1,8 +1,8 @@
 import os.path
 
-from iocbuilder import Device
+from iocbuilder import Device, makeArgInfo
 from iocbuilder.support import quote_c_string
-from iocbuilder.validators import strOrNone, intOrNone
+
 
 # These devices are used directly, while the others are loaded as part of
 # other devices
@@ -25,20 +25,12 @@ class AsynSerial(Device):
     # Flag used to identify this as an asyn device.
     IsAsyn = True
 
-    ArgInfo = [
-        ('port', None, 'Serial port'),
-        ('name', strOrNone, 'Override name', None),
-        ('input_eos', strOrNone, 'Input end of string (terminator)', None),
-        ('output_eos', strOrNone, 'Output end of string (terminator)', None),
-        ('baud', int, 'Baud Rate'),
-        ('bits', int, 'Bits'),
-        ('parity', str, 'Parity'),
-        ('stop', int, 'Stop Bits'),
-        ('clocal', None, 'clocal?'), 
-        ('crtscts', None, 'crtscts?')
-    ]
-    XMLObjects = ['port']
-    def __init__(self, port, name, input_eos, output_eos, **options):
+    ValidSetOptionKeys = set([
+        'baud', 'bits', 'parity', 'stop', 'clocal', 'crtscts'])
+
+    def __init__(self, port,
+            name=None, input_eos=None, output_eos=None,
+            priority=100, noAutoConnect=0, noProcessEos=0, **options):
         self.__super.__init__()
 
         self.port = port
@@ -51,14 +43,38 @@ class AsynSerial(Device):
         self.__Ports.add(name)
         self.asyn_name = name
 
+        assert set(options.keys()) <= self.ValidSetOptionKeys, \
+            'Invalid argument to asynSetOption'
         self.options = options
         self.input_eos = input_eos
         self.output_eos = output_eos
+        self.priority = priority
+        self.noAutoConnect = noAutoConnect
+        self.noProcessEos = noProcessEos
+        
+    ArgInfo = makeArgInfo(__init__,
+        port          = (Device, 'Serial port'),
+        name          = (str, 'Override name'),
+        input_eos     = (str, 'Input end of string (terminator)'),
+        output_eos    = (str, 'Output end of string (terminator)'),
+        priority      = (int, "Priority"),
+        noAutoConnect = (int, "Set to 1 to stop autoconnect"),
+        noProcessEos  = (int, "Set to 1 to avoid processing end of string"),
+        # SetOption keys
+        baud    = (int, 'Baud Rate'),
+        bits    = (int, 'Bits'),
+        parity  = (str, 'Parity'),
+        stop    = (int, 'Stop Bits'),
+        clocal  = (None, 'clocal?'), 
+        crtscts = (None, 'crtscts?'))
+        
         
     def Initialise(self):
-        print 'drvAsynSerialPortConfigure("%s", "%s", 0, 0, 0)' % (
-            self.asyn_name, self.port_name)
-        for key, value in self.options:
+        print 'drvAsynSerialPortConfigure(' \
+            '"%(asyn_name)s", "%(port_name)s", ' \
+            '%(priority)d, %(noAutoConnect)d, %(noProcessEos)d)' % \
+                self.__dict__
+        for key, value in self.options.items():
             print 'asynSetOption("%s", 0, "%s", "%s")' % (
                 self.asyn_name, key, value)
         if self.input_eos is not None:

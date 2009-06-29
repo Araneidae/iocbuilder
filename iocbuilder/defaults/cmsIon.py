@@ -1,32 +1,30 @@
-from iocbuilder import Substitution, hardware
+from iocbuilder import Device, Substitution, hardware, makeArgInfo
 from iocbuilder.hardware import streamDeviceVersion, AutoProtocol
 
 __all__ = ['cmsIon']
 
 
 class cmsIon(Substitution, AutoProtocol):
-    # __init__ arguments
-    ArgInfo = [
-        ('device', str, 'Device Prefix'),
-        ('port', None, 'Asyn port'),
-        ('high', float, 'Integrated dose (since reset) HIGH value', 50),
-        ('hihi', float, 'Integrated dose (since reset) HIHI value', 100)        
-    ]    
-    XMLObjects = ['port']    
-    # Substitution attributes        
+    Arguments = ('device', 'port', 'high', 'hihi')
     if streamDeviceVersion == 1:
         TemplateFile  = 'cmsIon-v1.template'
         ProtocolFiles = ['cmsIon-v1.protocol']
     else:
         TemplateFile  = 'cmsIon.template'
         ProtocolFiles = ['cmsIon.protocol']
-    
 
-    def __init__(self, port, **kwargs):
+    def __init__(self, device, port, high=50, hihi=100):
         '''Creates support for radiation safety monitoring system.'''
         # need this line so that stream v1 works
         stream = hardware.streamProtocol(port, self.Protocols[0])
-        self.__super.__init__(port = stream.port, **kwargs)
+        self.__super.__init__(
+            device = device, port = stream.port, high = high, hihi = hihi)
+        
+    ArgInfo = makeArgInfo(__init__,
+        device = (str, 'Device Prefix'),
+        port = (Device, 'Asyn port'),
+        high = (float, 'Integrated dose (since reset) HIGH value'),
+        hihi = (float, 'Integrated dose (since reset) HIHI value'))
 
         
 def createCmsIon(serialCard, domain, id, socket, high, hihi):

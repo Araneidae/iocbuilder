@@ -495,8 +495,8 @@ include $(TOP)/configure/RULES
         
 
     def ConfigureRelease(self):
-        # The epicsBase module has a rather special role in the RELEASE file:
-        # it must appear, even if we're not actually linking anything, and it
-        # must appear last.
         for module in sorted(self.ModuleList):
+# Something like this might be a good idea --
+#             if self.check_release:
+#                 module.CheckDependencies()
             print '%s = %s' % (module.MacroName(), module.LibPath())
