@@ -1,5 +1,5 @@
 from iocbuilder import Substitution, Device, GetDevice, UnsetDevice
-from iocbuilder.hardware import genSub
+from iocbuilder.modules.genSub import genSub
 
 __all__ = ['MonitorEvent', 'EvrAlive']
 

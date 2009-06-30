@@ -1,5 +1,6 @@
 from iocbuilder import Device, records, RecordFactory
-from iocbuilder.hardware import Asyn, Seq
+from iocbuilder.modules.asyn import Asyn
+from iocbuilder.modules.seq import Seq
 
 __all__ = ['MotorLib', 'OmsVme58']
 
@@ -159,4 +160,3 @@ class _OmsVme58Channel:
 
     def AxisName(self):
         return 'XYZTUVRS'[self.channel]
-    

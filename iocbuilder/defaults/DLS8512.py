@@ -1,5 +1,6 @@
 from iocbuilder import records, RecordFactory
-from iocbuilder.hardware import Sscan, IpDevice
+from iocbuilder.modules.ipac import IpDevice
+from iocbuilder.modules.sscan import Sscan
 
 
 class DLS8512(IpDevice):

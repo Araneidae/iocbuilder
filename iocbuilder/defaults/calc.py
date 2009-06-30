@@ -1,5 +1,5 @@
 from iocbuilder import Device
-from iocbuilder.hardware import Sscan
+from iocbuilder.modules.sscan import Sscan
 
 __all__ = ['Calc']
 

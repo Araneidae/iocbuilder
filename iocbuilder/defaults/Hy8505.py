@@ -1,5 +1,5 @@
 from iocbuilder import records, RecordFactory
-from iocbuilder.hardware import IpDevice
+from iocbuilder.modules.ipac import IpDevice
 
 
 class Hy8505(IpDevice):

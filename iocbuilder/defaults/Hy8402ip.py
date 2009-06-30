@@ -1,5 +1,5 @@
 from iocbuilder import records, RecordFactory
-from iocbuilder.hardware import IpDevice
+from iocbuilder.modules.ipac import IpDevice
 
 
 # Digital to Analogue convert (DAC)

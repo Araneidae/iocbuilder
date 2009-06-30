@@ -1,5 +1,5 @@
 from iocbuilder import records, RecordFactory, Substitution
-from iocbuilder.hardware import IpDevice
+from iocbuilder.modules.ipac import IpDevice
 
 __all__ = ['Hy8403ipTemplate']
 
