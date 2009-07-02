@@ -7,7 +7,7 @@ import fnmatch
 import types
 import re
 
-__all__ = ['Singleton', 'AutoRegisterClass', 'SameDirFile']
+__all__ = ['Singleton', 'AutoRegisterClass', 'SameDirFile', 'filter_dict']
 
 
 def ExportModules(globals, *modulenames):
@@ -65,6 +65,11 @@ def choplist(list, size):
 def countChars(start='A', stop='Z'):
     '''Returns a sequence of letters.'''
     return iter(map(chr, range(ord(start), ord(stop) + 1)))
+
+
+def filter_dict(d, l):
+    '''Returns dictionary restricted to entries in given list.'''
+    return dict((n, d[n]) for n in l)
 
 
 unsafe_chars = re.compile(r'[\\"\1-\37]')

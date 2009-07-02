@@ -109,22 +109,11 @@ class Substitution(ModuleBase):
     defined by specifying the following class members in the subclass:
         Arguments = (...)
             List of names of Substitution arguments that must be filled in when
-            specifying a Substitution.  A default for each argument can be
-            specified by giving a tuple (name, default) in place of an
-            argument name.
+            specifying a Substitution.
         TemplateFile = '...'
             Name of template file to be loaded.  By default this will be
             looked for in the db subdirectory of the library.
     '''
-
-#     class __SubstitutionMeta(ModuleBase.__metaclass__):
-#         def __init__(cls, name, bases, dict):
-#             super(cls._Substitution__SubstitutionMeta, cls).\
-#                 __init__(name, bases, dict)
-#             if not hasattr(cls, 'Arguments') and 'ArgInfo' in dict:
-#                 cls.Arguments = [arg[0] for arg in cls.ArgInfo]
-# 
-#     __metaclass__ = __SubstitutionMeta
 
     BaseClass = True
 
@@ -151,11 +140,6 @@ class Substitution(ModuleBase):
         be expanded.'''
         
         self.__super.__init__()
-
-        # Combine the arguments with any defaults.
-        args = dict([arg
-            for arg in self.Arguments
-            if not isinstance(arg, str)], **args)
         
         # Check that all the required arguments have been given: we can't do
         # template expansion unless every argument is specified.

@@ -30,7 +30,7 @@ __all__ = ['hardware']
 __all__ += support.ExportModules(globals(),
     'support', 'dbd',
     'libversion', 'recordbase', 'recordset', 'iocinit', 'device',
-    'fanout', 'recordnames', 'iocwriter',
+    'fanout', 'recordnames', 'iocwriter', 'arginfo',
     'configure')    # Best to load configure module last
 
 

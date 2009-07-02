@@ -1,21 +1,15 @@
 #   Generic hardware module support
 
-import sys
 import os
 import string
 import re
-import inspect
-from types import ModuleType
 
 from support import autosuper_meta, SameDirFile, CreateModule
-from configure import Configure
 
 import hardware
 
 
-__all__ = [
-    'ModuleVersion', 'ModuleBase', 'modules', 'autodepends', 'makeArgInfo']
-
+__all__ = ['ModuleVersion', 'ModuleBase', 'modules', 'autodepends']
 
 
 
@@ -384,61 +378,6 @@ def autodepends(*devices):
         wrapped_function.__doc__  = f.__doc__
         return wrapped_function
     return device_wrapper
-
-
-def makeArgInfo(init, **descs):
-    '''This function produces an ArgInfo list for the xml frontend to 
-    iocbuilder. It uses the arguments and defaults from the supplied init
-    method and annotates them with types and descriptions. Example:
-
-    class mybase(ModuleBase):
-        def __init__(self, arg1, arg2=1):
-            # make arg appear as self.arg for all __init__ arguments
-            self.__dict__.update(locals())
-            ModuleBase.__init__(self)
-
-        ArgInfo = makeArgInfo(__init__,
-            arg1 = ('Description for arg1', str),
-            arg2 = ('Description for arg2', int)
-        )    
-    
-    ArgInfo has the format:
-    
-    ArgInfo = [
-        ('arg1', str, 'Description for arg1'),
-        ('arg2', int, 'Description for arg2', 1)
-    ]'''
-    # First drag the names and defaults from the init method
-    names, _, varkw, defaults = inspect.getargspec(init)
-    result = []
-    # def_start is the first argument with a default
-    def_start = len(names)
-    if defaults:
-        def_start -= len(defaults)
-    # strip off self
-    if names[0] == 'self':
-        names = names[1:]
-    # now construct ArgInfo
-    for i, name in enumerate(names):
-        # make sure we have been given a desc and type for each of init's args
-        assert descs.has_key(name), \
-            'No description and type supplied for "%s" in:\n%s' % (name, descs)
-        type, desc = descs[name]
-        del descs[name]
-        if i >= def_start:
-            result.append((name, type, desc, defaults[i - def_start]))
-        else:
-            result.append((name, type, desc))
-    # Make sure we only have extra arguments if a varkw argument has been
-    # specified.
-    assert varkw or not descs, \
-        'Arguments not valid for __init__ function: %s' % descs.keys()
-    # Finally generate the extra arguments
-    for name, (type, desc) in descs.items():
-        result.append((name, type, desc))
-    
-    return result
-
 
 
 # Dictionary of all modules with announced versions.  This will be

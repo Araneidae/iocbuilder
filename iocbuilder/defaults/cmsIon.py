@@ -5,7 +5,6 @@ __all__ = ['cmsIon']
 
 
 class cmsIon(Substitution, AutoProtocol):
-    Arguments = ('device', 'port', 'high', 'hihi')
     if streamDeviceVersion == 1:
         TemplateFile  = 'cmsIon-v1.template'
         ProtocolFiles = ['cmsIon-v1.protocol']
@@ -25,6 +24,7 @@ class cmsIon(Substitution, AutoProtocol):
         port = (Device, 'Asyn port'),
         high = (float, 'Integrated dose (since reset) HIGH value'),
         hihi = (float, 'Integrated dose (since reset) HIHI value'))
+    Arguments = ArgInfo.Names()
 
         
 def createCmsIon(serialCard, domain, id, socket, high, hihi):
