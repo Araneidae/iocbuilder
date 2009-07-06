@@ -1,6 +1,7 @@
 # Meta data argument info support.
 
 import inspect
+from libversion import ModuleBase
 
 __all__ = ['makeArgInfo', 'addArgInfo']
 
@@ -63,7 +64,7 @@ class ArgInfo(object):
             if __source:
                 self.required_names = list(__source)
             else:
-                self.required_names = []
+                self.required_names = sorted(set(descs.keys()) - set(__optional))
             self.default_names = []
             self.default_values = []
 
@@ -99,13 +100,13 @@ class ArgInfo(object):
             
 
         
-    def Names(self, excludes=[]):
+    def Names(self, without=[]):
         '''Returns list of all possible argument names.  If excludes is given
         then it lists names that will not be returned.'''
         return [name
             for name in \
                 self.required_names + self.default_names + self.optional_names
-            if name not in excludes]
+            if name not in without]
 
     def __add__(self, other):
         '''Aggregates information about two ArgInfo objects into a single
@@ -157,7 +158,7 @@ def Simple(desc, typ):
     desc = "%s %s" % (desc, typ)
     return ArgType(desc, typ)
     
-def Choice(desc, values, vlabels = None):
+def Choice(desc, values, labels = None):
     # a choice of different values, with optional different labels
     typ = type(values[0])
     assert typ in _simpleTypes, \
@@ -166,15 +167,15 @@ def Choice(desc, values, vlabels = None):
         assert typ == type(v), \
             "Value '%s' doesn't have same type as '%s'" % (v, values[0])
     desc = "%s %s\nValues:\n\t" % (desc, typ)
-    if vlabels is None:
-        descs = descs + "\n\t".join(map(str,values))
+    if labels is None:
+        desc += "\n\t".join(map(str,values))
         return ArgType(typ, desc, labels = values)
     else:
-        assert len(values) == len(vlabels), \
-            "Value labels %s do not have the same length as values %s" % \
-            (vlables, values)
-        argdescs = [ "%s: %s" % x for x in zip(vlabels, values) ]        
-        descs = descs + "\n\t".join(argdescs)
+        assert len(values) == len(labels), \
+            "Labels %s do not have the same length as values %s" % \
+            (labels, values)
+        argdescs = [ "%s: %s" % x for x in zip(labels, values) ]        
+        desc += "\n\t".join(argdescs)
         return ArgType(typ, desc, values = values, labels = labels)
 
 def Enum(desc, values):
@@ -188,27 +189,11 @@ def Ident(desc, typ):
     descs = "%s %s" % (desc, typ)        
     return ArgType(typ, desc, ident = True)
 
-def List(desc, num, func, *arg, **kwargs):
+def List(desc, num, func, *args, **kwargs):
     # list of argtypes
-    return [ func("%s %d"%(desc,i) *args, **kwargs) for i in range(num) ]
+    return [ func("%s %d"%(desc,i), *args, **kwargs) for i in range(num) ]
 
 def Sevr(desc):
     # choice of possible values for SEVR field
     return Choice(desc, ["NO_ALARM","MINOR","MAJOR","INVALID"])
 
-
-class test1(object):
-    def __init__(self, a=1, b="string"):
-        pass
-    ArgInfo = makeArgInfo(__init__,
-        a = Simple("Arg 1", int),
-        b = Simple("Arg 2", str))
-
-class test2(object):
-    def __init__(self, c=12, d="string2"):
-        pass
-    ArgInfo = makeArgInfo(__init__,
-        c = Simple("Arg 3", float),
-        d = Simple("Arg 4", bool))
-        
-subclasses = [test1, test2]
