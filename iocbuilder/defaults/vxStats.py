@@ -1,4 +1,5 @@
-from iocbuilder import Substitution, Device, makeArgInfo
+from iocbuilder import Substitution, Device
+from iocbuilder.arginfo import *
 
 __all__ = ['vxStats']
 
@@ -7,13 +8,15 @@ class vxStats(Substitution, Device):
     run vxStatsApp/opi/edl/iocStatus.edl with the same device=device
     substitution.'''
 
-    Arguments = ('device',)
+    # __init__ attributes
+    ArgInfo = makeArgInfo(device = Simple('Device Prefix', str))
+        
     # Substitution attributes
+    Arguments = ArgInfo.Names()
     TemplateFile = 'vxStats.template'
+    
     # Device attributes    
     LibFileList = ['vxStatsLib']
     DbdFileList = ['vxStats']
 
-    def __init__(self, iocname):
-        self.__super.__init__(device = iocname)
-    ArgInfo = makeArgInfo(__init__, iocname = (str, 'Device Prefix'))
+

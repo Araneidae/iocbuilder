@@ -1,67 +1,94 @@
 from iocbuilder import Substitution
-from iocbuilder.hardware import AutoProtocol
-from iocbuilder.validators import TwoDigitInt, asynPort
+from iocbuilder.arginfo import *
 
-class _digitelBase(Substitution, AutoProtocol):
-    ProtocolFiles = ['digitelMpc.proto']
+from iocbuilder.modules.streamDevice import AutoProtocol
+from iocbuilder.modules.asyn import AsynOctetInterface
 
-class digitelMpcTemplate(_digitelBase):
+class digitelMpc(Substitution, AutoProtocol):
+    '''Digitel MPC Ion pump controller'''
+
+    # Make sure unit is a 2 digit int
+    def __init__(self, device, port, unit = 1):
+        unit = "%02d" % unit
+        self.__super.__init__(**filter_dict(locals(), self.Arguments))
+
     # __init__ arguments
-    ArgInfo = [
-        ('device', str, 'Device Prefix'),
-        ('port', asynPort, 'Asyn Serial Port'),
-        ('unit', TwoDigitInt, 'Unit number (for multidrop serial)', 1)
-    ]
-    XMLObjects = ['port']    
+    ArgInfo = makeArgInfo(__init__,
+        device = Simple('Device Prefix', str),
+        port   = Ident ('Asyn Serial Port', AsynOctetInterface),
+        unit   = Simple('Unit number (for multidrop serial)', int))
+
     # Substitution attributes
     TemplateFile = 'digitelMpc.template'
+    Arguments = ArgInfo.Names()
+    
+    # AutoProtocol attributes
+    ProtocolFiles = ['digitelMpc.proto']    
 
-class digitelMpcTemplate_sim(digitelMpcTemplate):
+'''
+class digitelMpc_sim(Substitution):
     TemplateFile = 'simulation_digitelMpc.template'
-    XMLObjects = []    
-digitelMpcTemplate_sim.ArgInfo[1]=('port', str, 'Dummy Asyn Serial Port')
-
-class digitelMpcTspTemplate(_digitelBase):
-    Arguments = ('device', 'port' , 'unit' , 'ctlsrc')
-    TemplateFile = 'digitelMpcTsp.template'
-    IdenticalSim = True
-
-class digitelMpcIonpTemplate(_digitelBase):
-    # __init__ arguments
+    XMLObjects = []
     ArgInfo = [
         ('device', str, 'Device Prefix'),
-        ('MPC', None, 'digitelMPC object'),
-        ('pump', int, 'Pump number'),
-        ('size', int, 'Pump size (l)'),
-        ('spon', int, 'Setpoint for on', 0),
-        ('spoff', int, 'Setpoint for off', 0)
+        ('port', str, 'Dummy Asyn Serial Port'),
+        ('unit', TwoDigitInt, 'Unit number (for multidrop serial)', 1)
     ]
-    XMLObjects = ['MPC']    
+'''
+
+class digitelMpcPump(Substitution):
+    pass
+        
+class digitelMpcTsp(digitelMpcPump):
+    Arguments = ('device', 'port' , 'unit' , 'ctlsrc')
+    TemplateFile = 'digitelMpcTsp.template'
+#    IdenticalSim = True
+
+class digitelMpcIonp(digitelMpcPump):
+    '''Digitel MPC Ion pump template'''
+
+    # Just pass the arguments straight through
+    def __init__(self, device, MPC, pump, size, spon = 0, spoff = 0):
+        port = MPC.args['port']
+        unit = MPC.args['unit']
+        self.__super.__init__(**filter_dict(locals(), self.Arguments))
+
+    # __init__ arguments
+    ArgInfo = makeArgInfo(__init__,
+        device = Simple('Device Prefix', str),
+        MPC    = Ident ('digitelMPC object', digitelMpc),
+        pump   = Simple('Pump number', int),
+        size   = Simple('Pump size (l)', int),
+        spon   = Simple('Setpoint for on', int),
+        spoff  = Simple('Setpoint for off', int))
+
     # Substitution attributes
-    Arguments = ['device', 'port', 'unit'] + [x[0] for x in ArgInfo[2:]]
+    Arguments = ['port', 'unit'] + ArgInfo.Names(without = ['MPC'])
     TemplateFile = 'digitelMpcIonp.template'
-    IdenticalSim = True
-    # get the device, port and unit from MPC object, then init        
-    def __init__(self, MPC, **kwargs):
-        self.__super.__init__(port = MPC.args['port'], 
-            unit = MPC.args['unit'], **kwargs)
     
-class digitelMpcIonpGroupTemplate(Substitution):
+#    EdmScreen = ('digitelMpcIonpControl','device=%(device)s')
+
+'''
+class digitelMpcIonp_sim(digitelMpcIonp):
+    TemplateFile = 'simulation_digitelMpcIonp.template'
+'''
+            
+class digitelMpcIonpGroup(Substitution):
     Arguments = (
         'device', 'delay',
         'ionp1', 'ionp2', 'ionp3', 'ionp4',
         'ionp5', 'ionp6', 'ionp7', 'ionp8')
     TemplateFile = 'digitelMpcIonpGroup.template'
-    IdenticalSim = True    
+#    IdenticalSim = True    
 
-class digitelMpcTspGroupTemplate(Substitution):
+class digitelMpcTspGroup(Substitution):
     Arguments = (
         'device',
         'tsp1', 'tsp2', 'tsp3', 'tsp4', 'tsp5', 'tsp6', 'tsp7', 'tsp8')
     TemplateFile = 'digitelMpcTspGroup.template'
-    IdenticalSim = True
+#    IdenticalSim = True
 
-class dummyIonpTemplate(Substitution):
+class dummyIonp(Substitution):
     Arguments = ('device',)
     TemplateFile = 'dummyIonp.template'
-    IdenticalSim = True
+#    IdenticalSim = True

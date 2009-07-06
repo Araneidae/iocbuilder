@@ -1,12 +1,13 @@
 import os.path
 
-from iocbuilder import Device, makeArgInfo
+from iocbuilder import Device
 from iocbuilder.support import quote_c_string
+from iocbuilder.arginfo import *
 
 
 # These devices are used directly, while the others are loaded as part of
 # other devices
-__all__ = ['Asyn', 'AsynSerial']
+__all__ = ['Asyn', 'AsynSerial', 'AsynIP']
 
 
 class Asyn(Device):
@@ -15,9 +16,8 @@ class Asyn(Device):
     AutoInstantiate = True
     
 
-class AsynSerial(Device):
+class AsynPort(Device):
     Dependencies = (Asyn,)
-    DbdFileList = ['drvAsynSerialPort']
 
     # Set of allocated ports to avoid accidential duplication.
     __Ports = set()
@@ -25,55 +25,42 @@ class AsynSerial(Device):
     # Flag used to identify this as an asyn device.
     IsAsyn = True
 
+    def __init__(self, name):
+        self.asyn_name = name
+        assert name not in self.__Ports, \
+            'AsynPort %s already defined' % name
+        self.__Ports.add(name)
+        self.__super.__init__()
+                
+    def DeviceName(self):
+        return self.asyn_name
+
+    def __str__(self):
+        return self.DeviceName()
+
+class AsynOctetInterface(AsynPort):
+
     ValidSetOptionKeys = set([
         'baud', 'bits', 'parity', 'stop', 'clocal', 'crtscts'])
 
     def __init__(self, port,
             name=None, input_eos=None, output_eos=None,
-            priority=100, noAutoConnect=0, noProcessEos=0, **options):
-        self.__super.__init__()
-
-        self.port = port
-        self.port_name = port.DeviceName()
-        
-        if name is None:
-            name = self.port_name[1:].replace('/', '_')
-        assert name not in self.__Ports, \
-            'AsynSerial port %s already defined' % name
-        self.__Ports.add(name)
-        self.asyn_name = name
-
+            priority=100, noAutoConnect=False, noProcessEos=False, **options):
+        self.port_name = port
         assert set(options.keys()) <= self.ValidSetOptionKeys, \
             'Invalid argument to asynSetOption'
         self.options = options
         self.input_eos = input_eos
         self.output_eos = output_eos
         self.priority = priority
-        self.noAutoConnect = noAutoConnect
-        self.noProcessEos = noProcessEos
-        
-    ArgInfo = makeArgInfo(__init__,
-        port          = (Device, 'Serial port'),
-        name          = (str, 'Override name'),
-        input_eos     = (str, 'Input end of string (terminator)'),
-        output_eos    = (str, 'Output end of string (terminator)'),
-        priority      = (int, "Priority"),
-        noAutoConnect = (int, "Set to 1 to stop autoconnect"),
-        noProcessEos  = (int, "Set to 1 to avoid processing end of string"),
-        # SetOption keys
-        baud    = (int, 'Baud Rate'),
-        bits    = (int, 'Bits'),
-        parity  = (str, 'Parity'),
-        stop    = (int, 'Stop Bits'),
-        clocal  = (None, 'clocal?'), 
-        crtscts = (None, 'crtscts?'))
-        
-        
+        self.noAutoConnect = int(noAutoConnect)
+        self.noProcessEos = int(noProcessEos)
+        self.__super.__init__(name)    
+               
     def Initialise(self):
-        print 'drvAsynSerialPortConfigure(' \
-            '"%(asyn_name)s", "%(port_name)s", ' \
-            '%(priority)d, %(noAutoConnect)d, %(noProcessEos)d)' % \
-                self.__dict__
+        print '%sConfigure("%s", "%s", %d, %d, %d)' % (
+            self.DbdFileList[0], self.asyn_name, self.port_name, self.priority,
+            self.noAutoConnect, self.noProcessEos)    
         for key, value in self.options.items():
             print 'asynSetOption("%s", 0, "%s", "%s")' % (
                 self.asyn_name, key, value)
@@ -83,9 +70,73 @@ class AsynSerial(Device):
         if self.output_eos is not None:
             print 'asynOctetSetOutputEos("%s", 0, %s)' % (
                 self.asyn_name, quote_c_string(self.output_eos))
+                                
+common_args = dict(
+    name          = Simple('Override name', str),
+    input_eos     = Simple('Input end of string (terminator)', str),
+    output_eos    = Simple('Output end of string (terminator)', str),
+    priority      = Simple('Priority', int),
+    noAutoConnect = Simple('Set to stop autoconnect', bool),
+    noProcessEos  = Simple('Set to avoid processing end of string', bool),
+    # SetOption keys        
+    baud          = Simple('Baud Rate', int),
+    bits          = Simple('Bits', int),
+    parity        = Simple('Parity', str),
+    stop          = Simple('Stop Bits', int),
+    clocal        = Simple('clocal?', int),
+    crtscts       = Simple('crtscts?', int))
 
-    def DeviceName(self):
-        return self.asyn_name
+class AsynSerial(AsynOctetInterface):
+    '''Asyn Serial Port'''
 
-    def __str__(self):
-        return self.asyn_name
+    DbdFileList = ['drvAsynSerialPort']
+
+    # just get the port_name from the serial port, and pass it up
+    def __init__(self, port, name = None, **kwargs):
+        self.port = port
+        port_name = port.DeviceName()
+        if name is None:
+            name = port_name[1:].replace('/', '_')
+        self.__super.__init__(port_name, name, **kwargs)
+        
+    # __init__ attributes
+    ArgInfo = makeArgInfo(AsynOctetInterface.__init__,
+        port = Ident('Serial port', Device), 
+        **common_args
+    )
+
+class AsynIP(AsynOctetInterface):
+    '''Asyn IP Port'''
+
+    DbdFileList = ['drvAsynIPPort']  
+    
+    # validate the port then pass it up
+    def __init__(self, port, name = None, **kwargs):
+        IsIpAddr(port)
+        if name is None:
+            name = port.replace(".", "_").replace(":","_")
+        self.__super.__init__(port, name, **kwargs)       
+        
+    # __init__ attributes
+    ArgInfo = makeArgInfo(AsynOctetInterface.__init__,
+        port = Simple('IP address', str), 
+        **common_args
+    )    
+
+def IsIpAddr(val):
+    # validator for an ip address
+    errStr = "Should be of format x[xx].x[xx].x[xx].x[xx][:x[x..]]"
+    # split into ip and port
+    split = value.strip().split(":")
+    # check we have either just an ip, or an ip and a port
+    assert len(split)in [1,2], errStr
+    # check the port is in an int if it exists
+    if len(split) == 2:
+        assert split[1].isdigit(), errStr
+    # split the ip by .
+    split = split[0].split(".")
+    # check there are 4 elements
+    assert len(split) == 4, errStr
+    # and that each element is an integer in the range 0..255
+    for i in split:
+        assert i.isdigit() and int(i) in range(256), errStr

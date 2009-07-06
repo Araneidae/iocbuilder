@@ -4,7 +4,7 @@
 import new
 from iocbuilder import *
 
-__all__ = ['IpDevice']
+__all__ = ['IpDevice', 'IpCarrier']
 
 
 # All IP carriers, in particular both the 8001 and 8002, depend on the ipac

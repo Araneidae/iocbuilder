@@ -1,5 +1,5 @@
 import os.path
-from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase
+from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase, Configure
 from iocbuilder import records, hardware
 
 from asyn import AsynSerial
@@ -93,7 +93,12 @@ class ProtocolFile(Device):
                 IocDataFile(file)
         else:
             protocol_dir = protocol_dirs.pop()
-        print 'STREAM_PROTOCOL_DIR = "%s"' % protocol_dir
+        import sys
+        print >>sys.stderr, '!!! Fix this?'
+        if Configure.architecture == "linux-x86":
+            print 'epicsEnvSet "STREAM_PROTOCOL_PATH", "%s"' % protocol_dir        
+        else:
+            print 'STREAM_PROTOCOL_DIR = "%s"' % protocol_dir
 
     def __str__(self):
         return self.ProtocolName

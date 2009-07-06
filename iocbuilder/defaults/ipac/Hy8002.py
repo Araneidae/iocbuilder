@@ -1,6 +1,7 @@
 # Hardware definitions for 8002 and IP cards
 
-from IpCarrier import IpCarrier, makeArgInfo
+from Carrier import IpCarrier
+from iocbuilder.arginfo import *
 
 __all__ = ['Hy8002']
 
@@ -17,9 +18,10 @@ class Hy8002(IpCarrier):
     def __init__(self, slot, intLevel=2):
         self.__super.__init__(slot)
         self.intLevel = intLevel
+
     ArgInfo = makeArgInfo(__init__,
-        slot     = (int, 'VME Slot number'),
-        intLevel = (int, 'VME Interrupt Level'))
+        slot     = Simple('VME Slot number', int),
+        intLevel = Simple('VME Interrupt Level', int))
         
 
     @classmethod

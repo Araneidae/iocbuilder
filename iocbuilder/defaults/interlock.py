@@ -1,18 +1,36 @@
 from iocbuilder import Substitution
-from iocbuilder.hardware import HostLink
-from iocbuilder.validators import TwoDigitInt
+from iocbuilder.arginfo import *
+
+from iocbuilder.modules.vacuumValve import vacuumValveRead
+from iocbuilder.modules.HostLink import HostLink
 
 class interlock(Substitution):
     Dependencies = (HostLink,)
+
+    # get the device and port from the vacuumValveReadTemplate object, then
+    # init 
+    def __init__(self, crate, interlock, desc, addr, ilks = ['']):
+        args = dict(        
+            zip(self._ilks, ilks + [''] * 16),
+            device = crate.args["device"],
+            port = carte.args["port"],
+            interlock = interlock,
+            desc = desc,
+            addr = "%02d" % addr)
+        self.__super.__init__(**args)
+
     # __init__ arguments
-    ArgInfo = [
-        ('crate', None, 'vacuumValveReadTemplate object'),
-        ('interlock', str, 'interlock suffix (e.g. :INT1)'),
-        ('desc', str, 'Permit description (e.g. Front end permit)'),
-        ('addr', TwoDigitInt, 'Address (1 to 10) in PLC') ] + [ 
-        ('ilk%X'%num, str, 'Interlock description (e.g. Water OK)', '') 
-             for num in range(16)
-    ]
+    ArgInfo = makeArgInfo(__init__,
+        crate     = Ident ('vacuumValveReadTemplate object', vacuumValveRead),
+        interlock = Simple('interlock suffix (e.g. :INT1)', str),
+        desc      = Simple('Permit description (e.g. Front end permit)', str),
+        addr      = Simple('Address (1 to 10) in PLC', int),
+        ilks      = List  ('Interlock description (e.g. Water OK)', 16, Simple, str))
+
     # Substitution attributes  
-    Arguments = ['device','port'] + [x[0] for x in ArgInfo[1:]]
+    _ilks = [ 'ilk%X' % i for i in range(16) ]
+    Arguments = ['device','port'] + ArgInfo.Names(without = 'crate') + _ilks
     TemplateFile = 'interlock.template'
+    
+#    EdmEmbedded = ("interlock-embed.edl","device=%(device)s%(interlock)s")    
+#    EdmScreen = ("interlocks.edl","device=%(device)s%(interlock)s")    

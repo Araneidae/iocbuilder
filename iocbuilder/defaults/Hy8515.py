@@ -1,10 +1,12 @@
-from iocbuilder import Device, makeArgInfo
+from iocbuilder import Device
+from iocbuilder.arginfo import *
+
 from iocbuilder.modules.ipac import IpDevice, IpCarrier
 
 class Hy8515(IpDevice):
     LibFileList = ['drvHy8515']
     DbdFileList = ['Hy8515']
-    
+
     def __init__(self, carrier, ipslot, cardid=None,
             fifo_threshold = None, poll_delay = None,
             halfduplex = 0, delay845 = 0):
@@ -24,17 +26,18 @@ class Hy8515(IpDevice):
         self.delay845 = delay845
         
         self.cardname = 'CARD%d' % self.cardid
-        
-    ArgInfo = makeArgInfo(__init__,
-        carrier        = (IpCarrier, 'Carrier card'),
-        ipslot         = (int, 'IP slot in carrier'),
-        cardid         = (int, 'cardid?'),
-        fifo_threshold = (int, 'fifo_threshold?'),
-        poll_delay     = (int, 'poll_delay?'),
-        halfduplex     = (int, 'halfduplex?'),
-        delay845       = (int, 'delay845?'))
-    
 
+    # __init__ arguments
+    ArgInfo = makeArgInfo(__init__,
+        carrier        = Ident ('Carrier card', IpCarrier),
+        ipslot         = Simple('IP slot in carrier', int),
+        cardid         = Simple('cardid?', int),
+        fifo_threshold = Simple('fifo_threshold?', int),
+        poll_delay     = Simple('poll_delay?', int),
+        halfduplex     = Simple('halfduplex?', int),
+        delay845       = Simple('delay845?', int))
+    
+                
     def Initialise(self):
         print '%(cardname)s = Hy8515Configure(' \
             '%(cardid)d, %(IPACid)s, %(ipslot)d, %(vector)d, ' \
@@ -56,6 +59,7 @@ class _Hy8515channel(Device):
 
         self.__super.__init__()
         assert 0 <= channel  and  channel < 8, 'Channel out of range'
+        assert parity in 'NEO', 'Invalid parity'
 
         self.channel = channel
 
@@ -72,17 +76,18 @@ class _Hy8515channel(Device):
         self.device = '/ty/%d/%d' % (card.cardid, channel)
 
         self.port = self
-        
+
+    # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
-        card     = (Hy8515, 'Hy8515 card'),
-        channel  = (int, 'Channel number'),
-        readbuf  = (int, 'Read buffer'),
-        writebuf = (int, 'Write buffer'),
-        speed    = (int, 'Speed'),
-        parity   = (str, 'Parity: N,E,O'),
-        stopbits = (int, 'Stop bits'),
-        numbits  = (int, 'Number of bits'),
-        flowctrl = (str, 'Flow Control'))
+        card     = Ident ('Hy8515 card', Hy8515),
+        channel  = Simple('Channel number', int),
+        readbuf  = Simple('Read buffer', int),
+        writebuf = Simple('Write buffer', int),
+        speed    = Simple('Speed', int),
+        parity   = Choice('Parity: N,E,O', ['N', 'E', 'O']),
+        stopbits = Simple('Stop bits', int),
+        numbits  = Simple('Number of bits', int),
+        flowctrl = Simple('Flow Control', str))
 
     def SetParameters(self,
             speed=None, parity=None, stopbits=None,

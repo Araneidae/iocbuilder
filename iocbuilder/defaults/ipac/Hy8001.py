@@ -1,7 +1,8 @@
 # Hardware implementation for 8001 digital IO card.
 
-from iocbuilder import records, RecordFactory, makeArgInfo
-from IpCarrier import IpCarrier
+from iocbuilder import records, RecordFactory
+from Carrier import IpCarrier
+from iocbuilder.arginfo import *
 
 
 # List of standard names to be exported
@@ -28,8 +29,8 @@ class Hy8001(IpCarrier):
                  intLevel = 0,
                  clock = 0,
                  scan = 0,
-                 invertin = 0,
-                 invertout = 0,
+                 invertin = False,
+                 invertout = False,
                  ip_support = False):
         self.__super.__init__(slot, ip_support)
 
@@ -41,8 +42,8 @@ class Hy8001(IpCarrier):
         self.clock = clock
         self.scan = scan
         self.direction = direction
-        self.invertin = invertin
-        self.invertout = invertout
+        self.invertin = int(invertin)
+        self.invertout = int(invertout)
 
         self.vector = self.AllocateIntVector()
 
@@ -55,15 +56,16 @@ class Hy8001(IpCarrier):
             self.low_bit = 0
 
     ArgInfo = makeArgInfo(__init__,
-        slot       = (int, 'VME Slot number'),
-        direction  = (int, '0 for input, 1 for output, 2 for mixed'),
-        cardid     = (int, 'cardid?'),
-        intLevel   = (int, 'intLevel?'),
-        clock      = (int, 'clock?'),
-        scan       = (int, 'scan?'),
-        invertin   = (int, 'invertin?'),
-        invertout  = (int, 'invertout?'),
-        ip_support = (bool, 'ip_support?'))
+        slot       = Simple('VME Slot number', int),
+        direction  = Enum  ('Direction of digital IO', 
+            ['Input', 'Output', 'Mixed']),
+        cardid     = Simple('cardid?', int),
+        intLevel   = Simple('intLevel?', int),
+        clock      = Simple('clock?', int),
+        scan       = Simple('scan?', int),
+        invertin   = Simple('invertin?', bool),
+        invertout  = Simple('invertout?', bool),
+        ip_support = Simple('ip_support?', bool))
 
 
     # define the initialisation code and dbd support for the library.

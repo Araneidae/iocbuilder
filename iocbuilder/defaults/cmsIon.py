@@ -1,5 +1,6 @@
-from iocbuilder import Device, Substitution, hardware, makeArgInfo
+from iocbuilder import Device, Substitution, hardware
 from iocbuilder.hardware import streamDeviceVersion, AutoProtocol
+from iocbuilder.arginfo import *
 
 __all__ = ['cmsIon']
 
@@ -8,9 +9,11 @@ class cmsIon(Substitution, AutoProtocol):
     if streamDeviceVersion == 1:
         TemplateFile  = 'cmsIon-v1.template'
         ProtocolFiles = ['cmsIon-v1.protocol']
+        _PortType = Device
     else:
         TemplateFile  = 'cmsIon.template'
         ProtocolFiles = ['cmsIon.protocol']
+        from iocbuilder.modules.asyn import AsynOctetInterface as _PortType
 
     def __init__(self, device, port, high=50, hihi=100):
         '''Creates support for radiation safety monitoring system.'''
@@ -20,10 +23,10 @@ class cmsIon(Substitution, AutoProtocol):
             device = device, port = stream.port, high = high, hihi = hihi)
         
     ArgInfo = makeArgInfo(__init__,
-        device = (str, 'Device Prefix'),
-        port = (Device, 'Asyn port'),
-        high = (float, 'Integrated dose (since reset) HIGH value'),
-        hihi = (float, 'Integrated dose (since reset) HIHI value'))
+        device = Simple('Device Prefix', str),
+        port   = Ident ('Asyn port', _PortType),
+        high   = Simple('Integrated dose (since reset) HIGH value', float),
+        hihi   = Simple('Integrated dose (since reset) HIHI value', float))
     Arguments = ArgInfo.Names()
 
         
