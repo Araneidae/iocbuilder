@@ -39,9 +39,11 @@ class offset(Substitution):
 
 # Templates for event statistics
 
-class MonitorEvent(event_stats):
+def MonitorEvent(eventMap, **kargs):
+    '''Monitors the event receiver event specified by eventMap. 
+    '''
     # "Official" event names as defined by Angelos
-    _EventNames = {
+    EventNames = {
         0x20: 'TZERO',      0x21: 'LB0DITRG',
         0x24: 'LINACPRE',   0x25: 'LINACHBT',
         0x26: 'LBDITRG',    0x2A: 'BRHWTRG',
@@ -50,18 +52,13 @@ class MonitorEvent(event_stats):
         0x3C: 'SRINJ',      0x40: 'SRDITRG',
         0x53: 'TOPUPON',    0x54: 'TOPUPOFF',
         0x5D: 'BEAMLOSS',   0x5E: 'MPSTRIP',
-        0x7D: 'TSRESET' }        
+        0x7D: 'TSRESET' }
 
-    def __init__(self, eventMap, **kargs):
-        '''Monitors the event receiver event specified by eventMap. 
-        '''
-        evnum = eventMap.SoftEvent(**kargs).event
-        eventMap.er.SetDevice()
-        self.__super.__init__(
-            SYSTEM = GetDevice(),
-            EVNAME = self._EventNames[evnum],
-            EVNUM  = evnum)
-        UnsetDevice()
+    evnum = eventMap.SoftEvent(**kargs).event
+    return event_stats(
+        SYSTEM = eventMap.er.GetDevice(),
+        EVNAME = EventNames[evnum],
+        EVNUM  = evnum)
 
         
 class EvrAlive(evr_alive):
@@ -69,8 +66,6 @@ class EvrAlive(evr_alive):
         # Ensure that we receive a Linac heartbeat soft event.
         self.softEvent = \
             er.EventMap('LINAC-HBT', er.LINAC_HBT).SoftEvent(**kargs)
-        er.SetDevice()
         self.__super.__init__(
-            SYSTEM = GetDevice(),
+            SYSTEM = er.GetDevice(),
             EVENT  = self.softEvent.event)
-        UnsetDevice()

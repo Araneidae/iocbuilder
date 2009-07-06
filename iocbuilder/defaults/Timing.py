@@ -281,6 +281,14 @@ class EventReceiver(ModuleBase):
     def SetDevice(self):
         SetDevice(self.__component, self.__id)
 
+    def GetDevice(self):
+        # Quick and dirty hack (with side effects) to retrieve device name.
+        # We should do this in a completely different way...
+        self.SetDevice()
+        result = GetDevice()
+        UnsetDevice()
+        return result
+
 
     # Standard timing system names
     T_ZERO      = 0x20  # Start of booster cycle sequence.
