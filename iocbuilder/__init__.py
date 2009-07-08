@@ -28,10 +28,9 @@ hardware = support.CreateModule('iocbuilder.hardware')
 
 __all__ = ['hardware']
 __all__ += support.ExportModules(globals(),
-    'support', 'dbd',
+    'configure', 'support', 'dbd',
     'libversion', 'recordbase', 'recordset', 'iocinit', 'device',
-    'fanout', 'recordnames', 'iocwriter', 'arginfo',
-    'configure')    # Best to load configure module last
+    'fanout', 'recordnames', 'iocwriter', 'arginfo')
 
 
 # Hacks for configure support.  The Configure class is allowed to add to the

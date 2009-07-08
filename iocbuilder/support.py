@@ -7,7 +7,7 @@ import fnmatch
 import types
 import re
 
-__all__ = ['Singleton', 'AutoRegisterClass', 'SameDirFile', 'filter_dict']
+__all__ = ['Singleton', 'AutoRegisterClass', 'SameDirFile', 'quote_c_string']
 
 
 def ExportModules(globals, *modulenames):
@@ -89,9 +89,9 @@ def quote_c_string(s):
                 '\t': r'\t',    '\n': r'\n',    '\r': r'\r' }
             return table[ch]
         except KeyError:
-            return r'\x%02x' % ord(ch)
+            return r'\%03o' % ord(ch)
 
-    return '"%s"' % unsafe_chars.sub(replace, s)
+    return '"%s"' % unsafe_chars.sub(replace, str(s))
 
 
 

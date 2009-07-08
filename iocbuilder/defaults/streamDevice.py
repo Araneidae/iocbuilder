@@ -1,6 +1,6 @@
 import os.path
-from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase, Configure
-from iocbuilder import records, hardware
+from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase
+from iocbuilder import records, hardware, quote_c_string
 
 from asyn import AsynSerial
 
@@ -87,18 +87,12 @@ class ProtocolFile(Device):
         protocol_dirs = set(
             [os.path.dirname(file) for file in self.__ProtocolFiles])
         if self.__ForceCopy or len(protocol_dirs) > 1:
-            protocol_dir = IocDataFile.GetDataPath()
+            protocol_dirs = [IocDataFile.GetDataPath()]
             for file in self.__ProtocolFiles:
                 # Grab a copy of each data file.
                 IocDataFile(file)
-        else:
-            protocol_dir = protocol_dirs.pop()
-        import sys
-        print >>sys.stderr, '!!! Fix this?'
-        if Configure.architecture == "linux-x86":
-            print 'epicsEnvSet "STREAM_PROTOCOL_PATH", "%s"' % protocol_dir        
-        else:
-            print 'STREAM_PROTOCOL_DIR = "%s"' % protocol_dir
+        print 'epicsEnvSet "STREAM_PROTOCOL_PATH", %s' % \
+            quote_c_string(':'.join(protocol_dirs))
 
     def __str__(self):
         return self.ProtocolName

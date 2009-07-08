@@ -4,10 +4,6 @@
 # are exported from epics for configuring global IOC parameters, and the
 # following methods are provided for general use:
 #
-#   Reset()
-#       This is called internally when starting a new IOC and ensures that
-#       all values are restored to their defaults. 
-#
 #   PrintHeader()
 #       Prints the preamble of an IOC initialisation file, including most of
 #       the IOC configuration settings defined by the Set... functions.
@@ -31,9 +27,10 @@
 import os
 import shutil
 
-from support import Singleton, autosuper_object
+from support import Singleton, autosuper_object, quote_c_string
 from liblist import Hardware
 from libversion import ModuleVersion
+from configure import TargetOS, Call_TargetOS
 import paths
 
 
@@ -44,11 +41,30 @@ def export(function):
     return function
 
 
+def quote_IOC_string_none(text):
+    assert False, 'Architecture not specified'
+
+_safe_chars = set([ord('\t')]) | set(range(ord(' '), 128))
+def quote_IOC_string_linux(text):
+    # Quoting in the linux EPICS IOC shell is a complete mess.  No
+    # non-printing characters are supported, as there is no quotation
+    # mechanism, and quote characters need to be handled specially anyway!
+    text = str(text)
+    unsafe_chars = set(map(ord, text)) - _safe_chars
+    assert not unsafe_chars, \
+        'Unquotable characters %s in message' % unsafe_chars
+    quote = '\''
+    return quote + '\'"\'"\''.join(text.split(quote)) + quote
+    
+
+quote_IOC_string_vxWorks = quote_c_string
+
+
 class iocInit(Singleton):
     DefaultEnvironment = { 'EPICS_TS_MIN_WEST' : 0 }
     
     def __init__(self):
-        self.__TargetDir = os.getcwd()
+        self.__TargetDir = None
         self.__Gateway = None
         self.__ClockRate = None
         
@@ -69,8 +85,44 @@ class iocInit(Singleton):
         from modules.EPICS_BASE import epicsBase
         self.__IocLib = epicsBase()
 
+        # Now the architecture has been set (assuming it has), set up the
+        # appropriate IOC string quoting function.
+        global quote_IOC_string
+        quote_IOC_string = globals().get(
+            'quote_IOC_string_%s' % TargetOS(), quote_IOC_string_none)
+
     def SetIocName(self, ioc_name):
         self.__IocLib.SetIocName(ioc_name)
+
+
+    def PrintHeader_vxWorks(self, ioc_root):
+        # Set up the working home directory.  If a target directory has
+        # been specified then use that.  Otherwise, if __TargetDir is not
+        # set then assume that st.cmd will be started in the correct
+        # target directory.
+        if self.__TargetDir is None:
+            # Remember the working directory on entry.
+            # The length of HOME_DIR is equal to MAX_FILENAME_LENGTH
+            # (Tornado2.2/host/include/host.h) which is equal to
+            # _POSIX_PATH_MAX+1.
+            print '# Pick up working directory on entry.'
+            print 'HOME_DIR = malloc(256)'
+            if ioc_root:
+                print 'cd %s' % quote_IOC_string(ioc_root)
+            print 'ioDefPathGet(HOME_DIR)'
+        print
+        print 'tyBackspaceSet(127)'
+
+        
+    def cd_home_vxWorks(self):
+        print 'cd HOME_DIR'
+    def cd_home_linux(self):
+        print 'cd "${HOME_DIR}"'
+    def cd_home(self):
+        if self.__TargetDir:
+            print 'cd %s' % quote_IOC_string(self.__TargetDir)
+        else:
+            Call_TargetOS(self, 'cd_home')
 
 
     def PrintHeader(self, ioc_root):
@@ -78,34 +130,14 @@ class iocInit(Singleton):
         # we do anything else, just in case something else we call cares.
         print
         for key, value in self.__EnvList.items():
-            print 'putenv "%s=%s"' % (key, value)
+            print 'epicsEnvSet "%s", %s' % (key, quote_IOC_string(value))
 
-        # Set up the working home directory.  If a target directory has
-        # been specified then use that.  Otherwise, if __TargetDir is not
-        # set then assume that st.cmd will be started in the correct
-        # target directory.
         print
-        if self.__TargetDir:
-            print '# Fixed working directory'
-            print 'homeDir = "%s"' % self.__TargetDir
-        else:
-            # Remember the working directory on entry.
-            # The length of homeDir is equal to MAX_FILENAME_LENGTH
-            # (Tornado2.2/host/include/host.h) which is equal to
-            # _POSIX_PATH_MAX+1.
-            print '# Pick up working directory on entry.'
-            print 'homeDir = malloc(256)'
-            if ioc_root:
-                print 'cd "%s"' % ioc_root
-            print 'ioDefPathGet(homeDir)'
-
-        # vxWorks and Diamond specific configuration hacks
-        print
-        print 'tyBackspaceSet(127)'
+        Call_TargetOS(self, 'PrintHeader', ioc_root)
         if self.__ClockRate:
-            print 'sysClkRateSet(%d)' % self.__ClockRate
+            print 'sysClkRateSet %d' % self.__ClockRate
         if self.__Gateway:
-            print 'routeAdd "0", "%s"' % self.__Gateway
+            print 'routeAdd "0", %s' % quote_IOC_string(self.__Gateway)
         print 
 
 
@@ -113,9 +145,9 @@ class iocInit(Singleton):
         print
         print '# Final ioc initialisation'
         print '# ------------------------'
-        print 'cd homeDir'
+        self.cd_home()
         for database in self.__DatabaseNameList:
-            print 'dbLoadRecords "%s"' % database
+            print 'dbLoadRecords %s' % quote_IOC_string(database)
 
         if self.__IocCommands_PreInit:
             print
@@ -288,10 +320,11 @@ class IocDataStream(_IocDataBase):
     '''This is used to package up a data stream which will be written to a
     freshly generated file at the end of the IOC build process.'''
 
-    def __init__(self, name):
+    def __init__(self, name, mode=None):
         self.content = []
         self.__super.__init__(name)
         self.written = False
+        self.mode = mode
 
     def write(self, text):
         assert not self.written, \
@@ -301,8 +334,12 @@ class IocDataStream(_IocDataBase):
     def _CopyFile(self, filename):
         output = file(filename, 'w')
         for content in self.content:
+            if callable(content):
+                content = content()
             output.write(content)
         output.close()
+        if self.mode is not None:
+            os.chmod(filename, self.mode)
         self.written = True
 
     

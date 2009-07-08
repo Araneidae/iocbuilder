@@ -3,7 +3,9 @@
 
 import os.path
 
-from iocbuilder import Device
+from iocbuilder import Device, Architecture
+from iocbuilder.configure import Call_TargetOS
+from iocbuilder.iocinit import iocInit
 
 
 class epicsBase(Device):
@@ -15,13 +17,16 @@ class epicsBase(Device):
     def SetIocName(self, ioc_name):
         self.ioc_name = ioc_name
 
+        
+    def InitialiseOnce_vxWorks(self):
+        print 'ld < bin/%s/%s.munch' % (Architecture(), self.ioc_name)
+
     def InitialiseOnce(self):
-        dbd_name = self.ioc_name
-        print 'cd homeDir'
-        print 'ld < bin/%s/%s.munch' % (self.Arch(), self.ioc_name)
-        print 'dbLoadDatabase "dbd/%s.dbd"' % dbd_name
+        iocInit.cd_home()
+        Call_TargetOS(self, 'InitialiseOnce')
+        print 'dbLoadDatabase "dbd/%s.dbd"' % self.ioc_name
         print '%s_registerRecordDeviceDriver(pdbbase)'% \
-            dbd_name.replace('-', '_')
+            self.ioc_name.replace('-', '_')
 
 
 def EpicsBasePath():

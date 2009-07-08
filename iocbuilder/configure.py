@@ -6,7 +6,31 @@ from support import Singleton
 
 
 __all__ = [
-    'Configure', 'LoadVersionFile', 'ConfigureIOC', 'ConfigureTemplate']
+    'Configure', 'LoadVersionFile', 'ConfigureIOC', 'ConfigureTemplate',
+    'Architecture', 'TargetOS']
+
+
+def Architecture():
+    return Configure.architecture
+
+    
+def TargetOS():
+    '''Returns the target OS for the configured architecture, currently
+    either linux or vxWorks.'''
+    return Architecture().split('-', 1)[0]
+
+    
+def Call_TargetOS(self, name, *args, **kargs):
+    '''Helper function for calling a target OS specific function.  Looks up
+        self.<name>_<TargetOS()>
+    and calls it with the given arguments if found, otherwise returns None.'''
+    targetOS = TargetOS()
+    try:
+        method = getattr(self, '%s_%s' % (name, targetOS))
+    except AttributeError:
+        return None
+    else:
+        return method(*args, **kargs)
 
     
 class Configure(Singleton):
@@ -18,7 +42,7 @@ class Configure(Singleton):
             record_names = None,
             ioc_writer   = None,
             dynamic_load = True,
-            architecture = None,
+            architecture = 'none',
             register_dbd = False):
 
         assert not self.__called, 'Cannot call Configure more than once!'
@@ -30,6 +54,8 @@ class Configure(Singleton):
         import recordnames
         import iocwriter
 
+        self.architecture = architecture
+        
         # Configure where ModuleVersion looks for modules.
         if module_path is None:
             module_path = paths.module_path
@@ -43,7 +69,6 @@ class Configure(Singleton):
         # Configure core ioc parameters.
         self.dynamic_load = dynamic_load
         self.register_dbd = register_dbd
-        self.architecture = architecture
 
         # Both recordnames and iocwriter can add names to the global names.
         if record_names is None:

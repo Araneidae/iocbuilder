@@ -12,7 +12,7 @@ import os.path
 from liblist import Hardware
 from libversion import ModuleBase
 from dbd import LoadDbdFile
-from configure import Configure
+from configure import Configure, Architecture
 from support import Singleton
 
 
@@ -20,20 +20,16 @@ from support import Singleton
 __all__ = ['Device', 'RecordFactory']
 
 
-# Wrapper for currently configured architecture
-def _Arch():
-    return Configure.architecture
-
 
 # Wrapper routines for local paths to library, object and dbd files.
 def _LibPath(file):
     if Configure.dynamic_load:
-        return os.path.join('bin', _Arch(), file)
+        return os.path.join('bin', Architecture(), file)
     else:
-        return os.path.join('lib', _Arch(), 'lib%s.a' % file)
+        return os.path.join('lib', Architecture(), 'lib%s.a' % file)
 
 def _BinPath(file):
-    return os.path.join('bin', _Arch(), file)
+    return os.path.join('bin', Architecture(), file)
 
 def _DbdPath(file):
     return os.path.join('dbd', '%s.dbd' % file)
@@ -228,9 +224,6 @@ class Device(ModuleBase):
         count > 0 then a contiguous block of that many interrupt vectors is
         allocated.'''
         return Hardware.AllocateIntVector(count)
-
-    # Wrapper for currently configured architecture.
-    Arch = staticmethod(_Arch)
 
 
 

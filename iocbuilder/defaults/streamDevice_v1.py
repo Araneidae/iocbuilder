@@ -1,6 +1,6 @@
 import os.path
 from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase
-from iocbuilder import records, hardware
+from iocbuilder import records, hardware, quote_c_string
 
 
 __all__ = [
@@ -95,7 +95,8 @@ class ProtocolFile(Device):
                 IocDataFile(file)
         else:
             protocol_dir = protocol_dirs.pop()
-        print 'STREAM_PROTOCOL_DIR = "%s"' % protocol_dir
+        print 'epicsEnvSet "STREAM_PROTOCOL_DIR", %s' % \
+            quote_c_string(protocol_dir)
 
     def __str__(self):
         return self.ProtocolName
