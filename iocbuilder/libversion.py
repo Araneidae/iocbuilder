@@ -301,8 +301,12 @@ class ModuleBase(object):
 
     # Set of instantiated modules as ModuleVersion instances
     _ReferencedModules = set()
-    # Set of subclasses (direct or indirect)
+    # List of subclasses (direct or indirect)
     _ModuleBaseClasses = []
+    # List of instantiated classes
+    _ReferencedClasses = []
+    # List of all instances
+    _ModuleBaseInstances = []
 
     @classmethod
     def _AutoInstantiate(cls):
@@ -324,13 +328,16 @@ class ModuleBase(object):
         instantiated.'''
         for dependency in cls.Dependencies:
             dependency._AutoInstantiate()
+        cls._ReferencedClasses.append(cls)
         cls._ReferencedModules.add(cls.ModuleVersion)
 
     def __new__(cls, *args, **kargs):
         if not cls.__dict__['_Instantiated']:
             cls._Instantiated = True
             cls.UseModule()
-        return cls.__super.__new__(cls, *args, **kargs)
+        self = cls.__super.__new__(cls, *args, **kargs)
+        cls._ModuleBaseInstances.append(self)
+        return self
 
         
     @classmethod
@@ -349,6 +356,16 @@ class ModuleBase(object):
         '''Returns the set of all modules that have been instantiated.  The
         objects returned are ModuleVersion instances.'''
         return cls._ReferencedModules
+
+        
+    @classmethod
+    def CallForAllInstances(cls, method_name, *args, **kargs):
+        '''The given method is called for all instances for which the method
+        is defined.'''
+        for instance in cls._ModuleBaseInstances:
+            method = getattr(instance, method_name, None)
+            if method:
+                method(*args, **kargs)
 
 
 def autodepends(*devices):

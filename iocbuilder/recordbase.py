@@ -11,6 +11,14 @@ __all__ = ['PP', 'CP', 'MS', 'NP', 'ImportRecord', 'Parameter']
 
 
 
+def _unbind(function):
+    '''Converts a bound function to an unbound function which can then be
+    rebound: the extra binding is passed as the first argument.'''
+    def wrapper(*args, **kargs):
+        return function(*args, **kargs)
+    return wrapper
+
+
 #---------------------------------------------------------------------------
 #
 #   Record class    
@@ -25,6 +33,30 @@ class Record(object):
         return recordnames.RecordNames.RecordName(name)
 
 
+    __MetadataHooks = []
+
+    @classmethod
+    def AddMetadataHook(cls, hook_cls, **hook_functions):
+        '''Called to add hooks for meta-data.  The hook class should provide
+        a function
+            hook_cls.PrintMetadata(record)
+        which will be called as the record is generated.  All the given
+        hook_functions will be exported as methods of the class which will be
+        called with the class instance as its first argument.'''
+        cls.__MetadataHooks.append(hook_cls)
+        for name, function in hook_functions.items():
+            setattr(cls, name, _unbind(function))
+
+
+    def __setattr(self, name, value):
+        # Because we have hooked into __setattr__, we need to dance a little
+        # to write names into our dictionary.
+        if name[:2] == '__':
+            self.__dict__['_Record' + name] = value
+        else:
+            self.__dict__[name] = value
+        
+    
     # Builds standard record name using the currently configured RecordName
     # hook.
     def __init__(self, type, validate, record, **fields):
@@ -35,11 +67,10 @@ class Record(object):
         
         # These assignment have to be directly into the dictionary to
         # bypass the tricksy use of __setattr__.
-        self.__dict__['_Record__type'] = type
-        self.__dict__['_Record__validate'] = validate
-        self.__dict__['_Record__fields'] = {}
-        self.__dict__['_Record__autosaves'] = set()
-        self.__dict__['name'] = self.RecordName(record)
+        self.__setattr('__type', type)
+        self.__setattr('__validate', validate)
+        self.__setattr('__fields', {})
+        self.__setattr('name', self.RecordName(record))
 
         # Support the special 'address' field as an alias for either INP or
         # OUT, depending on which of those exists.  We only set up this field
@@ -48,9 +79,9 @@ class Record(object):
             for field in ['INP', 'OUT']
             if self.ValidFieldName(field)]
         if len(address) == 1:
-            self.__dict__['_Record__address'] = address[0]
+            self.__setattr('address', address[0])
         else:
-            self.__dict__['_Record__address'] = 'address'
+            self.__setattr('address', 'address')
         
         # Make sure all the fields are properly processed and validated.
         for name, value in fields.items():
@@ -59,21 +90,14 @@ class Record(object):
         recordset.PublishRecord(self.name, self)
 
 
-    def Autosave(self, *fieldnames):
-        '''Enables named field(s) for autosave and restore.'''
-        for fieldname in fieldnames:
-            self.__validate.ValidFieldName(fieldname)
-            self.__autosaves.add(fieldname)
-
-
 
     # Call to generate database description of this record.
     def Print(self):
         '''Outputs record definition in .db file format.  Hooks for
         meta-data can go here.'''
         print
-        for field in self.__autosaves:
-            print '#%% autosave 0 %s' % field
+        for hook in self.__MetadataHooks:
+            hook(self)
         print 'record(%s, "%s")' % (self.__type, self.name)
         print '{'
         # Print the fields in alphabetical order.  This is more convenient
@@ -90,14 +114,6 @@ class Record(object):
             print '    field(%s, %s"%s")' % (k, padding, value)
         print '}'
 
-
-    def PrintAutosaves(self):
-        for fieldname in self.__autosaves:
-            print '%s.%s' % (self.name, fieldname)
-
-    def CountAutosaves(self):
-        return len(self.__autosaves)
-            
 
     # The string for a record is just its name.
     def __str__(self):
@@ -239,11 +255,6 @@ class _Link:
         '''Returns the value currently assigned to this field.'''
         return self.record._Record__fields[self.field]
 
-    def autosave(self):
-        self.record.Autosave(self.field)
-
-    def burt(self):
-        self.record.Burt(self.field)
 
 
 class Parameter:

@@ -41,7 +41,7 @@ class Configure(Singleton):
             module_path  = None,
             record_names = None,
             ioc_writer   = None,
-            dynamic_load = True,
+            dynamic_load = False,
             architecture = 'none',
             register_dbd = False):
 

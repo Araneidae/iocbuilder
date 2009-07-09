@@ -37,20 +37,9 @@ class RecordSet(Singleton):
         for record in sorted(self.__RecordSet.keys()):
             self.__RecordSet[record].Print()
 
-    def PrintAutosaves(self):
-        '''Output all autosaves to stdout.'''
-        for record in sorted(self.__RecordSet.keys()):
-            self.__RecordSet[record].PrintAutosaves()
-
     def CountRecords(self):
         '''Returns the number of published records.'''
-        return len(self.__RecordSet)
-
-    def CountAutosaves(self):
-        '''Returns the number of autosave entries.'''
-        return sum(record.CountAutosaves()
-            for record in self.__RecordSet.values())
-            
+        return len(self.__RecordSet)            
 
 
         

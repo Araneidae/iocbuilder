@@ -88,6 +88,57 @@ class WriteFile:
         sys.stdout = self.__stdout
 
 
+class DataDirectory:
+    '''Class to support the creation of data files, either dynamically
+    generated inline, or copied from elsewhere.  Designed to be passed down
+    to makefile building tasks.'''
+
+    def __init__(self, ioc_root, directory):
+        self.files = set()
+        self.ioc_root = ioc_root
+        self.directory = directory
+
+    def Path(self, filename = None, absolute = False):
+        if absolute:
+            join = [self.ioc_root, self.directory]
+        else:
+            join = [self.directory]
+        if filename is not None:
+            join.append(filename)
+        return os.path.join(*join)
+
+    def __AddFilename(self, filename):
+        assert '/' not in filename, 'Invalid target filename %s' % filename
+        assert filename not in self.files, \
+            'Filename %s already added' % filename
+
+    def OpenFile(self, filename):
+        '''Opens a new file in the target directory.'''
+        self.__AddFilename(filename)
+        return file(self.Path(filename, True), 'w')
+
+    def CopyFile(self, filename, target_name=None):
+        '''Copies the given file into the target directory, possibly giving
+        a new name.'''
+        if target_name is None:
+            target_name = os.path.basename(filename)
+        self.__AddFilename(target_name)
+        shutil.copyfile(filename, self.Path(target_name, True))
+
+        
+class Makefile:
+    '''Class to support the generation of makefiles.'''
+    
+    def __init__(self):
+        self.lines = []
+
+    def AddLine(self, line):
+        self.lines.append(line)
+
+    def Generate(self, ioc_root, directory):
+        pass
+
+
 class IocWriter:
     '''Base class for IOC writer.  A subclass of this class should be passed
     as an iocwriter option to the epics.Configure method.
@@ -106,9 +157,8 @@ class IocWriter:
         # Set up the appropriate methods for the actions required during IOC
         # writing.
 
-        # Printout of records, autosave files and subsititution files
+        # Printout of records and subsititution files
         self.PrintRecords = recordset.RecordSet.Print
-        self.PrintAutosaves = recordset.RecordSet.PrintAutosaves
         self.PrintSubstitutions = recordset.SubstitutionSet.Print
         self.SortedTemplateList = recordset.SubstitutionSet.SortedTemplateList
         # Alternative to mass expand substitution files at build time
@@ -116,7 +166,6 @@ class IocWriter:
             recordset.SubstitutionSet.ExpandSubstitutions
 
         self.CountRecords = recordset.RecordSet.CountRecords
-        self.CountAutosaves = recordset.RecordSet.CountAutosaves
         self.CountSubstitutions = recordset.SubstitutionSet.CountSubstitutions
 
         # Print st.cmd for IOC
@@ -371,7 +420,7 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
 
         
     def __init__(self, path, ioc_name,
-            make_boot = True, check_release = False):
+            make_boot = True, check_release = True):
         
         IocWriter.__init__(self, path)
 
@@ -393,7 +442,6 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
             self.WriteFile(('configure', filename), content % config_dict)
 
         self.TopMakefileList = ['configure']
-        self.ModuleList = set()
 
         self.__WriteIoc()
         self.__Close()
@@ -419,9 +467,7 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
 
         # In static build mode create the source directory and add all the
         # modules we use to the list of libraries.
-        if not configure.Configure.dynamic_load:
-            self.CreateSourceFiles(ioc, iocAppDir)
-            self.ModuleList.update(libversion.ModuleBase.ListModules())
+        self.CreateSourceFiles(ioc, iocAppDir)
 
         
     def __Close(self):
@@ -471,13 +517,8 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
     def CreateBootFiles(self, ioc, iocBootDir):
         # Create the st.cmd file with appropriate hooks.
         # Start by telling iocinit which .db files to load.
-        if self.CountAutosaves():
-            sys.stderr.write('Do this in autosave module!')
-            self.WriteFile(
-                (iocBootDir, '0.req'), self.PrintAutosaves, header=None)
-            # The autosave directory needs to be configured before writing
-            # the command file.
-            hardware.Autosave.SetAutosaveDir(iocBootDir)
+        libversion.ModuleBase.CallForAllInstances(
+            'GenerateBootFiles', None, DataDirectory(self.iocRoot, iocBootDir))
 
         if self.make_boot:
             st_cmd = 'st%s.cmd' % ioc
@@ -515,10 +556,10 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
 
 
     def SrcMakefile_linux(self, ioc):
-        print '%s_SRCS_Linux += %sMain.cpp' % (ioc, ioc)
+        print '%s_SRCS += %sMain.cpp' % (ioc, ioc)
         
     def SrcMakefile_vxWorks(self, ioc):
-        print '%s_OBJS_vxWorks += $(EPICS_BASE_BIN)/vxComLibrary' % ioc
+        print '%s_OBJS += $(EPICS_BASE_BIN)/vxComLibrary' % ioc
 
     def SrcMakefile(self, ioc):
         dbd = ioc
@@ -557,7 +598,7 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
 
 
     def ConfigureRelease(self):
-        for module in sorted(self.ModuleList):
+        for module in sorted(libversion.ModuleBase.ListModules()):
 # Something like this might be a good idea --
 #             if self.check_release:
 #                 module.CheckDependencies()
