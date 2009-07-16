@@ -3,10 +3,14 @@
 import inspect
 from libversion import ModuleBase
 
-__all__ = ['makeArgInfo', 'addArgInfo']
+__all__ = ['makeArgInfo', 'addArgInfo', 'filter_dict']
 
 
+def filter_dict(d, l):
+    '''Returns dictionary restricted to entries in given list.'''
+    return dict((n, d[n]) for n in l)
 
+    
 class ArgInfo(object):
     '''This function produces an ArgInfo list for the xml frontend to 
     iocbuilder. It uses the arguments and defaults from the supplied init
@@ -33,7 +37,7 @@ class ArgInfo(object):
 
     def __init__(self, __source=None, __optional=[], __method=True, **descs):
         self.descriptions = descs
-        self.optional_names = __optional
+        self.optional_names = list(__optional)
 
         if callable(__source):
             # First get the names and defaults from the given function
@@ -52,19 +56,19 @@ class ArgInfo(object):
 
             if varkw:
                 # Add any names in descs that we've not already accounted for
-                # to the list of required names.  We sort the list so that
+                # to the list of optional names.  We sort the list so that
                 # the ordering is at least predictable.
                 self.required_names += sorted(list(
                     set(descs) - set(names) - set(__optional)))
             assert varkw or not __optional, \
-                'Unusable optional arguments: %s' % __optional
+                'Unusable optional arguments: %s' % self.optional_names
         else:
             # Somewhat special case for taking the arguments from a list of
             # names.  These are treated as all mandatory.
             if __source:
                 self.required_names = list(__source)
             else:
-                self.required_names = sorted(set(descs.keys()) - set(__optional))
+                self.required_names = sorted(set(descs) - set(__optional))
             self.default_names = []
             self.default_values = []
 
@@ -97,8 +101,6 @@ class ArgInfo(object):
             'Arguments %s not described' % (all_names - set_descs)
         assert set_descs <= all_names, \
             'Descriptions for unknown arguments %s' % (set_descs - all_names)
-            
-
         
     def Names(self, without=[]):
         '''Returns list of all possible argument names.  If excludes is given
@@ -148,35 +150,35 @@ class ArgType(object):
         self.desc = str(desc)
         self.typ = typ
         for k in extras:
-            assert k in self._extras, "%s is not one of %s" % (k, self._extras)
+            assert k in self._extras, '%s is not one of %s' % (k, self._extras)
         self.__dict__.update(extras)        
             
 def Simple(desc, typ):
     # just a simple type
     assert typ in _simpleTypes, \
-        "%s is not a supported simple type %s" % (typ, _simpleTypes)    
-    desc = "%s %s" % (desc, typ)
+        '%s is not a supported simple type %s' % (typ, _simpleTypes)    
+    desc = '%s %s' % (desc, typ)
     return ArgType(desc, typ)
     
 def Choice(desc, values, labels = None):
     # a choice of different values, with optional different labels
     typ = type(values[0])
     assert typ in _simpleTypes, \
-        "%s is not a supported simple type %s" % (typ, _simpleTypes)     
+        '%s is not a supported simple type %s' % (typ, _simpleTypes)     
     for v in values:
         assert typ == type(v), \
-            "Value '%s' doesn't have same type as '%s'" % (v, values[0])
-    desc = "%s %s\nValues:\n\t" % (desc, typ)
+            'Value "%s" doesn\'t have same type as "%s"' % (v, values[0])
+    desc = '%s %s\nValues:\n ' % (desc, typ)
     if labels is None:
-        desc += "\n\t".join(map(str,values))
-        return ArgType(typ, desc, labels = values)
+        desc += '\n '.join(map(str,values))
+        return ArgType(desc, typ, labels = values)
     else:
         assert len(values) == len(labels), \
-            "Labels %s do not have the same length as values %s" % \
+            'Labels %s do not have the same length as values %s' % \
             (labels, values)
-        argdescs = [ "%s: %s" % x for x in zip(labels, values) ]        
-        desc += "\n\t".join(argdescs)
-        return ArgType(typ, desc, values = values, labels = labels)
+        argdescs = [ '%s: %s' % x for x in zip(labels, values) ]        
+        desc += '\n '.join(argdescs)
+        return ArgType(desc, typ, values = values, labels = labels)
 
 def Enum(desc, values):
     # a choice of different values, stores the index
@@ -185,15 +187,14 @@ def Enum(desc, values):
 def Ident(desc, typ):
     # a choice of identifiers of a particular type
     assert issubclass(typ, ModuleBase), \
-        "Identifier lookup only allowed on ModuleBase subclasses"
-    descs = "%s %s" % (desc, typ)        
-    return ArgType(typ, desc, ident = True)
+        '%s is not a ModuleBase subclass, can't do Ident lookup' % typ
+    desc = '%s %s' % (desc, typ)        
+    return ArgType(desc, typ, ident = True)
 
 def List(desc, num, func, *args, **kwargs):
     # list of argtypes
-    return [ func("%s %d"%(desc,i), *args, **kwargs) for i in range(num) ]
+    return [ func('%s %d'%(desc,i), *args, **kwargs) for i in range(num) ]
 
 def Sevr(desc):
     # choice of possible values for SEVR field
-    return Choice(desc, ["NO_ALARM","MINOR","MAJOR","INVALID"])
-
+    return Choice(desc, ['NO_ALARM','MINOR','MAJOR','INVALID'])

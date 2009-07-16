@@ -1,4 +1,4 @@
-from iocbuilder import Substitution
+from iocbuilder import Substitution, ModuleBase
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.digitelMpc import \
@@ -8,7 +8,7 @@ from iocbuilder.modules.mks937a import \
     mks937aImg, mks937aImgGroup, mks937aImgDummy, \
     mks937aPirg, mks937aPirgGroup
 from iocbuilder.modules.vacuumValve import \
-    vacuumValve_callback, vacuumValveGroup, dummyValve
+    valve, vacuumValveGroup, dummyValve
 
 class space(Substitution):
     '''Helper that packages up a series of ion pumps, gauges, imgs, pirgs and
@@ -26,7 +26,8 @@ class space(Substitution):
             # this is a gauge
             return '%s-VA-GAUGE-%s'%(ob.args['dom'],ob.args['id'])
 
-    def __init__(self, device, ionps, gauges, imgs, pirgs, valves):
+    def __init__(self, device, ionps = [None], gauges = [None], 
+            imgs = [None], pirgs = [None], valves = [None]):
         # these are the different types of component we deal with
         components = dict(
             ionp = (digitelMpcIonpGroup, dummyIonp),
@@ -41,7 +42,7 @@ class space(Substitution):
         # loop over the component types
         for component, (group, dummy) in components.items():
             # grab the list of objects of this type
-            l = locals()[component+'s']
+            l = [ x for x in locals()[component+'s'] if x != None ]
             # work out a prefix for this component type
             p = '%s-VA-%s-%02i' % (
                 device.split('-')[0], component.upper(), space.spacei)
@@ -80,7 +81,7 @@ class space(Substitution):
         gauges = List  ('Gauge objects', numobs, Ident, mks937aGauge),
         imgs   = List  ('Img objects',   numobs, Ident, mks937aImg),
         pirgs  = List  ('Pirg objects',  numobs, Ident, mks937aPirg),        
-        valves = List  ('Pirg objects',  numobs, Ident, vacuumValve_callback))
+        valves = List  ('Pirg objects',  numobs, Ident, valve))
 
     # Substutution attributes
     Arguments = ['device', 'ionp', 'gauge', 'img', 'pirg', 'valve']
@@ -88,3 +89,4 @@ class space(Substitution):
     
 #    EdmScreen = ('space','device=%(device)s')
 #    IdenticalSim = True    
+

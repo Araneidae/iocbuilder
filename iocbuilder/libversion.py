@@ -239,7 +239,7 @@ class ModuleBase(object):
             # Aggregate dependencies from subclasses.
             cls.__AggregateDependencies(bases, dict.get('Dependencies'))
             # Remember this new class
-            cls._ModuleBaseClasses.append(cls)
+            cls.ModuleBaseClasses.append(cls)
             # Finally mark this instance as not yet instantiated.
             cls._Instantiated = False
             
@@ -302,7 +302,7 @@ class ModuleBase(object):
     # Set of instantiated modules as ModuleVersion instances
     _ReferencedModules = set()
     # List of subclasses (direct or indirect)
-    _ModuleBaseClasses = []
+    ModuleBaseClasses = []
     # List of instantiated classes
     _ReferencedClasses = []
     # List of all instances

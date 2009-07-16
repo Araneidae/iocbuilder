@@ -24,7 +24,8 @@ class basic_asyn_motor(Substitution):
             BDST = '', BVEL = '', BACC = '', PREC = 3, EGU = 'mm', 
             DHLM = 10000, DLLM = -10000, HLSV = 'MAJOR', INIT = '', 
             SREV = 1000, RRES = '', TWV = 0.1, ERES = '', JAR = 1000, 
-            UEIP = False, OFF = 0.0, RDBD = '', FOFF = 0):
+            UEIP = False, OFF = 0.0, RDBD = '', FOFF = 0, **args):
+        locals().update(args)
         # Default VMAX to VELO
         if VMAX is not None:
             VMAX = VELO
@@ -84,7 +85,7 @@ class motorUtil(Substitution, Device):
 
     def __init__(self, P):
         self.P = P
-        self.__super.safe__init__(**locals())
+        self.__super.__init__(P = P)
     
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
@@ -96,4 +97,4 @@ class motorUtil(Substitution, Device):
 #    IdenticalSim = True  
 
     def Initialise(self):
-        print 'motorUtilInit("%(P)s")'%self.ArgValues
+        print 'motorUtilInit("%(P)s")' % self.__dict__

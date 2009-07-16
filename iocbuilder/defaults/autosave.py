@@ -1,8 +1,8 @@
 # Support for autosave/restore.  This needs to be tied into record support
 # for programmer suppport.
 
-import os.path
-from iocbuilder import Device, Substitution
+import os.path, sys
+from iocbuilder import Device, Substitution, Call_TargetOS
 from iocbuilder.recordbase import Record
 
 __all__ = ['Autosave', 'SetAutosaveServer']
@@ -22,12 +22,13 @@ class Autosave(Device):
     LibFileList = ['autosave']
     DbdFileList = ['asSupport']
 
-    def __init__(self, iocName, debug=0):
+    def __init__(self, iocName, debug=0, skip_1=False):
         self.__super.__init__()
 
-        Autosave.autosave_dir = None
+        self.autosave_dir = None
         self.__iocName = iocName
         self.__debug = debug
+        self.skip_1 = skip_1
 
         _AutosaveFile(device = iocName, file = '0')
         _AutosaveStatus(device = iocName)
@@ -52,46 +53,58 @@ class Autosave(Device):
             fieldset.add(fieldname)
 
 
-    def Initialise(self):
-        print '# Autosave and restore initialisation'
+    def Initialise_vxWorks(self):
         print 'hostAdd "%s", "%s"' % (self.AutosaveServer, self.AutosaveIp)
         print 'nfsAuthUnixSet "%s", %d, %d, 0, 0' % (
-            self.AutosaveServer, 1015, 500)  # gid for mga83, pid for dcs
-        print 'nfsMount "%s", "%s", "/autosave"' % (
+            self.AutosaveServer, 37134, 500)  # gid for epics_user, pid for dcs
+        print 'save_restoreSet_NFSHost "%s", "%s"' % (
             self.AutosaveServer, self.AutosavePath)
+        print 'requestfilePath = malloc(256)'
+        print 'sprintf requestfilePath, "%%s/%s", HOME_DIR' % \
+            self.autosave_dir
+        print 'set_requestfile_path requestfilePath'
+
+    def Initialise_linux(self):
+        # whatever do for mounts...
+        print 'set_requestfile_path "${HOME_DIR}/"%s' % \
+            quote_IOC_string(self.autosave_dir)
+
+    def Initialise(self):
+        print '# Autosave and restore initialisation'
+        Call_TargetOS(self, 'Initialise')
+        print 'set_savefile_path "%s/%s"' % (
+            self.AutosavePath, self.__iocName)
         print
         print 'save_restoreSet_status_prefix "%s"' % self.__iocName
         print 'save_restoreSet_Debug %d' % self.__debug
-        print 'save_restoreSet_NumSeqFiles 0'
-        print 'save_restoreDatedBackupFiles=0'
-        print 'set_pass0_restoreFile "0.sav"'
-        print 'set_pass1_restoreFile "0.sav"'
-        
-        if self.autosave_dir:
-            print 'requestfilePath = malloc(256)'
-            print 'sprintf requestfilePath, "%%s/%s", HOME_DIR' % \
-                self.autosave_dir
-            print 'set_requestfile_path requestfilePath'
-        else:
-            print 'set_requestfile_path HOME_DIR'
-
-        print 'set_savefile_path "/autosave/%s"' % self.__iocName
+        print 'save_restoreSet_NumSeqFiles 3'
+        print 'save_restoreSet_SeqPeriodInSeconds 600'
+        print 'save_restoreSet_DatedBackupFiles 1'
+        print 'save_restoreSet_IncompleteSetsOk 1'
+        print 'set_pass0_restoreFile "%s_0.sav"' % self.__iocName
+        if not self.skip_1:
+            print 'set_pass0_restoreFile "%s_1.sav"' % self.__iocName
+            print 'set_pass1_restoreFile "%s_1.sav"' % self.__iocName
+        print 'set_pass1_restoreFile "%s_2.sav"' % self.__iocName
 
     def PostIocInitialise(self):
-        req_file = '0.req'
-        print 'create_monitor_set "%s", 10, ""' % req_file
+        print 'create_monitor_set "%s_0.req", 5, ""' % self.__iocName
+        print 'create_monitor_set "%s_1.req", 30, ""' % self.__iocName
+        print 'create_monitor_set "%s_2.req", 30, ""' % self.__iocName
 
 
     def GenerateBootFiles(self, makefile, bootdir):
         if not self.autosaves:
             return
             
-        autosave_file = bootdir.OpenFile('0.req')
+        self.autosave_dir = 'db'
+        print >> sys.stderr, 'Need to look at this again...'
+        autosave_file = bootdir.OpenFile('%s_0.req' % self.__iocName)
         for record_name in sorted(self.autosaves.keys()):
             for fieldname in self.autosaves[record_name]:
                 autosave_file.write('%s.%s\n' % (record_name, fieldname))
         autosave_file.close()
-        Autosave.autosave_dir = bootdir.Path()
+        self.autosave_dir = bootdir.Path()
     
 
     @classmethod

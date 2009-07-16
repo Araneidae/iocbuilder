@@ -26,7 +26,19 @@ class vacuumValveRead_sim(ModuleBase):
     )
 '''
 
-class vacuumValve_callback(Substitution):
+class valve(ModuleBase):
+    pass
+    
+class externalValve(valve):
+    def __init__(self, device):
+        self.args = dict(device = device)
+        self.__super.__init__()
+        
+    ArgInfo = makeArgInfo(__init__,
+        device = Simple ("Device macro of valve that exists in another IOC", 
+            str))
+
+class vacuumValve_callback(Substitution, valve):
     Dependencies = (Busy, HostLink)
     
     # get the device and port from the vacuumValveRead object, then
@@ -34,7 +46,7 @@ class vacuumValve_callback(Substitution):
     def __init__(self, device, crate, valve, ilks = [""], 
             gilks = [""], gda_name = "", gda_desc = ""):  
         kwargs = dict(
-            zip(self.ilkNames, (ilks + [""]*16)[:16]),
+            zip(self.ilkNames, (ilks + [""]*16)[:16]) + \
             zip(self.gilkNames, (gilks+ [""]*16)[:16]),         
             device = device,
             vlvcc = crate.args['device'],
@@ -58,7 +70,7 @@ class vacuumValve_callback(Substitution):
 
     # Substitution attributes      
     ilkNames = ["ilk%s"%i for i in range(16)]
-    gilkNames = ["glk%s"%i for i in range(16)]    
+    gilkNames = ["gilk%s"%i for i in range(16)]    
     Arguments = ['device','vlvcc','port','valve','gda_name','gda_desc'] +\
         ilkNames + gilkNames
     TemplateFile = 'vacuumValve_callback.template'

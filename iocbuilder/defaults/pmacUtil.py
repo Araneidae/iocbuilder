@@ -92,7 +92,7 @@ class dls_pmac_asyn_motor(basic_asyn_motor):
 #        else:
 #            HOME.plc.add_motor( int(args["ADDR"]), group = group, 
 #                timeout = timeout, htype = htype, jdist = jdist, post = post)
-            HOME = HOME.P                    
+#            HOME = HOME.P                    
         self.__super.__init__(HOME = HOME, SPORT = args["Controller"].PortName, 
             **args)
 

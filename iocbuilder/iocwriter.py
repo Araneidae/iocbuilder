@@ -39,6 +39,12 @@ def PrintDisclaimerScript():
 def PrintDisclaimerC():
     PrintDisclaimer('/* ', '\n * ', ' */')
 
+def PrintDisclaimerHashPling(cmd):
+    def f():
+        print '#!' + cmd
+        PrintDisclaimerScript()
+    return f
+    
 
 class WriteFile:
     '''A support routine for writing files using the print mechanism.  This is
@@ -327,17 +333,21 @@ $(LIBNAME): ../Makefile
 '''include $(EPICS_BASE)/configure/RULES_TOP
 ''',
     }
-
-    IOC_MAKEFILE_TEMPLATE = \
+    
+    if iocinit.substitute_boot:
+        IOC_MAKEFILE_TEMPLATE = \
 '''TOP=../..
 include $(TOP)/configure/CONFIG
 SCRIPTS += st%(ioc)s.boot
 include $(TOP)/configure/RULES
-
-%%.boot: ../%%.sh
-	cp $< $@
-%%.boot: ../%%.cmd
-	cp $< $@
+'''    
+    else:
+        IOC_MAKEFILE_TEMPLATE = \
+'''TOP=../..
+include $(TOP)/configure/CONFIG
+ARCH = %(arch)s
+TARGETS = %(targets)s
+include $(TOP)/configure/RULES.ioc
 '''
 
     MAIN_CPP = \
@@ -360,8 +370,7 @@ int main(int argc,char *argv[])
     # Startup shell script for linux IOC
     LINUX_CMD = \
 '''#!/bin/sh
-export HOME_DIR="$(cd "$(dirname "$0")"/../..; pwd)"
-cd "$HOME_DIR"
+cd "$(dirname "$0")"/../..
 bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
 '''
 
@@ -511,8 +520,9 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
 
     def CreateBootFiles_linux(self, ioc, iocBootDir):
         architecture = configure.Architecture()
-        self.WriteFile((iocBootDir, 'st%s.sh' % ioc),
-            self.LINUX_CMD % locals())
+        self.WriteFile((iocBootDir, 'st.sh'),
+            self.LINUX_CMD % locals(), 
+            header = PrintDisclaimerHashPling("/bin/sh"))
         
     def CreateBootFiles(self, ioc, iocBootDir):
         # Create the st.cmd file with appropriate hooks.
@@ -520,19 +530,33 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
         libversion.ModuleBase.CallForAllInstances(
             'GenerateBootFiles', None, DataDirectory(self.iocRoot, iocBootDir))
 
-        if self.make_boot:
-            st_cmd = 'st%s.cmd' % ioc
+        if iocinit.substitute_boot:
+            st_cmd = 'st%s.src' % ioc
         else:
             st_cmd = 'st.cmd'
-        self.WriteFile((iocBootDir, st_cmd), 
-            self.PrintIoc, '../..', maxLineLength = self.IOCmaxLineLength)
+        arch = configure.Architecture()      
+        if arch.startswith("linux") and iocinit.substitute_boot:
+            fargs = dict(header = 
+                PrintDisclaimerHashPling("$(INSTALL)/bin/%(arch)s/%(ioc)s" \
+                                            % locals()) )
+        else:
+            fargs = {}
+        self.WriteFile((iocBootDir, st_cmd),             
+            self.PrintIoc, '../..', maxLineLength = self.IOCmaxLineLength, 
+            **fargs)
 
+        # Need to merge/obsolete make_boot vs substitute_boot
         if self.make_boot:
+            if arch.startswith("linux"):    # !!! no!
+                targets = "envPaths"
+            else:
+                targets = "cdCommands"
             self.WriteFile((iocBootDir, 'Makefile'),
                 self.IOC_MAKEFILE_TEMPLATE % locals())
             self.TopMakefileList.append(iocBootDir)
-            configure.Call_TargetOS(
-                self, 'CreateBootFiles', ioc, iocBootDir)
+            if not iocinit.substitute_boot:
+                configure.Call_TargetOS(
+                    self, 'CreateBootFiles', ioc, iocBootDir)
     
 
     def TopMakefile(self):

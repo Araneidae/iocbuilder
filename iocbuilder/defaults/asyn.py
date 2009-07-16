@@ -38,6 +38,7 @@ class AsynPort(Device):
     def __str__(self):
         return self.DeviceName()
 
+
 class AsynOctetInterface(AsynPort):
 
     ValidSetOptionKeys = set([
@@ -71,20 +72,21 @@ class AsynOctetInterface(AsynPort):
             print 'asynOctetSetOutputEos("%s", 0, %s)' % (
                 self.asyn_name, quote_c_string(self.output_eos))
                                 
-common_args = dict(
-    name          = Simple('Override name', str),
-    input_eos     = Simple('Input end of string (terminator)', str),
-    output_eos    = Simple('Output end of string (terminator)', str),
-    priority      = Simple('Priority', int),
-    noAutoConnect = Simple('Set to stop autoconnect', bool),
-    noProcessEos  = Simple('Set to avoid processing end of string', bool),
-    # SetOption keys        
-    baud          = Simple('Baud Rate', int),
-    bits          = Simple('Bits', int),
-    parity        = Simple('Parity', str),
-    stop          = Simple('Stop Bits', int),
-    clocal        = Simple('clocal?', int),
-    crtscts       = Simple('crtscts?', int))
+    _common_args = dict(
+        name          = Simple('Override name', str),
+        input_eos     = Simple('Input end of string (terminator)', str),
+        output_eos    = Simple('Output end of string (terminator)', str),
+        priority      = Simple('Priority', int),
+        noAutoConnect = Simple('Set to stop autoconnect', bool),
+        noProcessEos  = Simple('Set to avoid processing end of string', bool),
+        # SetOption keys        
+        baud          = Simple('Baud Rate', int),
+        bits          = Simple('Bits', int),
+        parity        = Simple('Parity', str),
+        stop          = Simple('Stop Bits', int),
+        clocal        = Simple('clocal?', int),
+        crtscts       = Simple('crtscts?', int))
+
 
 class AsynSerial(AsynOctetInterface):
     '''Asyn Serial Port'''
@@ -101,9 +103,10 @@ class AsynSerial(AsynOctetInterface):
         
     # __init__ attributes
     ArgInfo = makeArgInfo(AsynOctetInterface.__init__,
+        AsynOctetInterface.ValidSetOptionKeys,
         port = Ident('Serial port', Device), 
-        **common_args
-    )
+        **AsynOctetInterface._common_args)
+
 
 class AsynIP(AsynOctetInterface):
     '''Asyn IP Port'''
@@ -119,15 +122,16 @@ class AsynIP(AsynOctetInterface):
         
     # __init__ attributes
     ArgInfo = makeArgInfo(AsynOctetInterface.__init__,
+        AsynOctetInterface.ValidSetOptionKeys,
         port = Simple('IP address', str), 
-        **common_args
-    )    
+        **AsynOctetInterface._common_args)    
+
 
 def IsIpAddr(val):
     # validator for an ip address
     errStr = "Should be of format x[xx].x[xx].x[xx].x[xx][:x[x..]]"
     # split into ip and port
-    split = value.strip().split(":")
+    split = val.strip().split(":")
     # check we have either just an ip, or an ip and a port
     assert len(split)in [1,2], errStr
     # check the port is in an int if it exists

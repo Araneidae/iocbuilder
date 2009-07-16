@@ -30,9 +30,10 @@ import shutil
 from support import Singleton, autosuper_object, quote_c_string
 from liblist import Hardware
 from libversion import ModuleVersion
-from configure import TargetOS, Call_TargetOS
+from configure import TargetOS, Call_TargetOS, Architecture
 import paths
 
+substitute_boot = False
 
 
 _ExportList = []
@@ -83,7 +84,7 @@ class iocInit(Singleton):
         # to put off creating it until configure tells us to initialise.
         ModuleVersion('EPICS_BASE', home = paths.EPICS_BASE, use_name = False)
         from modules.EPICS_BASE import epicsBase
-        self.__IocLib = epicsBase()
+        epicsBase()
 
         # Now the architecture has been set (assuming it has), set up the
         # appropriate IOC string quoting function.
@@ -91,8 +92,9 @@ class iocInit(Singleton):
         quote_IOC_string = globals().get(
             'quote_IOC_string_%s' % TargetOS(), quote_IOC_string_none)
 
+
     def SetIocName(self, ioc_name):
-        self.__IocLib.SetIocName(ioc_name)
+        self.ioc_name = ioc_name
 
 
     def PrintHeader_vxWorks(self, ioc_root):
@@ -100,27 +102,26 @@ class iocInit(Singleton):
         # been specified then use that.  Otherwise, if __TargetDir is not
         # set then assume that st.cmd will be started in the correct
         # target directory.
-        if self.__TargetDir is None:
-            # Remember the working directory on entry.
-            # The length of HOME_DIR is equal to MAX_FILENAME_LENGTH
-            # (Tornado2.2/host/include/host.h) which is equal to
-            # _POSIX_PATH_MAX+1.
-            print '# Pick up working directory on entry.'
-            print 'HOME_DIR = malloc(256)'
-            if ioc_root:
-                print 'cd %s' % quote_IOC_string(ioc_root)
-            print 'ioDefPathGet(HOME_DIR)'
-        print
+        if not substitute_boot:        
+            print '< cdCommands'        
+        self.cd_home()        
+        print 'ld < bin/%s/%s.munch' % (Architecture(), self.ioc_name)
         print 'tyBackspaceSet(127)'
 
-        
+    def PrintHeader_linux(self, ioc_root):
+        if not substitute_boot:
+            print '< envPaths'
+        self.cd_home()        
+                        
     def cd_home_vxWorks(self):
-        print 'cd HOME_DIR'
+        print 'cd top'
     def cd_home_linux(self):
-        print 'cd "${HOME_DIR}"'
+        print 'cd "$(TOP)"'
     def cd_home(self):
         if self.__TargetDir:
             print 'cd %s' % quote_IOC_string(self.__TargetDir)
+        elif substitute_boot:
+            print 'cd "$(INSTALL)"'
         else:
             Call_TargetOS(self, 'cd_home')
 
@@ -128,17 +129,22 @@ class iocInit(Singleton):
     def PrintHeader(self, ioc_root):
         # Print out all the environment settings.  Do this right away before
         # we do anything else, just in case something else we call cares.
+
+        Call_TargetOS(self, 'PrintHeader', ioc_root)
+                    
         print
         for key, value in self.__EnvList.items():
             print 'epicsEnvSet "%s", %s' % (key, quote_IOC_string(value))
 
         print
-        Call_TargetOS(self, 'PrintHeader', ioc_root)
         if self.__ClockRate:
             print 'sysClkRateSet %d' % self.__ClockRate
         if self.__Gateway:
             print 'routeAdd "0", %s' % quote_IOC_string(self.__Gateway)
         print 
+        print 'dbLoadDatabase "dbd/%s.dbd"' % self.ioc_name
+        print '%s_registerRecordDeviceDriver(pdbbase)'% \
+            self.ioc_name.replace('-', '_')        
 
 
     def PrintFooter(self):

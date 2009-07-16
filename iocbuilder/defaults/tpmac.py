@@ -29,7 +29,8 @@ class GeoBrick(DeltaTau):
             PortName = DeviceName + 'port'        
         if ":" not in IP:
             IP = IP + ':1025'            
-        self.IPPort = AsynIP(IP, IPPort)
+        self.IPPort = AsynIP(IP, PortName)
+        self.PortName = PortName
         # Now add self to list of cards
         self.Card = len(self._Cards)
         self._Cards.append(self)        
@@ -82,7 +83,7 @@ class GeoBrick_sim(GeoBrick):
             self.NAxes+1)            
 '''
                   
-class CS(Device):
+class CS(DeltaTau):
     Dependencies = (tpmac,)
     LibFileList = [ "pmacAsynCoord" ]
     DbdFileList = [ "pmacAsynCoord" ]
@@ -98,14 +99,16 @@ class CS(Device):
         else:
             self.PLCNum = PLCNum
         # reference for linking pmacAsynCoordCreate and drvAsynMotorConfigure
-        Ref = len(self._CSs)
+        self.Ref = len(self._CSs)
         self._CSs.append(self)       
         # Store other attributes
         self.NAxes = NAxes
         self.IdlePoll = IdlePoll
         self.MovingPoll = MovingPoll  
         self.Program = Program
-        self.__super.__init__()
+        self.CS = CS
+        # init the AsynPort superclass
+        self.__super.__init__(DeviceName)        
 
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
@@ -121,8 +124,8 @@ class CS(Device):
     def Initialise(self):
         print 'pmacAsynCoordCreate("%(PortName)s", 0, %(CS)d, %(Ref)d, '\
             '%(Program)s)'%self.__dict__
-        print 'drvAsynMotorConfigure("%(DeviceName)s", "pmacAsynCoord", '\
-            '%(Ref)d, %(NAxes)d)'%self.__dict__
+        print 'drvAsynMotorConfigure("%s", "pmacAsynCoord", %d, %d)'%(
+            self.DeviceName(), self.Ref, self.NAxes)                 
         print 'pmacSetCoordIdlePollPeriod(%(Ref)d, %(IdlePoll)d)'%self.__dict__
         print 'pmacSetCoordMovingPollPeriod(%(Ref)d, %(MovingPoll)d)'%self.__dict__
 '''

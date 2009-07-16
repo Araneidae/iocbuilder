@@ -17,7 +17,7 @@ class generic_scan(Substitution):
             # this is the list of strings
             l = locals()[name]
             # extend it so it's at least 8 elements long
-            l + ['']*8
+            l += ['']*8
             # make a dict, e.g. d["D01"] = Dets[0]
             d = dict(zip(getattr(self, "_"+name), l))
             # update args with it
@@ -36,7 +36,7 @@ class generic_scan(Substitution):
     # Substitution attributes
     _Dets = [ "D%02d" % i for i in range(1, 8) ]
     _Posns = [ "P%d" % i for i in range(1, 4) ]
-    _Trigs = [ "P%d" % i for i in range(1, 4) ]
+    _Trigs = [ "T%d" % i for i in range(1, 4) ]
     Arguments = ['P', 'S', 'MPTS'] + _Dets + _Posns + _Trigs
     TemplateFile = 'generic-scan.template'
     

@@ -7,7 +7,7 @@ from support import Singleton
 
 __all__ = [
     'Configure', 'LoadVersionFile', 'ConfigureIOC', 'ConfigureTemplate',
-    'Architecture', 'TargetOS']
+    'Architecture', 'TargetOS', 'Call_TargetOS']
 
 
 def Architecture():

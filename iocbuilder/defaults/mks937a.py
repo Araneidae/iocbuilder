@@ -3,6 +3,7 @@ from iocbuilder.modules.streamDevice import AutoProtocol
 from iocbuilder.modules.asyn import AsynPort
 from iocbuilder.arginfo import *
 
+
 class mks937a(Substitution, AutoProtocol):    
     '''MKS 937a Gauge controller for IMGs and PIRGs'''
 
@@ -48,7 +49,7 @@ class mks937aImg(Substitution):
     )
 
     # Substitution attributes
-    Arguments = ['port'] + ArgInfo.Names(without = 'controller')
+    Arguments = ArgInfo.Names(without = 'controller') + ['port']
     TemplateFile = 'mks937aImg.template'
 
 #    EdmScreen = ('mks937aImg','device=%(device)s')

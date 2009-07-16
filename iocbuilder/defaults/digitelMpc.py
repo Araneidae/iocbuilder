@@ -63,7 +63,7 @@ class digitelMpcIonp(digitelMpcPump):
         spoff  = Simple('Setpoint for off', int))
 
     # Substitution attributes
-    Arguments = ['port', 'unit'] + ArgInfo.Names(without = ['MPC'])
+    Arguments = ArgInfo.Names(without = ['MPC']) + ['port', 'unit']
     TemplateFile = 'digitelMpcIonp.template'
     
 #    EdmScreen = ('digitelMpcIonpControl','device=%(device)s')

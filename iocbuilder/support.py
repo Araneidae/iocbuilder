@@ -67,11 +67,6 @@ def countChars(start='A', stop='Z'):
     return iter(map(chr, range(ord(start), ord(stop) + 1)))
 
 
-def filter_dict(d, l):
-    '''Returns dictionary restricted to entries in given list.'''
-    return dict((n, d[n]) for n in l)
-
-
 unsafe_chars = re.compile(r'[\\"\1-\37]')
 
 def quote_c_string(s):
