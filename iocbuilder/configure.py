@@ -19,14 +19,16 @@ def TargetOS():
     either linux or vxWorks.'''
     return Architecture().split('-', 1)[0]
 
+def Get_TargetOS(self, name, *default):
+    return getattr(self, '%s_%s' % (name, TargetOS()), *default)
+    
     
 def Call_TargetOS(self, name, *args, **kargs):
     '''Helper function for calling a target OS specific function.  Looks up
         self.<name>_<TargetOS()>
     and calls it with the given arguments if found, otherwise returns None.'''
-    targetOS = TargetOS()
     try:
-        method = getattr(self, '%s_%s' % (name, targetOS))
+        method = Get_TargetOS(self, name)
     except AttributeError:
         return None
     else:

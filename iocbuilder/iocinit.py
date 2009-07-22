@@ -30,7 +30,7 @@ import shutil
 from support import Singleton, autosuper_object, quote_c_string
 from liblist import Hardware
 from libversion import ModuleVersion
-from configure import TargetOS, Call_TargetOS, Architecture
+from configure import TargetOS, Get_TargetOS, Call_TargetOS, Architecture
 import paths
 
 substitute_boot = False
@@ -57,8 +57,14 @@ def quote_IOC_string_linux(text):
     quote = '\''
     return quote + '\'"\'"\''.join(text.split(quote)) + quote
     
-
 quote_IOC_string_vxWorks = quote_c_string
+
+
+def setenv_linux(name, value):
+    print 'epicsEnvSet "%s", %s' % (key, quote_IOC_string(value))
+
+def setenv_vxWorks(name, value):
+    print 'putenv ' + quote_c_string('%s=%s' % (name, value))
 
 
 class iocInit(Singleton):
@@ -88,9 +94,10 @@ class iocInit(Singleton):
 
         # Now the architecture has been set (assuming it has), set up the
         # appropriate IOC string quoting function.
-        global quote_IOC_string
+        global quote_IOC_string, print_setenv
         quote_IOC_string = globals().get(
             'quote_IOC_string_%s' % TargetOS(), quote_IOC_string_none)
+        print_setenv = globals().get('setenv_%s' % TargetOS())
 
 
     def SetIocName(self, ioc_name):
@@ -125,17 +132,16 @@ class iocInit(Singleton):
         else:
             Call_TargetOS(self, 'cd_home')
 
-
     def PrintHeader(self, ioc_root):
         # Print out all the environment settings.  Do this right away before
         # we do anything else, just in case something else we call cares.
 
         Call_TargetOS(self, 'PrintHeader', ioc_root)
-                    
+
+        
         print
         for key, value in self.__EnvList.items():
-            print 'epicsEnvSet "%s", %s' % (key, quote_IOC_string(value))
-
+            print_setenv(key, value)
         print
         if self.__ClockRate:
             print 'sysClkRateSet %d' % self.__ClockRate
@@ -145,7 +151,7 @@ class iocInit(Singleton):
         print 'dbLoadDatabase "dbd/%s.dbd"' % self.ioc_name
         print '%s_registerRecordDeviceDriver(pdbbase)'% \
             self.ioc_name.replace('-', '_')        
-
+                    
 
     def PrintFooter(self):
         print

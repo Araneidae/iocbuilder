@@ -187,7 +187,7 @@ def Enum(desc, values):
 def Ident(desc, typ):
     # a choice of identifiers of a particular type
     assert issubclass(typ, ModuleBase), \
-        '%s is not a ModuleBase subclass, can't do Ident lookup' % typ
+        '%s is not a ModuleBase subclass, can\'t do Ident lookup' % typ
     desc = '%s %s' % (desc, typ)        
     return ArgType(desc, typ, ident = True)
 
@@ -197,4 +197,4 @@ def List(desc, num, func, *args, **kwargs):
 
 def Sevr(desc):
     # choice of possible values for SEVR field
-    return Choice(desc, ['NO_ALARM','MINOR','MAJOR','INVALID'])
+    return Choice(desc, ['NO_ALARM', 'MINOR', 'MAJOR', 'INVALID'])
