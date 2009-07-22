@@ -5,7 +5,7 @@ class Hy8401continuous_100k(Substitution):
     '''Continuous capturing of 1 8401 channel at 100KHz'''
 
     def __init__(self, P, C, CH1, S = 0, NELM = 50000, FTVL = 'FLOAT'):
-        self.__super.__init__(**filter_dict(locals(), self.Argument))
+        self.__super.__init__(**filter_dict(locals(), self.Arguments))
     
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
@@ -14,20 +14,25 @@ class Hy8401continuous_100k(Substitution):
         CH1  = Simple('Suffix for channel 1', str),
         S    = Simple('Signal Number', int),
         NELM = Simple('Number of elements', int),
-        FTVL = Simple('Value format', str))
+        FTVL = Simple('Value format', str),
+        name = Simple('Object name', str))
+
     
     # Substitution attributes
     Arguments = ArgInfo.Names()
     TemplateFile = 'Hy8401continuous_100k.template'
-    
-#    StatusPv = '%(P)s:ACQUIRE'    
-#    SevrPv = '%(P)s:READOUTPTR'
-#    EdmEmbedded = ('Hy8401continuous_100k_embed.edl','P=%(P)s,CH1=%(CH1)s')
 
-'''
-# Do this with a proper ai record
+    
+# TODO: Do this with a proper ai record
 class ai(Substitution):
-    def __init__(self, P, R, DTYP, INP, SCAN, PREC, EGUL, EGUF, EGU, LINR, gda_name, gda_desc):
+    def __init__(self, P, R, INP, name = '', desc = '', 
+            DTYP = 'Hy8401ip', SCAN = '1 second', PREC = 4, EGUL = -10, 
+            EGUF = 10, EGU = 'V', LINR = 'LINEAR', gda = False):
+        if gda:
+            gda_name, gda_desc = (name, desc)
+        else:
+            gda_name, gda_desc = ('', '')
+        self.__super.__init__(**filter_dict(locals(), self.Arguments))
 
 
     # __init__ arguments
@@ -42,30 +47,11 @@ class ai(Substitution):
         EGUF     = Simple('EGU full scale', int),
         EGU      = Simple('EGU', str),
         LINR     = Simple('LINR', str),
-        gda_name = Simple('gda_name', str),
-        gda_desc = Simple('gda_desc', str))
+        name     = Simple('Object name, also used for gda_name if gda', str),
+        desc     = Simple('Description, also used for gda_desc if gda', str),
+        gda      = Simple('Set to True to export to gda', bool))
 
     # Substitution attributes
     TemplateFile = 'ai.template'
-    Arguments = ['P', 'R', ('DTYP', 'Hy8401ip'), 'INP', ('SCAN', '1 second'), 
-        ('PREC', 4), ('EGUL', -10), ('EGUF', 10), ('EGU', 'V'), 
-        ('LINR', 'LINEAR'), ('gda_name', ''), ('gda_desc', '')
-    ]
-    # EdmScreen attributes
-    SevrPv = '%(P)s%(R)s'
-    EdmEmbedded = ('ai_embed.edl','P=%(P)s,R=%(R)s')
-    # __init__ arguments    
-    ArgInfo = makeArgInfo(Arguments,
-        P = (str, 'Device Prefix')
-        R = (str, 'Device Suffix')
-        DTYP = (str, 'Device Type')
-        INP = (str, 'Input link')
-        SCAN = (str, 'Scan Rate')
-        PREC = (int, 'Precision')
-        EGUL = (int, 'EGU low scale')
-        EGUF = (int, 'EGU full scale')
-        EGU = (str, 'EGU')
-        LINR = (str, 'LINR')
-        gda_name = (str, 'gda_name')
-        gda_desc = (str, 'gda_desc')
-'''
+    Arguments = ArgInfo.Names(without = ['gda']) + ['gda_name', 'gda_desc']
+    

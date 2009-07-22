@@ -14,7 +14,8 @@ class fftWaveform(Substitution, Device):
     input'''
 
     # just pass the args straight through
-    def __init__(self, P, INP, DTYP = "FFT", NELM = 25000, RARM = 0): 
+    def __init__(self,
+            P, INP, name = '', DTYP = "FFT", NELM = 25000, RARM = 0): 
         self.__super.__init__(**filter_dict(locals(), self.Arguments))
 
     # __init__ arguments
@@ -23,7 +24,8 @@ class fftWaveform(Substitution, Device):
         INP  = Simple('Input waveform for fft', str),
         DTYP = Choice('FFT type', DTYPS),
         NELM = Simple('Number of elements, should be half the size of the input waveform', int),
-        RARM = Simple('Set this to the window number if using windowing', int))
+        RARM = Simple('Set this to the window number if using windowing', int),
+        name = Simple('Object name', str))
 
     # Substitution attributes
     Arguments = ArgInfo.Names()
@@ -33,4 +35,3 @@ class fftWaveform(Substitution, Device):
     DbdFileList = ['fft', 'Window']
     LibFileList = ['fft', 'Window']
     
-#    EdmEmbedded = ('fft_embed.edl','P=%(P)s')

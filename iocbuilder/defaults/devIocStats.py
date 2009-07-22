@@ -7,7 +7,8 @@ class ioc(Substitution, Device):
     substitution.'''
     # __init__ arguments
     ArgInfo = makeArgInfo(
-        IOCNAME = Simple('IOC name', str))
+        IOCNAME = Simple('IOC name', str),
+        name    = Simple('Object name', str))
     
     # Substitution attributes
     Arguments = ArgInfo.Names()
@@ -18,6 +19,3 @@ class ioc(Substitution, Device):
     DbdFileList = ['iocAdmin']
     
 #    IdenticalSim = True    
-#    EdmScreen = ('ioc_stats.edl','ioc=%(IOCNAME)s')
-#    EdmEmbedded = ('ioc_embed.edl','ioc=%(IOCNAME)s')
-#    SevrPv = '%(IOCNAME)s:LOAD'

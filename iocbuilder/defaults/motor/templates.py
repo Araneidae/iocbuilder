@@ -18,17 +18,21 @@ class basic_asyn_motor(Substitution):
     '''Basic motor record'''
 
     # Just grab the port name from the controller and init
-    def __init__(self, Controller, ADDR, P, M, DESC, MRES, 
-            gda_name = '', gda_desc = '', DTYP = 'asynMotor', 
+    def __init__(self, Controller, ADDR, P, M, DESC, MRES, DTYP = 'asynMotor', 
             DIR = 0, VBAS = 0, VELO = 1.0, VMAX = None, ACCL =  0.5, 
             BDST = '', BVEL = '', BACC = '', PREC = 3, EGU = 'mm', 
             DHLM = 10000, DLLM = -10000, HLSV = 'MAJOR', INIT = '', 
             SREV = 1000, RRES = '', TWV = 0.1, ERES = '', JAR = 1000, 
-            UEIP = False, OFF = 0.0, RDBD = '', FOFF = 0, **args):
-        locals().update(args)
+            UEIP = False, OFF = 0.0, RDBD = '', FOFF = 0, 
+            name = '', gda = True, **args):
         # Default VMAX to VELO
         if VMAX is not None:
             VMAX = VELO
+        # If gda then set gda_name = name and gda_desc = DESC
+        if gda:
+            gda_name, gda_desc = (name, DESC)
+        else:
+            gda_name, gda_desc = ('', '')
         # Convert UEIP to an int
         UEIP = int(UEIP)        
         PORT = Controller.DeviceName
@@ -40,10 +44,9 @@ class basic_asyn_motor(Substitution):
         ADDR       = Simple('Address on controller', str),
         P          = Simple('Device Prefix', str),
         M          = Simple('Device Suffix', str),
-        DESC       = Simple('Description (displayed on edm screen)', str),
+        DESC       = Simple('Description, displayed on EDM screen, ' \
+            'also used for gda_desc if gda', str),
         MRES       = Simple('Motor Step Size (EGU)', str),
-        gda_name   = Simple('GDA Name', str),
-        gda_desc   = Simple('GDA description', str),
         DTYP       = Simple('DTYP of record', str),
         DIR        = Simple('User Direction', int),
         VBAS       = Simple('Base Velocity (EGU/s)', float),
@@ -67,17 +70,16 @@ class basic_asyn_motor(Substitution):
         UEIP       = Simple('Use Encoder If Present', bool),
         OFF        = Simple('User Offset (EGU)', float),
         RDBD       = Simple('Retry Deadband (EGU)', float),
-        FOFF       = Simple('Freeze Offset, 0=variable, 1=frozen', int))
+        FOFF       = Simple('Freeze Offset, 0=variable, 1=frozen', int),
+        name       = Simple('Object name, also used for gda_name if gda', str),
+        gda        = Simple('Set to True to export to gda', bool))
 
     # Substitution attributes
     TemplateFile = 'basic_asyn_motor.template'
-    Arguments = ['PORT'] + ArgInfo.Names(without = ['Controller'])
+    Arguments = ['PORT', 'gda_name', 'gda_desc'] + \
+        ArgInfo.Names(without = ['Controller'])
 
-#    IdenticalSim = True  
-#    EdmEmbedded = ("motor-embed-small.edl","motor=%(P)s%(M)s,filename=motor.edl")    
-#    EdmScreen = ("motor.edl","motor=%(P)s%(M)s")
-#    StatusPv = "%(P)s%(M)s.MOVN"
-#    SevrPv = StatusPv        
+#    IdenticalSim = True        
                         
 
 class motorUtil(Substitution, Device):

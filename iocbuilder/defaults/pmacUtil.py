@@ -47,12 +47,10 @@ class autohome(EdmScreen,Substitution):
     # Substitution attributes
     _Grps = [ "GRP%d"%i for i in range(1,8) ]
     _States = [ "STATE%d"%i for i in range(11,15) ]
-    Arguments = ["PORT", "P", "PLC"] + _Grps + _States
+    Arguments = ["PORT", "P", "PLC", "name"] + _Grps + _States
     TemplateFile = 'autohome.template'
-    # EdmScreen attributes
-    EdmScreen = ('autohome.edl','P=%(P)s')
     
-    def __init__(self, Controller, P, PLC, Groups = ["All"], States = [], htype=None, 
+    def __init__(self, Controller, P, PLC, name = '', Groups = ["All"], States = [], htype=None, 
         jdist=None, post=None):
         self.__dict__.update(locals())
         # now make the template
@@ -71,6 +69,7 @@ class autohome(EdmScreen,Substitution):
         PLC = (int, 'PLC Number'),
         Groups = ([str16], "Text strings for Group 1..7 labels"),
         States = ([str16], "Text strings for State 11..14 labels"),
+        name = Simple('Object name', str))        
         **_PLCArgs
     )        
                         
@@ -147,12 +146,11 @@ class CS_blade_slits(_pmcInclude):
 '''
 class CS_3jack(Substitution, EdmScreen):
     Dependencies = (tpmac,)
-    Arguments = ("P","PORT","COORD")
+    Arguments = ("P","PORT","COORD", "name")
     TemplateFile = '3jack.template' 
-    EdmScreen = ("3jack.edl","3jack=%(P)s")    
     PmcFile = "CS_3jack.pmc"
 
-    def __init__(self, CS, P, J1, J1X, J1Z, J2, J2X, J2Z, J3, J3X, J3Z, MD, MCX, MCZ, PLC = None, **kwargs):
+    def __init__(self, CS, P, J1, J1X, J1Z, J2, J2X, J2Z, J3, J3X, J3Z, MD, MCX, MCZ, PLC = None, name = '', **kwargs):
         locals().update(kwargs)
         args = locals().copy()
         del args["self"]
@@ -182,13 +180,13 @@ class CS_3jack(Substitution, EdmScreen):
         MCX = (float, 'Global X co-ord of measure point in EGU, e.g. 0'),
         MCZ = (float, 'Global Z co-ord of measure in EGU, e.g. 10'),
         PLC = (int, 'PLC number, defaults to CS number+15'),
+        name = Simple('Object name', str))        
     )
      
 class CS_3jack_mirror(CS_3jack):
 
     Arguments = ("P","PORT","COORD","ROTX","ROTY")
     TemplateFile = '3jack-mirror.template' 
-    EdmScreen = ("3jack-mirror.edl","3jack=%(P)s")    
     PmcFile = "CS_3jack_mirror.pmc"
 
     def __init__(self, JTX, JTZ, MP, MR, ROTX = 0, ROTY = 0, **kwargs):

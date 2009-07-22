@@ -9,15 +9,15 @@ class interlock(Substitution):
 
     # get the device and port from the vacuumValveReadTemplate object, then
     # init 
-    def __init__(self, crate, interlock, desc, addr, ilks = ['']):
-        args = dict(        
-            zip(self._ilks, ilks + [''] * 16),
-            device = crate.args["device"],
-            port = crate.args["port"],
+    def __init__(self, crate, interlock, desc, addr, name = '', ilks = ['']):
+        self.__super.__init__(
+            device = crate.args['device'],
+            port = crate.args['port'],
             interlock = interlock,
+            name = name,
             desc = desc,
-            addr = "%02d" % addr)
-        self.__super.__init__(**args)
+            addr = "%02d" % addr,
+            **dict(zip(self._ilks, ilks + [''] * 16)))
 
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
@@ -25,14 +25,12 @@ class interlock(Substitution):
         interlock = Simple('interlock suffix (e.g. :INT1)', str),
         desc      = Simple('Permit description (e.g. Front end permit)', str),
         addr      = Simple('Address (1 to 10) in PLC', int),
+        name      = Simple('Object name', str),
         ilks      = List  ('Interlock description (e.g. Water OK)',
             16, Simple, str))
 
     # Substitution attributes  
-    _ilks = [ 'ilk%X' % i for i in range(16) ]
+    _ilks = ['ilk%X' % i for i in range(16)]
     Arguments = ['device','port'] + \
         ArgInfo.Names(without = ['crate', 'ilks']) + _ilks
     TemplateFile = 'interlock.template'
-
-#    EdmEmbedded = ('interlock-embed.edl', 'device=%(device)s%(interlock)s')
-#    EdmScreen = ('interlocks.edl', 'device=%(device)s%(interlock)s')

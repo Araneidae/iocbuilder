@@ -35,7 +35,7 @@ class externalValve(valve):
         self.__super.__init__()
         
     ArgInfo = makeArgInfo(__init__,
-        device = Simple ("Device macro of valve that exists in another IOC", 
+        device = Simple ('Device macro of valve that exists in another IOC', 
             str))
 
 class vacuumValve_callback(Substitution, valve):
@@ -43,15 +43,23 @@ class vacuumValve_callback(Substitution, valve):
     
     # get the device and port from the vacuumValveRead object, then
     # init            
-    def __init__(self, device, crate, valve, ilks = [""], 
-            gilks = [""], gda_name = "", gda_desc = ""):  
+    def __init__(self, device, crate, valve, desc = None, ilks = [''], 
+            gilks = [''], name = '', gda = False):  
+        if desc is None:
+            desc = device
+        if gda:
+            gda_name, gda_desc = (name, desc)
+        else:
+            gda_name, gda_desc = ('', '')            
         kwargs = dict(
-            zip(self.ilkNames, (ilks + [""]*16)[:16]) + \
-            zip(self.gilkNames, (gilks+ [""]*16)[:16]),         
+            zip(self.ilkNames, (ilks + ['']*16)[:16]) + \
+            zip(self.gilkNames, (gilks+ ['']*16)[:16]),         
             device = device,
+            name = name,
+            desc = desc,
             vlvcc = crate.args['device'],
             port = crate.args['port'], 
-            valve = "%02d" % valve,         
+            valve = '%02d' % valve,         
             gda_name = gda_name,
             gda_desc = gda_desc,            
         )
@@ -60,24 +68,20 @@ class vacuumValve_callback(Substitution, valve):
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
         device   = Simple('Device Prefix', str),
-        crate    = Ident ('Parent vacuumValveRead object', 
-            vacuumValveRead),
+        crate    = Ident ('Parent vacuumValveRead object', vacuumValveRead),
         valve    = Simple('Valve number (1 to 6) in PLC', int),
+        desc     = Simple('Description for label, defaults to $(device)', str),
         ilks     = List  ('Interlock Descriptions', 16, Simple, str),
         gilks    = List  ('Gauge Interlock Descriptions', 16, Simple, str),
-        gda_name = Simple('GDA short name', str),
-        gda_desc = Simple('GDA description', str))
+        name     = Simple('Object name, also used for gda name if gda', str),
+        gda      = Simple('Set to True to export to gda', bool))
 
     # Substitution attributes      
-    ilkNames = ["ilk%s"%i for i in range(16)]
-    gilkNames = ["gilk%s"%i for i in range(16)]    
-    Arguments = ['device','vlvcc','port','valve','gda_name','gda_desc'] +\
-        ilkNames + gilkNames
+    ilkNames = ['ilk%s'%i for i in range(16)]
+    gilkNames = ['gilk%s'%i for i in range(16)]    
+    Arguments = ['name', 'device', 'desc', 'vlvcc', 'port', 'valve', 
+        'gda_name', 'gda_desc'] + ilkNames + gilkNames
     TemplateFile = 'vacuumValve_callback.template'
-
-#    EdmScreen = ('vacuumValve.edl','device=%(device)s')
-#    EdmEmbedded = ('vacuumValve-embed.edl','device=%(device)s,box-label=%(device)s')
-#    SevrPv = "%(device)s:STA"
     
 
 
@@ -107,17 +111,17 @@ class BeamRecords(ModuleBase):
         # make a list of objects
         obs = [ o for o in objects if o is not None ]
         # now get their status pvs
-        pvs = [ "%s:STA CP" % o.args["device"] for o in obs ]
+        pvs = [ '%s:STA CP' % o.args['device'] for o in obs ]
         # now find out which calc input they should be
         letters = [ chr(65+j) for j in range(len(pvs)) ]
         # and what the input link should be
-        inps = [ "INP%s" % x for x in letters ]
+        inps = [ 'INP%s' % x for x in letters ]
         # zip them together
         zipped = zip(inps, pvs)
         for i in range(len(zipped)):        
-            recordName = "%s:STA%s" % (P, i+1)
+            recordName = '%s:STA%s' % (P, i+1)
             inpdict = dict(zipped[:i])
-            CALC = "&".join(["%s=1"%l for l in letters[:i]])
+            CALC = '&'.join(['%s=1'%l for l in letters[:i]])
             records.calc(recordName,CALC=CALC,**inpdict)
         self.__super.__init__(**args)        
                 
