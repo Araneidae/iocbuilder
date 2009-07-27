@@ -2,6 +2,8 @@ import sys
 import os
 sys.path.append(
     os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+# from pkg_resources import require
+# require('iocbuilder')
 import iocbuilder
 
 iocbuilder.ConfigureIOC()

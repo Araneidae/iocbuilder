@@ -4,6 +4,8 @@
 import os.path, sys
 from iocbuilder import Device, Substitution, Call_TargetOS
 from iocbuilder.recordbase import Record
+from iocbuilder import iocwriter
+
 
 __all__ = ['Autosave', 'SetAutosaveServer']
 
@@ -25,10 +27,12 @@ class Autosave(Device):
     def __init__(self, iocName, debug=0, skip_1=False):
         self.__super.__init__()
 
-        self.autosave_dir = None
+        self.autosave_dir = 'data'
         self.__iocName = iocName
         self.__debug = debug
         self.skip_1 = skip_1
+        self.__rule_added = False
+        self.__db_names = []
 
         _AutosaveFile(device = iocName, file = '0')
         _AutosaveStatus(device = iocName)
@@ -36,6 +40,8 @@ class Autosave(Device):
         self.autosaves = {}
         Record.AddMetadataHook(
             self.PrintMetadata, Autosave = self.AutosaveField)
+
+        iocwriter.AutoSaveDatabaseHook = self.AddDatabase
 
 
     # Called during record output, we add the autosave metadata
@@ -81,36 +87,36 @@ class Autosave(Device):
         print 'save_restoreSet_SeqPeriodInSeconds 600'
         print 'save_restoreSet_DatedBackupFiles 1'
         print 'save_restoreSet_IncompleteSetsOk 1'
-        print 'set_pass0_restoreFile "%s_0.sav"' % self.__iocName
-        if not self.skip_1:
-            print 'set_pass0_restoreFile "%s_1.sav"' % self.__iocName
-            print 'set_pass1_restoreFile "%s_1.sav"' % self.__iocName
-        print 'set_pass1_restoreFile "%s_2.sav"' % self.__iocName
+        for db_name in self.__db_names:
+            print 'set_pass0_restoreFile "%s_0.sav"' % db_name
+            if not self.skip_1:
+                print 'set_pass0_restoreFile "%s_1.sav"' % db_name
+                print 'set_pass1_restoreFile "%s_1.sav"' % db_name
+            print 'set_pass1_restoreFile "%s_2.sav"' % db_name
+
 
     def PostIocInitialise(self):
-        print 'create_monitor_set "%s_0.req", 5, ""' % self.__iocName
-        print 'create_monitor_set "%s_1.req", 30, ""' % self.__iocName
-        print 'create_monitor_set "%s_2.req", 30, ""' % self.__iocName
+        for db_name in self.__db_names:
+            print 'create_monitor_set "%s_0.req",  5, ""' % db_name
+            print 'create_monitor_set "%s_1.req", 30, ""' % db_name
+            print 'create_monitor_set "%s_2.req", 30, ""' % db_name
 
 
-    def GenerateBootFiles(self, makefile, bootdir):
-        if not self.autosaves:
+    def AddDatabase(self, db_name, makefile, own_records):
+        if own_records and not self.autosaves:
+            # No autosaves in this db file
             return
+        
+        # Called when a .db file is added
+        if not self.__rule_added:
+            self.__rule_added = True
+            makefile.AddRule(_REQ_DB_RULE)
+
+        self.__db_names.append(db_name)
+        for n in range(3):
+            makefile.AddLine('DATA += %s_%d.req' % (db_name, n))
             
-        self.autosave_dir = 'db'
-        print >> sys.stderr, 'Need to look at this again...'
-        autosave_file = bootdir.OpenFile('%s_0.req' % self.__iocName)
-        for record_name in sorted(self.autosaves.keys()):
-            for fieldname in self.autosaves[record_name]:
-                autosave_file.write('%s.%s\n' % (record_name, fieldname))
-        autosave_file.close()
-        self.autosave_dir = bootdir.Path()
     
-
-    @classmethod
-    def SetAutosaveDir(cls, autosave_dir):
-        cls.autosave_dir = autosave_dir
-
     @classmethod
     def SetAutosaveServer(cls, server, ip, path):
         cls.AutosaveServer = server
@@ -118,3 +124,11 @@ class Autosave(Device):
         cls.AutosavePath = path
 
 SetAutosaveServer = Autosave.SetAutosaveServer
+
+# Rule to build all three .req files by postprocessing the corresponding .db
+# file.
+_REQ_DB_RULE = '''
+%_1.req %_2.req %_0.req: %.db
+\t/dls_sw/tools/bin/epicsparser.py -s as -r $* $^
+\ttouch $*_0.req $*_1.req $*_2.req
+'''

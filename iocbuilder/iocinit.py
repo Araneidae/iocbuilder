@@ -33,7 +33,6 @@ from libversion import ModuleVersion
 from configure import TargetOS, Get_TargetOS, Call_TargetOS, Architecture
 import paths
 
-substitute_boot = False
 
 
 _ExportList = []
@@ -61,7 +60,7 @@ quote_IOC_string_vxWorks = quote_c_string
 
 
 def setenv_linux(name, value):
-    print 'epicsEnvSet "%s", %s' % (key, quote_IOC_string(value))
+    print 'epicsEnvSet "%s", %s' % (name, quote_IOC_string(value))
 
 def setenv_vxWorks(name, value):
     print 'putenv ' + quote_c_string('%s=%s' % (name, value))
@@ -100,8 +99,9 @@ class iocInit(Singleton):
         print_setenv = globals().get('setenv_%s' % TargetOS())
 
 
-    def SetIocName(self, ioc_name):
+    def SetIocName(self, ioc_name, substitute_boot = False):
         self.ioc_name = ioc_name
+        self.substitute_boot = substitute_boot
 
 
     def PrintHeader_vxWorks(self, ioc_root):
@@ -109,14 +109,14 @@ class iocInit(Singleton):
         # been specified then use that.  Otherwise, if __TargetDir is not
         # set then assume that st.cmd will be started in the correct
         # target directory.
-        if not substitute_boot:        
+        if not self.substitute_boot:        
             print '< cdCommands'        
         self.cd_home()        
         print 'ld < bin/%s/%s.munch' % (Architecture(), self.ioc_name)
         print 'tyBackspaceSet(127)'
 
     def PrintHeader_linux(self, ioc_root):
-        if not substitute_boot:
+        if not self.substitute_boot:
             print '< envPaths'
         self.cd_home()        
                         
@@ -127,7 +127,7 @@ class iocInit(Singleton):
     def cd_home(self):
         if self.__TargetDir:
             print 'cd %s' % quote_IOC_string(self.__TargetDir)
-        elif substitute_boot:
+        elif self.substitute_boot:
             print 'cd "$(INSTALL)"'
         else:
             Call_TargetOS(self, 'cd_home')
@@ -137,8 +137,6 @@ class iocInit(Singleton):
         # we do anything else, just in case something else we call cares.
 
         Call_TargetOS(self, 'PrintHeader', ioc_root)
-
-        
         print
         for key, value in self.__EnvList.items():
             print_setenv(key, value)
@@ -265,10 +263,11 @@ class IocDataSet(Singleton):
 
     def CopyDataFiles(self, targetDir):
         assert self.__DataPath is not None, 'IOC data path not yet defined'
-        targetDir = os.path.join(targetDir, self.__DataPath)
-        os.makedirs(targetDir)
-        for filename, file_object in self.__DataFileList.items():
-            file_object._CopyFile(os.path.join(targetDir, filename))
+        if self.__DataFileList:
+            targetDir = os.path.join(targetDir, self.__DataPath)
+            os.makedirs(targetDir)
+            for filename, file_object in self.__DataFileList.items():
+                file_object._CopyFile(os.path.join(targetDir, filename))
 
     def DataFileCount(self):
         return len(self.__DataFileList)

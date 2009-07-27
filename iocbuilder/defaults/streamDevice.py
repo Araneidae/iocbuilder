@@ -1,9 +1,9 @@
 import os.path
 from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase
-from iocbuilder import records, hardware
+from iocbuilder import records, hardware, iocwriter
 from iocbuilder.configure import Call_TargetOS
 from iocbuilder.iocwriter import IocWriter
-from iocbuilder.iocinit import substitute_boot, quote_IOC_string
+from iocbuilder.iocinit import quote_IOC_string
 
 from asyn import AsynSerial
 
@@ -109,7 +109,7 @@ class ProtocolFile(Device):
     def ProtocolPath_vxWorks(self, protocol_macronames):
         print "STREAM_PROTOCOL_DIR = malloc(%d)" % \
             (IocWriter.IOCmaxLineLength_vxWorks * len(protocol_macronames))
-        if substitute_boot:
+        if iocwriter.substitute_boot:
             protocol_dirs = ["$(%s)/data" % x for x in protocol_macronames]
             print 'strcpy(STREAM_PROTOCOL_DIR,"%s")' % protocol_dirs[0]
             for x in protocol_dirs[1:]:

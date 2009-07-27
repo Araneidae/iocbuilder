@@ -358,16 +358,6 @@ class ModuleBase(object):
         return cls._ReferencedModules
 
         
-    @classmethod
-    def CallForAllInstances(cls, method_name, *args, **kargs):
-        '''The given method is called for all instances for which the method
-        is defined.'''
-        for instance in cls._ModuleBaseInstances:
-            method = getattr(instance, method_name, None)
-            if method:
-                method(*args, **kargs)
-
-
 def autodepends(*devices):
     '''This is a decorator helper function designed to be used with functions
     which require resources from one or more ModuleBase subclasses.  This is

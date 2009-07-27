@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import os
 sys.path.append(
@@ -6,6 +8,6 @@ import iocbuilder
 
 iocbuilder.ConfigureIOC(architecture = 'linux-x86')
 
-iocbuilder.IocCommand('epicsEnvShow HOME_DIR')
+iocbuilder.IocCommand('epicsEnvShow TOP')
 
 iocbuilder.WriteIoc('iocs', 'TS', 'SOFT', 1)

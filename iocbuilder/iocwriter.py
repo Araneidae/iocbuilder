@@ -13,13 +13,14 @@ import recordset
 import configure
 import libversion
 import hardware
+import paths
 
 from liblist import Hardware
-from paths import msiPath
 
 
 __all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter']
 
+substitute_boot = False
 
 
 def PrintDisclaimer(s, m, e):
@@ -39,7 +40,7 @@ def PrintDisclaimerScript():
 def PrintDisclaimerC():
     PrintDisclaimer('/* ', '\n * ', ' */')
 
-def PrintDisclaimerHashPling(cmd):
+def PrintDisclaimerCommand(cmd):
     def f():
         print '#!' + cmd
         PrintDisclaimerScript()
@@ -135,14 +136,34 @@ class DataDirectory:
 class Makefile:
     '''Class to support the generation of makefiles.'''
     
-    def __init__(self):
+    def __init__(self, path, header, footer):
+        self.path = path
+        self.header = header
         self.lines = []
+        self.footer = footer
+        self.rules = []
 
-    def AddLine(self, line):
-        self.lines.append(line)
+    def AddLine(self, *lines):
+        self.lines.extend(lines)
 
-    def Generate(self, ioc_root, directory):
-        pass
+    def AddRule(self, rule):
+        self.rules.append(rule)
+
+    def __print(self, lines):
+        for line in lines:
+            print line
+
+    def Generate(self, root):
+        output = WriteFile(os.path.join(root, self.path, 'Makefile'))
+        self.__print(self.header)
+        print
+        self.__print(self.lines)
+        print
+        self.__print(self.footer)
+        print
+        self.__print(self.rules)
+        output.Close()
+
 
 
 class IocWriter:
@@ -188,9 +209,8 @@ class IocWriter:
         self.IOCmaxLineLength = getattr(self,
             'IOCmaxLineLength_%s' % configure.TargetOS(), 0)
 
+        self.SetIocName = iocinit.iocInit.SetIocName
 
-    def SetIocName(self, ioc_name):
-        iocinit.iocInit.SetIocName(ioc_name)
 
         
     def WriteFile(self, filename, writer, *argv, **argk):
@@ -239,7 +259,7 @@ class SimpleIocWriter(IocWriter):
 
     def PrintAndExpandRecords(self):
         self.PrintRecords()
-        self.ExpandSubstitutions(msiPath)
+        self.ExpandSubstitutions(paths.msiPath)
 
     def WriteHardware(self, filename):
         '''Writes out the IOC startup command file.  The entire internal
@@ -334,21 +354,6 @@ $(LIBNAME): ../Makefile
 ''',
     }
     
-    if iocinit.substitute_boot:
-        IOC_MAKEFILE_TEMPLATE = \
-'''TOP=../..
-include $(TOP)/configure/CONFIG
-SCRIPTS += st%(ioc)s.boot
-include $(TOP)/configure/RULES
-'''    
-    else:
-        IOC_MAKEFILE_TEMPLATE = \
-'''TOP=../..
-include $(TOP)/configure/CONFIG
-ARCH = %(arch)s
-TARGETS = %(targets)s
-include $(TOP)/configure/RULES.ioc
-'''
 
     MAIN_CPP = \
 '''#include "epicsExit.h"
@@ -369,11 +374,51 @@ int main(int argc,char *argv[])
 
     # Startup shell script for linux IOC
     LINUX_CMD = \
-'''#!/bin/sh
-cd "$(dirname "$0")"/../..
-bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
-'''
+'''cd "$(dirname "$0")"
+#    export HOME_DIR="$(cd "$(dirname "$0")"/../..; pwd)"
+# cd "$HOME_DIR"
+./%(ioc)s st%(ioc)s.cmd'''
 
+
+    # Makefile templates
+    TOP_MAKEFILE_HEADER = [
+        'TOP = .',
+        'include $(TOP)/configure/CONFIG_APP']
+    TOP_MAKEFILE_FOOTER = [
+        'include $(TOP)/configure/RULES_TOP']
+
+    MAKEFILE_HEADER = [
+        'TOP = ../..',
+        'include $(TOP)/configure/CONFIG']
+    MAKEFILE_FOOTER = [
+        'include $(TOP)/configure/RULES']
+
+
+    # Directory helper routines
+
+    def MakeDirectory(self, *dir_names):
+        os.makedirs(os.path.join(self.iocRoot, *dir_names))
+        
+    def DeleteIocDirectory(self):
+        # Checks that the newly computed iocBoot directory is a plausible IOC
+        # directory.  This prevents any unfortunate accidents caused by
+        # accidentially pointing at some other directory by mistake...
+        #    The only files we can absolutely expect to be present are the
+        # configure and iocBoot directories (as these are created by
+        # __init__), and we allow for all the built directories and our App
+        # directories.  Anything else is suspicious!
+        dirlist = os.listdir(self.iocRoot)
+        require_list = ['configure', 'iocBoot']
+        ignore_list = ['bin', 'db', 'dbd', 'Makefile', 'data'] + \
+            fnmatch.filter(dirlist, '%sApp' % (self.ioc_name))
+        assert set(dirlist) - set(ignore_list) == set(require_list), \
+            'Directory %s doesn\'t appear to be an IOC directory' % \
+                self.iocRoot
+        shutil.rmtree(self.iocRoot)
+        
+
+    # Published methods: alternative IOC constructors
+        
     @classmethod
     def WriteIoc(cls,
             path, domain, techArea, id = 1, long_name = False, **argk):
@@ -398,232 +443,210 @@ bin/%(architecture)s/%(ioc)s %(iocBootDir)s/st%(ioc)s.cmd
             iocDir = ioc_name
         else:
             iocDir = techArea
-        cls(os.path.join(path, domain, iocDir), ioc_name, **argk)
+        cls.WriteNamedIoc(
+            os.path.join(path, domain, iocDir), ioc_name, **argk)
 
     @classmethod
     def WriteNamedIoc(cls, path, ioc_name, **argk):
+        '''Creates an IOC in path with the specified name.'''
         cls(path, ioc_name, **argk)
-        
 
-    def MakeDirectory(self, *dir_names):
-        os.makedirs(os.path.join(self.iocRoot, *dir_names))
 
-        
-    def __DeleteIocDirectory(self):
-        # Checks that the newly computed iocBoot directory is a plausible IOC
-        # directory.  This prevents any unfortunate accidents caused by
-        # accidentially pointing at some other directory by mistake...
-        #    The only files we can absolutely expect to be present are the
-        # configure and iocBoot directories (as these are created by
-        # __init__), and we allow for all the built directories and our App
-        # directories.  Anything else is suspicious!
-        dirlist = os.listdir(self.iocRoot)
-        require_list = ['configure', 'iocBoot']
-        ignore_list = ['bin', 'db', 'dbd', 'Makefile', 'data'] + \
-            fnmatch.filter(dirlist, '%sApp' % (self.ioc_name))
-        assert set(dirlist) - set(ignore_list) == set(require_list), \
-            'Directory %s doesn\'t appear to be an IOC directory' % \
-                self.iocRoot
-        shutil.rmtree(self.iocRoot)
-        
+    # Top level IOC writer control
 
-        
     def __init__(self, path, ioc_name,
-            make_boot = True, check_release = True):
-        
-        IocWriter.__init__(self, path)
+            check_release = True, substitute_boot = False):
+        # Remember parameters
+        IocWriter.__init__(self, path)  # Sets up iocRoot
+        self.check_release = check_release
+        self.substitute_boot = substitute_boot
 
+        # Create the working skeleton
+        self.CreateIocNames(ioc_name)
+        self.StartMakefiles()
+        self.CreateSkeleton()
+
+        # Actually generate the IOC
+        self.GenerateIoc()
+
+    def CreateIocNames(self, ioc_name):
+        # Create the names of the important components: configure, boot, app.
         self.ioc_name = ioc_name
-        self.make_boot = make_boot
-        
-        self.iocBoot = os.path.join(self.iocRoot, 'iocBoot')
-        if os.access(self.iocRoot, os.F_OK):
-            self.__DeleteIocDirectory()
-        self.MakeDirectory('')
-        self.MakeDirectory('iocBoot')
-        self.MakeDirectory('configure')
+        iocAppDir = ioc_name + 'App'
+        self.iocDbDir   = os.path.join(iocAppDir, 'Db')
+        self.iocSrcDir  = os.path.join(iocAppDir, 'src')
+        self.iocBootDir = os.path.join('iocBoot', 'ioc' + ioc_name)
+        self.iocDataDir = os.path.join(iocAppDir, 'data')
 
-        # Write the configure skeleton.
-        config_dict = dict(
-            ARCH = configure.Architecture(),
-            CHECK_RELEASE = check_release and 'YES' or 'NO')
-        for filename, content in self.IOC_configure_Skeleton.items():
-            self.WriteFile(('configure', filename), content % config_dict)
-
-        self.TopMakefileList = ['configure']
-
-        self.__WriteIoc()
-        self.__Close()
-
+    def StartMakefiles(self):
+        header = self.MAKEFILE_HEADER
+        footer = self.MAKEFILE_FOOTER
             
-    def __WriteIoc(self):
-        ioc = self.ioc_name
-        self.SetIocName(ioc)
+        self.makefile_db   = Makefile(self.iocDbDir,   header, footer)
+        self.makefile_src  = Makefile(self.iocSrcDir,  header, footer)
+        self.makefile_boot = Makefile(self.iocBootDir, header, footer)
+        self.makefile_top  = Makefile('',
+            self.TOP_MAKEFILE_HEADER, self.TOP_MAKEFILE_FOOTER)
 
-        # Create the core directories for this ioc
-        iocBootDir = os.path.join('iocBoot', 'ioc' + ioc)
-        iocAppDir  = ioc + 'App'
-        self.MakeDirectory(iocBootDir)
-        self.MakeDirectory(iocAppDir)
+    def CreateSkeleton(self):
+        '''Builds the complete unpopulated directory skeleton of the IOC.'''
+        # Create the complete skeleton after first erasing any previous IOC
+        if os.access(self.iocRoot, os.F_OK):
+            self.DeleteIocDirectory()
 
-        # Create the data directory
-        self.SetDataPath(os.path.join(iocAppDir, 'data'))
+        # The order here corresponds to the order of generation in the TOP
+        # makefile.
+        dirs = [
+            'configure',
+            self.iocDbDir,
+            self.iocSrcDir,
+            self.iocBootDir]
+        for d in dirs:
+            self.MakeDirectory(d)
+            self.makefile_top.AddLine('DIRS += %s' % d)
+
+    def GenerateIoc(self):
+        '''Coordinates the writing of the individual IOC components.'''
+        # Push IOC name and data directory out to components that need to know
+        self.SetIocName(self.ioc_name, self.substitute_boot)
+        self.SetDataPath(self.iocDataDir)
+
+        # Generate each of the output stages.  The order matters!
+        self.CreateDatabaseFiles()
+        self.CreateSourceFiles()
+        self.CreateBootFiles()
+        self.CreateConfigureFiles()
+
+        # Note that the data files have to be generated after almost
+        # everything else, as they can be generated by Initialise commands.
+        self.CopyDataFiles(self.iocRoot)
+    
+        # Finally generate the make files
+        self.WriteMakefiles()
         
-        # Create the Db directory and its associated files.
-        self.CreateDatabaseFiles(ioc, iocAppDir)
-
-        self.CreateBootFiles(ioc, iocBootDir)
-
-        # In static build mode create the source directory and add all the
-        # modules we use to the list of libraries.
-        self.CreateSourceFiles(ioc, iocAppDir)
-
-        
-    def __Close(self):
-        '''This should be called when all IOCs have been written.  This writes
-        the final version of the top level makefile and the configure RELEASE
-        file needed by the makefile system.'''
-        self.WriteFile('Makefile', self.TopMakefile)
-        self.WriteFile('configure/RELEASE', self.ConfigureRelease)
-
-        # If there are any data files to copy, create the data directory and
-        # put them in place.
-        if self.DataFileCount():
-            self.CopyDataFiles(self.iocRoot)
+    def WriteMakefiles(self):
+        '''Outputs all the individual make files.'''
+        self.makefile_top.Generate(self.iocRoot)
+        self.makefile_boot.Generate(self.iocRoot)
+        self.makefile_src.Generate(self.iocRoot)
+        self.makefile_db.Generate(self.iocRoot)
 
 
-    def CreateDatabaseFiles(self, ioc, iocAppDir):
-        iocDbDir   = os.path.join(iocAppDir, 'Db')
-        self.MakeDirectory(iocDbDir)
+    # Individual stages of IOC generation
+    
 
+    def CreateDatabaseFiles(self):
         # Names of the db files we're about to build
-        db = ioc + '.db'
-        substitutions = ioc + '.expanded.substitutions'
-        expanded = ioc + '.expanded.db'
+        db = self.ioc_name + '.db'
+        substitutions = self.ioc_name + '.expanded.substitutions'
+        expanded = self.ioc_name + '.expanded.db'
+        makefile = self.makefile_db
+
+        makefile.AddLine('PATH := $(PATH):%s' % paths.msiPath)
 
         # Generate the .db and substitutions files and compute the
         # appropriate makefile targets.
-        DbTargets = []
         if self.CountRecords():
+            self.WriteFile((self.iocDbDir, db), self.PrintRecords, )
             self.AddDatabase(os.path.join('db', db))
-            self.WriteFile((iocDbDir, db), self.PrintRecords, )
-            DbTargets.append(db)
+            makefile.AddLine('DB += %s' % db)
+            AutoSaveDatabaseHook(self.ioc_name, self.makefile_db, True)
         if self.CountSubstitutions():
-            self.WriteFile((iocDbDir, substitutions), self.PrintSubstitutions)
+            self.WriteFile(
+                (self.iocDbDir, substitutions), self.PrintSubstitutions)
             self.AddDatabase(os.path.join('db', expanded))
-            DbTargets.append(expanded)
-
-        self.WriteFile((iocDbDir, 'Makefile'), self.DbMakefile, DbTargets)
-
-        self.TopMakefileList.append(iocDbDir)
+            makefile.AddLine('DB += %s' % expanded)
+            AutoSaveDatabaseHook(
+                self.ioc_name + '.expanded', self.makefile_db, False)
 
 
-    def CreateBootFiles_linux(self, ioc, iocBootDir):
-        architecture = configure.Architecture()
-        self.WriteFile((iocBootDir, 'st.sh'),
-            self.LINUX_CMD % locals(), 
-            header = PrintDisclaimerHashPling("/bin/sh"))
+    def CreateSourceFiles(self):
+        makefile = self.makefile_src
+        ioc = self.ioc_name
         
-    def CreateBootFiles(self, ioc, iocBootDir):
-        # Create the st.cmd file with appropriate hooks.
-        # Start by telling iocinit which .db files to load.
-        libversion.ModuleBase.CallForAllInstances(
-            'GenerateBootFiles', None, DataDirectory(self.iocRoot, iocBootDir))
-
-        if iocinit.substitute_boot:
-            st_cmd = 'st%s.src' % ioc
-        else:
-            st_cmd = 'st.cmd'
-        arch = configure.Architecture()      
-        if arch.startswith("linux") and iocinit.substitute_boot:
-            fargs = dict(header = 
-                PrintDisclaimerHashPling("$(INSTALL)/bin/%(arch)s/%(ioc)s" \
-                                            % locals()) )
-        else:
-            fargs = {}
-        self.WriteFile((iocBootDir, st_cmd),             
-            self.PrintIoc, '../..', maxLineLength = self.IOCmaxLineLength, 
-            **fargs)
-
-        # Need to merge/obsolete make_boot vs substitute_boot
-        if self.make_boot:
-            if arch.startswith("linux"):    # !!! no!
-                targets = "envPaths"
-            else:
-                targets = "cdCommands"
-            self.WriteFile((iocBootDir, 'Makefile'),
-                self.IOC_MAKEFILE_TEMPLATE % locals())
-            self.TopMakefileList.append(iocBootDir)
-            if not iocinit.substitute_boot:
-                configure.Call_TargetOS(
-                    self, 'CreateBootFiles', ioc, iocBootDir)
-    
-
-    def TopMakefile(self):
-        # The top level makefile simply invokes make in all of the subsiduary
-        # application directories.
-        print 'TOP=.'
-        print 'include $(TOP)/configure/CONFIG_APP'
-        for target in self.TopMakefileList:
-            print 'DIRS += %s' % target
-        print 'include $(TOP)/configure/RULES_TOP'
+        makefile.AddLine('PROD_IOC = %s' % ioc)
+        makefile.AddLine('DBD += %s.dbd' % ioc)
         
-
-
-    def DbMakefile(self, DbTargets):
-        print 'TOP=../..'
-        print 'PATH:=$(PATH):%s' % msiPath        
-        print 'include $(TOP)/configure/CONFIG'
-        for target in DbTargets:
-            print 'DB += %s' % target
-        print 'include $(TOP)/configure/RULES'
-
-
-    def SrcMakefile_linux(self, ioc):
-        print '%s_SRCS += %sMain.cpp' % (ioc, ioc)
-        
-    def SrcMakefile_vxWorks(self, ioc):
-        print '%s_OBJS += $(EPICS_BASE_BIN)/vxComLibrary' % ioc
-
-    def SrcMakefile(self, ioc):
-        dbd = ioc
-        print 'TOP=../..'
-        print 'include $(TOP)/configure/CONFIG'
-        print 'PROD_IOC = %s' % ioc
-        print
-        print 'DBD += %s.dbd' % dbd
         for dbd_part in Hardware.GetDbdList():
-            print '%s_DBD += %s.dbd' % (dbd, dbd_part)
-        print
-        print '%s_SRCS += %s_registerRecordDeviceDriver.cpp' % (ioc, dbd)
-        configure.Call_TargetOS(self, 'SrcMakefile', ioc)
-        print
-
+            makefile.AddLine('%s_DBD += %s.dbd' % (ioc, dbd_part))
+        makefile.AddLine(
+            '%s_SRCS += %s_registerRecordDeviceDriver.cpp' % (ioc, ioc))
+        
         # Library dependencies need to be expressed in reverse dependency
         # order so that each library pulls in the required symbols from the
         # next library loaded.
         for lib in reversed(Hardware.GetLibList()):
-            print '%s_LIBS += %s' % (ioc, lib)
-        print '%s_LIBS += $(EPICS_BASE_IOC_LIBS)' % ioc
-        print
-        print 'include $(TOP)/configure/RULES'
+            makefile.AddLine('%s_LIBS += %s' % (ioc, lib))
+        makefile.AddLine('%s_LIBS += $(EPICS_BASE_IOC_LIBS)' % ioc)
 
+        # Finally add the target specific files.
+        configure.Call_TargetOS(self, 'CreateSourceFiles')
 
-    def CreateSourceFiles_linux(self, ioc, iocSrcDir):
-        self.WriteFile((iocSrcDir, '%sMain.cpp' % ioc), self.MAIN_CPP,
+    def CreateSourceFiles_linux(self):
+        ioc = self.ioc_name
+        self.WriteFile(
+            (self.iocSrcDir, '%sMain.cpp' % ioc), self.MAIN_CPP,
             header = PrintDisclaimerC)
+        self.makefile_src.AddLine('%s_SRCS += %sMain.cpp' % (ioc, ioc))
 
-    def CreateSourceFiles(self, ioc, iocAppDir):
-        iocSrcDir  = os.path.join(iocAppDir, 'src')
-        self.MakeDirectory(iocSrcDir)
-        self.WriteFile((iocSrcDir, 'Makefile'), self.SrcMakefile, ioc)
-        self.TopMakefileList.append(iocSrcDir)
-        configure.Call_TargetOS(self, 'CreateSourceFiles', ioc, iocSrcDir)
+    def CreateSourceFiles_vxWorks(self):
+        self.makefile_src.AddLine(
+            '%s_OBJS += $(EPICS_BASE_BIN)/vxComLibrary' % self.ioc_name)
 
 
-    def ConfigureRelease(self):
+    def CreateBootFiles(self):
+        extension = self.substitute_boot and 'src' or 'cmd'
+        self.WriteFile(
+            (self.iocBootDir, 'st%s.%s' % (self.ioc_name, extension)),
+            self.PrintIoc, '../..', maxLineLength = self.IOCmaxLineLength)
+
+        self.makefile_boot.AddLine('ARCH = %s' % configure.Architecture())
+        configure.Call_TargetOS(self, 'CreateBootFiles')
+
+        self.makefile_boot.AddRule(
+            'envPaths cdCommands:\n'
+            '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(ARCH) $@')
+            
+    def CreateBootFiles_linux(self):
+        ioc = self.ioc_name
+        self.WriteFile((self.iocBootDir, 'st%s.sh' % ioc),
+            self.LINUX_CMD % dict(ioc = self.ioc_name),
+            header = PrintDisclaimerCommand("/bin/sh"))
+        
+        self.makefile_boot.AddLine('SCRIPTS += envPaths')
+        self.makefile_boot.AddLine('SCRIPTS += ../st%s.sh' % self.ioc_name)
+        self.makefile_boot.AddLine('SCRIPTS += ../st%s.cmd' % self.ioc_name)
+        
+    def CreateBootFiles_vxWorks(self):
+        self.makefile_boot.AddLine('SCRIPTS += cdCommands')
+        self.makefile_boot.AddLine('SCRIPTS += st%s.boot' % self.ioc_name)
+
+        self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
+
+
+        
+    def CreateConfigureFiles(self):
+        # Write the configure skeleton: mostly standard boilerplate.
+        config_dict = dict(
+            ARCH = configure.Architecture(),
+            CHECK_RELEASE = self.check_release and 'YES' or 'NO')
+        for filename, content in self.IOC_configure_Skeleton.items():
+            self.WriteFile(('configure', filename), content % config_dict)
+
+        # Write out configure/RELEASE
+        releases = []
         for module in sorted(libversion.ModuleBase.ListModules()):
 # Something like this might be a good idea --
 #             if self.check_release:
 #                 module.CheckDependencies()
-            print '%s = %s' % (module.MacroName(), module.LibPath())
+            releases.append(
+                '%s = %s' % (module.MacroName(), module.LibPath()))
+        self.WriteFile('configure/RELEASE', '\n'.join(releases))
+
+
+
+# This function is a special hack: this is called during autosave database
+# generation, and is designed to be overwritten by the autosave component
+# when it is created.
+def AutoSaveDatabaseHook(db_name, makefile, own_records):
+    pass
