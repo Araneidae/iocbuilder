@@ -1,6 +1,7 @@
 #   Generic hardware module support
 
 import os
+import sys
 import string
 import re
 
@@ -66,10 +67,54 @@ class ModuleVersion:
     # nested loads (really bad idea) and can treat the module name specially
     # in ModuleBase.
     _LoadingModule = None
+    # This is set to the list of auto-instantiating ModuleBase subclasses
+    # that have been loaded so that we can auto instantiate them if
+    # requested.
+    _AutoInstances = []
     
     def __init__(self, libname,
             version=None, home=None, use_name=True,
-            suppress_import=False, load_path=None, override=False):
+            suppress_import=False, load_path=None, override=False,
+            auto_instantiate=False):
+        '''Declares the version of an EPICS support module and loads its
+        definitions from the appropriate builder.py file into the iocbuilder
+        namespace.
+
+        The arguments are:
+
+        libname
+            Name of the support module.  This will be upper-cased to form the
+            configure/RELEASE macro name.
+        version
+            Version of support module to be loaded, if specified: names a
+            subdirectory of the support module directory.
+        home
+            Directory where the support module is located.  If not specified
+            then /dls_sw/prod/$DLS_EPICS_VERSION/support is used.
+        use_name
+            If set (by default) the support module is located as a
+            subdirectory of home; if false, home (possibly plus version) is
+            the path to the support module.
+        suppress_import
+            If set no builder definitions are loaded for this module.  Not
+            normally very useful!
+        load_path
+            Can be used to specify the path to the builder definitions for this
+            module.  Otherwise the builder definitions are searched for in the
+            following locations:
+
+                <module>/etc/builder
+                <module>/builder
+                <iocbuilder>/defaults/<module>
+        override
+            Can be set to allow definitions for a particular module to be
+            loaded more than once.  May not always work as expected, in
+            particular the old module definitions are not deleted first!
+        auto_instantiate
+            If set then all ModuleBase subclasses marked as AutoInstantiate
+            will be instantiated as soon as this module's definitions have
+            been loaded.
+        '''
         if home is None:
             # By default pick up each module from the prod support directory.
             # It might be quite nice to extend this with a path search.
@@ -102,9 +147,13 @@ class ModuleVersion:
         _ModuleVersionTable[libname] = self
         self.__CreateVersionModule()
         if suppress_import:
-            print 'Import of %s skipped' % self.__name
+            print >>sys.stderr, 'Import of %s skipped' % self.__name
         else:
+            ModuleVersion._AutoInstances = []
             self.__LoadModuleDefinitions(load_path)
+            if auto_instantiate:
+                for subclass in ModuleVersion._AutoInstances:
+                    subclass._AutoInstantiate()
         
 
     def LibPath(self, macro_name=False):
@@ -167,7 +216,9 @@ class ModuleVersion:
             ModuleFile, IsPackage = _CheckPythonModule(load_path, self.__name)
         else:
             Places = [
-                # First look for a builder package in the loaded EPICS module
+                # First look for a builder package in etc dir
+                (os.path.join(self.LibPath(), 'etc'), 'builder'),
+                # Then in the module root
                 (self.LibPath(), 'builder'),
                 # Failing that, try for a defaults entry.
                 (SameDirFile(__file__, 'defaults'), self.__name)]
@@ -200,7 +251,8 @@ class ModuleVersion:
                             self.__name, name)
                     setattr(hardware, name, getattr(self.module, name))
         else:
-            print 'Module definitions for', self.__name, 'not found'
+            print >>sys.stderr, \
+                'Module definitions for', self.__name, 'not found'
 
     
 
@@ -272,6 +324,10 @@ class ModuleBase(object):
                             'ModuleName must be %s' % name
                         print 'Redundant ModuleName for', cls.__name__
                     cls.ModuleName = name
+                    # During module loading, also add class to list of
+                    # classes to auto instantiate.
+                    if cls.AutoInstantiate:
+                        ModuleVersion._AutoInstances.append(cls)
                 cls.ModuleVersion = _ModuleVersionTable[cls.ModuleName]
                 cls.ModuleVersion.ClassesList.append(cls)
 

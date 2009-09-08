@@ -3,6 +3,7 @@
 import os
 
 from support import Singleton
+import recordnames
 
 
 __all__ = [
@@ -103,14 +104,15 @@ def LoadVersionFile(filename, **context):
 
 # Some sensible default configurations.
 
+
 def ConfigureIOC(
         architecture = 'vxWorks-ppc604_long',
+        record_names = recordnames.DiamondRecordNames,
         module_path = None):
-    import recordnames
     import iocwriter
     Configure(
         module_path  = module_path,
-        record_names = recordnames.DiamondRecordNames(),
+        record_names = record_names(),
         ioc_writer   = iocwriter.DiamondIocWriter,
         dynamic_load = False,
         architecture = architecture,
