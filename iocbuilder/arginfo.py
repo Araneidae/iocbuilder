@@ -8,7 +8,7 @@ __all__ = ['makeArgInfo', 'addArgInfo', 'filter_dict']
 
 def filter_dict(d, l):
     '''Returns dictionary restricted to entries in given list.'''
-    return dict((n, d[n]) for n in l)
+    return dict((n, d[n]) for n in set(l) & set(d))
 
     
 class ArgInfo(object):
@@ -37,6 +37,11 @@ class ArgInfo(object):
 
     def __init__(self, __source=None, __optional=[], __method=True, **descs):
         self.descriptions = descs
+        for k,v in descs.items():
+            assert isinstance(v, ArgType) or \
+                min(isinstance(x, ArgType) for x in v), \
+                'ArgInfo description "%s" is not of valid type. Got:\n%s' % \
+                    (k, v)
         self.optional_names = list(__optional)
 
         if callable(__source):
@@ -48,7 +53,7 @@ class ArgInfo(object):
             if defaults:
                 self.required_names = names[:-len(defaults)]
                 self.default_names = names[-len(defaults):]
-                self.default_values = defaults
+                self.default_values = list(defaults)
             else:
                 self.required_names = names
                 self.default_names = []
@@ -131,6 +136,7 @@ def addArgInfo(__method=False, **descs):
     a function.'''
     def decorator(f):
         f.ArgInfo = makeArgInfo(f, __method = __method, **descs)
+        ModuleBase.ModuleBaseClasses.append(f)
         return f
     return decorator
 
