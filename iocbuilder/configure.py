@@ -46,7 +46,8 @@ class Configure(Singleton):
             ioc_writer   = None,
             dynamic_load = False,
             architecture = 'none',
-            register_dbd = False):
+            register_dbd = False,
+            simulation = False):
 
         assert not self.__called, 'Cannot call Configure more than once!'
         self.__called = True
@@ -58,6 +59,8 @@ class Configure(Singleton):
         import iocwriter
 
         self.architecture = architecture
+        if simulation:
+            libversion.simulation_mode = True
         
         # Configure where ModuleVersion looks for modules.
         if module_path is None:

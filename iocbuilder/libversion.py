@@ -10,7 +10,8 @@ from support import autosuper_meta, SameDirFile, CreateModule
 import hardware
 
 
-__all__ = ['ModuleVersion', 'ModuleBase', 'modules', 'autodepends']
+__all__ = ['ModuleVersion', 'ModuleBase', 'modules', 'autodepends', 
+    'SetSimulation']
 
 
 
@@ -450,3 +451,33 @@ _ModuleVersionTable = {}
 # We maintain all loaded modules in a synthetic module.
 modules = CreateModule('iocbuilder.modules')
 modules.LoadedModules = {}
+
+
+simulation_mode = False
+def SetSimulation(real, sim):
+    '''If we are in simulation mode, then place sim instead of real in
+    iocbuilder.modules and ModuleBase.ModuleBaseClasses.'''
+    if simulation_mode:
+        # first replace it in the list of subclasses
+        index = ModuleBase.ModuleBaseClasses.index(real)
+        ModuleBase.ModuleBaseClasses[index] = sim
+        # now in iocbuilder.modules
+        sim.__name__ = real.__name__
+        sim.ModuleName = real.ModuleName
+        sim.ArgInfo = real.ArgInfo
+        setattr(getattr(modules, real.ModuleName), real.__name__, sim)
+        return sim
+    else:
+        # first replace it in the list of subclasses
+        try:
+            ModuleBase.ModuleBaseClasses.remove(sim)
+        except:
+            pass
+        # now in iocbuilder.modules
+        try:
+            delattr(getattr(modules, sim.ModuleName), sim.__name__)
+        except:
+            pass
+        return real
+        
+        
