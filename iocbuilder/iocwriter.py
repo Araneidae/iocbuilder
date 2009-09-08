@@ -20,8 +20,6 @@ from liblist import Hardware
 
 __all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter']
 
-substitute_boot = False
-
 
 def PrintDisclaimer(s, m, e):
     now = time.strftime('%a %d %b %Y %H:%M:%S %Z')
@@ -377,7 +375,7 @@ int main(int argc,char *argv[])
 '''cd "$(dirname "$0")"
 #    export HOME_DIR="$(cd "$(dirname "$0")"/../..; pwd)"
 # cd "$HOME_DIR"
-./%(ioc)s st%(ioc)s.cmd'''
+./%(ioc)s st%(ioc)s.boot'''
 
 
     # Makefile templates
@@ -602,27 +600,25 @@ int main(int argc,char *argv[])
 
         self.makefile_boot.AddLine('ARCH = %s' % configure.Architecture())
         configure.Call_TargetOS(self, 'CreateBootFiles')
-
-        self.makefile_boot.AddRule(
-            'envPaths cdCommands:\n'
-            '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(ARCH) $@')
+        self.makefile_boot.AddLine('SCRIPTS += st%s.boot' % self.ioc_name)        
+        if not self.substitute_boot:
+            self.makefile_boot.AddRule(
+                'envPaths cdCommands:\n'
+                '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(ARCH) $@')
+            self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
             
     def CreateBootFiles_linux(self):
         ioc = self.ioc_name
         self.WriteFile((self.iocBootDir, 'st%s.sh' % ioc),
-            self.LINUX_CMD % dict(ioc = self.ioc_name),
-            header = PrintDisclaimerCommand("/bin/sh"))
-        
-        self.makefile_boot.AddLine('SCRIPTS += envPaths')
+            self.LINUX_CMD % dict(ioc = ioc),
+            header = PrintDisclaimerCommand('/bin/sh'))
+        if not self.substitute_boot:            
+            self.makefile_boot.AddLine('SCRIPTS += envPaths')
         self.makefile_boot.AddLine('SCRIPTS += ../st%s.sh' % self.ioc_name)
-        self.makefile_boot.AddLine('SCRIPTS += ../st%s.cmd' % self.ioc_name)
         
     def CreateBootFiles_vxWorks(self):
-        self.makefile_boot.AddLine('SCRIPTS += cdCommands')
-        self.makefile_boot.AddLine('SCRIPTS += st%s.boot' % self.ioc_name)
-
-        self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
-
+        if not self.substitute_boot:    
+            self.makefile_boot.AddLine('SCRIPTS += cdCommands')
 
         
     def CreateConfigureFiles(self):
