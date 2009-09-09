@@ -1,4 +1,4 @@
-from iocbuilder import Substitution
+from iocbuilder import Substitution, SetSimulation
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.streamDevice import AutoProtocol
@@ -19,3 +19,6 @@ class CrateMonitor(Substitution, AutoProtocol):
     
     # AutoProtocol attributes
     ProtocolFiles = ['CrateMon.proto']
+
+# inform iocbuilder that there is no simulation
+SetSimulation(CrateMonitor, None)

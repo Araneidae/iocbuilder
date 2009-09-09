@@ -1,4 +1,4 @@
-from iocbuilder import Device
+from iocbuilder import Device, SetSimulation
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.ipac import IpDevice, IpCarrier
@@ -111,6 +111,9 @@ class _Hy8515channel(Device):
         return self.device
 
 
-
 # The 8516 is identical to the 8515, so just clone it.
 Hy8515.Clone('Hy8516')
+
+# Inform iocbuilder that there is no simulation
+SetSimulation(Hy8515, None)
+SetSimulation(_Hy8515channel, None)

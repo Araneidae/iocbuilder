@@ -1,9 +1,13 @@
 import os.path
 
-from iocbuilder import Device
+from iocbuilder import Device, SetSimulation, DummySimulation
 from iocbuilder.support import quote_c_string
 from iocbuilder.arginfo import *
 
+try:
+    from iocbuilder.modules.pyDrv import serial_sim
+except:
+    serial_sim = Device
 
 # These devices are used directly, while the others are loaded as part of
 # other devices
@@ -46,7 +50,8 @@ class AsynOctetInterface(AsynPort):
 
     def __init__(self, port,
             name=None, input_eos=None, output_eos=None,
-            priority=100, noAutoConnect=False, noProcessEos=False, **options):
+            priority=100, noAutoConnect=False, noProcessEos=False,
+            simulation=None, **options):
         self.port_name = port
         assert set(options.keys()) <= self.ValidSetOptionKeys, \
             'Invalid argument to asynSetOption'
@@ -79,6 +84,7 @@ class AsynOctetInterface(AsynPort):
         priority      = Simple('Priority', int),
         noAutoConnect = Simple('Set to stop autoconnect', bool),
         noProcessEos  = Simple('Set to avoid processing end of string', bool),
+        simulation    = Ident ('serial_sim object to use as a simulation', serial_sim),        
         # SetOption keys        
         baud          = Simple('Baud Rate', int),
         bits          = Simple('Bits', int),
@@ -107,6 +113,22 @@ class AsynSerial(AsynOctetInterface):
         port = Ident('Serial port', Device), 
         **AsynOctetInterface._common_args)
 
+class dummyAsyn(DummySimulation):  
+    def DeviceName(self):
+        return "dummyAsynPort"
+    def __str__(self):
+        return "dummyAsynPort"
+
+def AsynSerial_sim(port, name, simulation = None, **kwargs):
+    if simulation is None:
+        return dummyAsyn()
+    else:
+        portname = simulation.startSerial()
+        class DummyPort:
+            def DeviceName(self): return portname
+        return AsynSerial_real(DummyPort(), name, **kwargs)
+AsynSerial_real = AsynSerial
+SetSimulation(AsynSerial, AsynSerial_sim)                        
 
 class AsynIP(AsynOctetInterface):
     '''Asyn IP Port'''
@@ -126,6 +148,15 @@ class AsynIP(AsynOctetInterface):
         port = Simple('IP address', str), 
         **AsynOctetInterface._common_args)    
 
+def AsynIP_sim(port, name, simulation = None, **kwargs):
+    if simulation is None:
+        return dummyAsyn()
+    else:
+        port = simulation.startIP()
+        return AsynIP_real(port, name, **kwargs)
+AsynIP_real = AsynIP
+
+SetSimulation(AsynIP, AsynIP_sim)      
 
 def IsIpAddr(val):
     # validator for an ip address
@@ -137,6 +168,8 @@ def IsIpAddr(val):
     # check the port is in an int if it exists
     if len(split) == 2:
         assert split[1].isdigit(), errStr
+    if split[0] == "localhost":
+        return
     # split the ip by .
     split = split[0].split(".")
     # check there are 4 elements

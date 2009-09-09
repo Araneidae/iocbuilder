@@ -1,8 +1,8 @@
-from iocbuilder import Device
+from iocbuilder import Device, SetSimulation, IocDataStream, iocwriter
 from iocbuilder.arginfo import *
 
-from iocbuilder.modules.asyn import AsynPort, Asyn, AsynIP
-from iocbuilder.modules.motor import MotorLib, MotorController
+from iocbuilder.modules.asyn import AsynPort, Asyn
+from iocbuilder.modules.motor import MotorLib, MotorController, MotorSimLib
 import sys 
 
 PMAC = 0
@@ -20,7 +20,6 @@ class GeoBrick(DeltaTau):
     LibFileList = [ "pmacAsynIPPort", "pmacAsynMotor" ]
     DbdFileList = [ "pmacAsynIPPort", "pmacAsynMotor" ]    
     _Cards = []
-#    EdmScreen = ('dls-motor-control.py -o tcpip -s %(Server)s -p %(Port)s', '')
     
     def __init__(self, DeviceName, IP, PortName = None, NAxes = 8, 
         IdlePoll = 500, MovingPoll = 50):
@@ -29,7 +28,7 @@ class GeoBrick(DeltaTau):
             PortName = DeviceName + 'port'        
         if ":" not in IP:
             IP = IP + ':1025'            
-        self.IPPort = AsynIP(IP, PortName)
+        self.IP = IP
         self.PortName = PortName
         # Now add self to list of cards
         self.Card = len(self._Cards)
@@ -50,26 +49,35 @@ class GeoBrick(DeltaTau):
         IdlePoll   = Simple('Idle Poll Period in ms', int),
         MovingPoll = Simple('Moving Poll Period in ms', int))
     
-#    def getPmc(self):
-#        if not hasattr(self,"pmc"):
-#            self.pmc = IocDataStream(self.DeviceName+".pmc",path="pmc")    
-#        return self.pmc        
-
-#    def IncludePmc(self,filename,macrodict={}):
-#        text = open(filename).read()
-#        for k,v in macrodict.items():
-#            text = text.replace("$(%s)"%k,"%s"%v)
-#        self.getPmc().write(text)
+    def IncludePmc(self,filename,macrodict={}):
+        if not hasattr(self,"pmc"):
+            self.pmc = IocDataStream(self.DeviceName()+".substitutions")
+            iocwriter.pmcs.append(self.DeviceName()+".substitutions")
+        if not macrodict:
+            macrodict = dict(x = "x")
+        self.pmc.write("file %s\n{ pattern\n{" % filename)
+        keys = []
+        values = []
+        for k in sorted(macrodict.keys()):
+            keys.append(k)
+            values.append('"%s"' % macrodict[k])
+        self.pmc.write(", ".join(keys)+"}\n{")
+        self.pmc.write(", ".join(values)+"}\n}\n\n")        
                     
     def Initialise(self):
+        print '# Create IP Port (IPPort, IPAddr)'    
+        print 'pmacAsynIPConfigure("%(PortName)s", "%(IP)s")'\
+            %self.__dict__
+        print '# Create GeoBrick (IPPort, Addr, BrickNum, NAxes)'    
         print 'pmacAsynMotorCreate("%(PortName)s", 0, %(Card)d, %(NAxes)d)'\
             %self.__dict__
+        print '# Configure GeoBrick (PortName, DriverName, BrickNum, NAxes+1)'            
         print 'drvAsynMotorConfigure("%s", "pmacAsynMotor", %d, %d)'%(
             self.DeviceName(), self.Card, self.NAxes+1)            
         print 'pmacSetIdlePollPeriod(%(Card)d, %(IdlePoll)d)'%self.__dict__
         print 'pmacSetMovingPollPeriod(%(Card)d, %(MovingPoll)d)'%self.__dict__
 
-'''
+
 class GeoBrick_sim(GeoBrick):
     Dependencies = (MotorSimLib,)
 
@@ -79,9 +87,9 @@ class GeoBrick_sim(GeoBrick):
 
     def Initialise(self):
         print 'drvAsynMotorConfigure("%s", "motorSim", %d, %d)'%(
-            self.DeviceName, self.Card+100, 
+            self.DeviceName(), self.Card+100, 
             self.NAxes+1)            
-'''
+SetSimulation(GeoBrick, GeoBrick_sim)
                   
 class CS(DeltaTau):
     Dependencies = (tpmac,)
@@ -92,7 +100,8 @@ class CS(DeltaTau):
     def __init__(self, DeviceName, Controller, CS, PLCNum = None, NAxes = 9, 
         Program = 10, IdlePoll = 500, MovingPoll = 100):
 
-        self.PortName = Controller.DeviceName()
+        self.PortName = Controller.PortName
+        self.IncludePmc = Controller.IncludePmc
         # PLC number for position reporting
         if PLCNum is None:
             self.PLCNum = CS + 15        
@@ -108,8 +117,8 @@ class CS(DeltaTau):
         self.Program = Program
         self.CS = CS
         # init the AsynPort superclass
-        self.__super.__init__(DeviceName)        
-
+        self.__super.__init__(DeviceName) 
+     
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
         DeviceName = Simple('CS Name (for asyn port that motor records are connected to)', str),
@@ -122,13 +131,16 @@ class CS(DeltaTau):
         MovingPoll = Simple('Moving Poll Period in ms', int))
 
     def Initialise(self):
+        print '# Create CS (ControllerPort, Addr, CSNumber, CSRef, Prog)'
         print 'pmacAsynCoordCreate("%(PortName)s", 0, %(CS)d, %(Ref)d, '\
             '%(Program)s)'%self.__dict__
+        print '# Configure CS (PortName, DriverName, CSRef, NAxes)'
         print 'drvAsynMotorConfigure("%s", "pmacAsynCoord", %d, %d)'%(
             self.DeviceName(), self.Ref, self.NAxes)                 
+        print '# Set Idle and Moving poll periods (CS_Ref, PeriodMilliSeconds)'
         print 'pmacSetCoordIdlePollPeriod(%(Ref)d, %(IdlePoll)d)'%self.__dict__
         print 'pmacSetCoordMovingPollPeriod(%(Ref)d, %(MovingPoll)d)'%self.__dict__
-'''
+
 class CS_sim(CS):
     Dependencies = (MotorSimLib,)
     
@@ -138,5 +150,5 @@ class CS_sim(CS):
 
     def Initialise(self):
         print 'drvAsynMotorConfigure("%s", "motorSim", %d, %d)'%(
-            self.DeviceName, self.Ref+200, self.NAxes)  
-'''
+            self.DeviceName(), self.Ref+200, self.NAxes)  
+SetSimulation(CS, CS_sim)

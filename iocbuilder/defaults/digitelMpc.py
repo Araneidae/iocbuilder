@@ -1,4 +1,4 @@
-from iocbuilder import Substitution
+from iocbuilder import Substitution, SetSimulation
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.streamDevice import AutoProtocol
@@ -25,16 +25,10 @@ class digitelMpc(Substitution, AutoProtocol):
     # AutoProtocol attributes
     ProtocolFiles = ['digitelMpc.proto']    
 
-'''
-class digitelMpc_sim(Substitution):
+# Simulation has a different db
+class digitelMpc_sim(digitelMpc):
     TemplateFile = 'simulation_digitelMpc.template'
-    XMLObjects = []
-    ArgInfo = [
-        ('device', str, 'Device Prefix'),
-        ('port', str, 'Dummy Asyn Serial Port'),
-        ('unit', TwoDigitInt, 'Unit number (for multidrop serial)', 1)
-    ]
-'''
+SetSimulation(digitelMpc, digitelMpc_sim)
 
 class digitelMpcPump(Substitution):
     pass
@@ -42,13 +36,12 @@ class digitelMpcPump(Substitution):
 class digitelMpcTsp(digitelMpcPump):
     Arguments = ('device', 'port' , 'unit' , 'ctlsrc')
     TemplateFile = 'digitelMpcTsp.template'
-#    IdenticalSim = True
 
 class digitelMpcIonp(digitelMpcPump):
     '''Digitel MPC Ion pump template'''
 
     # Just pass the arguments straight through
-    def __init__(self, device, MPC, pump, size, spon = 0, spoff = 0):
+    def __init__(self, device, MPC, pump, size, spon = 0, spoff = 0, name = ""):
         port = MPC.args['port']
         unit = MPC.args['unit']
         self.__super.__init__(**filter_dict(locals(), self.Arguments))
@@ -60,18 +53,17 @@ class digitelMpcIonp(digitelMpcPump):
         pump   = Simple('Pump number', int),
         size   = Simple('Pump size (l)', int),
         spon   = Simple('Setpoint for on', int),
-        spoff  = Simple('Setpoint for off', int))
+        spoff  = Simple('Setpoint for off', int),
+        name   = Simple('Object name', str))
 
     # Substitution attributes
     Arguments = ArgInfo.Names(without = ['MPC']) + ['port', 'unit']
     TemplateFile = 'digitelMpcIonp.template'
-    
-#    EdmScreen = ('digitelMpcIonpControl','device=%(device)s')
 
-'''
+# Simulation has a different db
 class digitelMpcIonp_sim(digitelMpcIonp):
     TemplateFile = 'simulation_digitelMpcIonp.template'
-'''
+SetSimulation(digitelMpcIonp, digitelMpcIonp_sim)
             
 class digitelMpcIonpGroup(Substitution):
     Arguments = (
@@ -79,16 +71,13 @@ class digitelMpcIonpGroup(Substitution):
         'ionp1', 'ionp2', 'ionp3', 'ionp4',
         'ionp5', 'ionp6', 'ionp7', 'ionp8')
     TemplateFile = 'digitelMpcIonpGroup.template'
-#    IdenticalSim = True    
 
 class digitelMpcTspGroup(Substitution):
     Arguments = (
         'device',
         'tsp1', 'tsp2', 'tsp3', 'tsp4', 'tsp5', 'tsp6', 'tsp7', 'tsp8')
     TemplateFile = 'digitelMpcTspGroup.template'
-#    IdenticalSim = True
 
 class dummyIonp(Substitution):
     Arguments = ('device',)
     TemplateFile = 'dummyIonp.template'
-#    IdenticalSim = True

@@ -1,4 +1,4 @@
-from iocbuilder import Substitution
+from iocbuilder import Substitution, SetSimulation
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.vacuumValve import vacuumValveRead
@@ -34,3 +34,6 @@ class interlock(Substitution):
     Arguments = ['device','port'] + \
         ArgInfo.Names(without = ['crate', 'ilks']) + _ilks
     TemplateFile = 'interlock.template'
+
+# inform iocbuilder this has no simulation
+SetSimulation(interlock, None)

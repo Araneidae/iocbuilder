@@ -1,4 +1,4 @@
-from iocbuilder import Device, Substitution, hardware
+from iocbuilder import Device, Substitution, hardware, SetSimulation
 from iocbuilder.hardware import streamDeviceVersion, AutoProtocol
 from iocbuilder.arginfo import *
 
@@ -29,7 +29,12 @@ class cmsIon(Substitution, AutoProtocol):
         hihi   = Simple('Integrated dose (since reset) HIHI value', float))
     Arguments = ArgInfo.Names()
 
-        
+# The simulation has a slightly different db file                      
+class cmsIon_sim(cmsIon):
+    TemplateFile = 'simulation_cmsIon.template'    
+SetSimulation(cmsIon, cmsIon_sim)
+
+                
 def createCmsIon(serialCard, domain, id, socket, high, hihi):
     '''Helper routine for creating cmsIon instances.  The  arguments are:
         domain is the machine location (LI/BRnnC/SRnnC/etc),

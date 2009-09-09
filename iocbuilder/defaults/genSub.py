@@ -1,8 +1,8 @@
 from iocbuilder import Device
 
-__all__ = ['genSub']
+__all__ = ['GenSub']
 
-class genSub(Device):
+class GenSub(Device):
     '''Implementation of gensub record type.'''
     LibFileList = ['genSub']
     DbdFileList = ['genSubRecord']

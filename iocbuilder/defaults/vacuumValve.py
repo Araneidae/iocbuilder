@@ -1,9 +1,11 @@
-from iocbuilder import Substitution, ModuleBase
+from iocbuilder import Substitution, ModuleBase, records
+from iocbuilder import SetSimulation, DummySimulation
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.HostLink import HostLink
 from iocbuilder.modules.busy import Busy
 from iocbuilder.modules.asyn import AsynOctetInterface
+
 
 class vacuumValveRead(Substitution):
     Dependencies = (HostLink,)
@@ -17,14 +19,11 @@ class vacuumValveRead(Substitution):
     Arguments = ArgInfo.Names()
     TemplateFile = 'vacuumValveRead.template'   
 
-'''
-class vacuumValveRead_sim(ModuleBase):
-    """Dummy simulation class, doesn't create anything"""
-    ArgInfo = makeArgInfo(vacuumValveRead.Arguments,
-        device = (str, 'Device Prefix'),
-        port = (str, 'Dummy Asyn Serial Port'),
-    )
-'''
+
+# Simulation is just a placeholder to satisfy vacuumValve_callback
+class vacuumValveRead_sim(DummySimulation): pass
+SetSimulation(vacuumValveRead, vacuumValveRead_sim)
+
 
 class valve(ModuleBase):
     pass
@@ -39,7 +38,7 @@ class externalValve(valve):
             str))
 
 class vacuumValve_callback(Substitution, valve):
-    Dependencies = (Busy, HostLink)
+    Dependencies = (Busy,)
     
     # get the device and port from the vacuumValveRead object, then
     # init            
@@ -74,7 +73,7 @@ class vacuumValve_callback(Substitution, valve):
         ilks     = List  ('Interlock Descriptions', 16, Simple, str),
         gilks    = List  ('Gauge Interlock Descriptions', 16, Simple, str),
         name     = Simple('Object name, also used for gda name if gda', str),
-        gda      = Simple('Set to True to export to gda', bool))
+        gda      = Simple('Set to True to make available to gda', bool))
 
     # Substitution attributes      
     ilkNames = ['ilk%s'%i for i in range(16)]
@@ -84,11 +83,11 @@ class vacuumValve_callback(Substitution, valve):
     TemplateFile = 'vacuumValve_callback.template'
     
 
-
-'''
+# Simulation has different db file
 class vacuumValve_callback_sim(vacuumValve_callback):
-    TemplateFile = 'simulation_vacuumValve.template'
-'''
+    TemplateFile = 'simulation_vacuumValve_callback.template'
+SetSimulation(vacuumValve_callback, vacuumValve_callback_sim)
+
 
 class vacuumValveGroup(Substitution):
     Arguments = (
@@ -96,12 +95,10 @@ class vacuumValveGroup(Substitution):
         'valve1', 'valve2', 'valve3', 'valve4',
         'valve5', 'valve6', 'valve7', 'valve8')
     TemplateFile = 'vacuumValveGroup.template'
-#    IdenticalSim = True  
 
 class dummyValve(Substitution):
     Arguments = ('device',)
     TemplateFile = 'dummyValve.template'
-#    IdenticalSim = True  
 
 class BeamRecords(ModuleBase):
     '''Creates beam records that the gui can connect to to see which valves and
@@ -118,16 +115,16 @@ class BeamRecords(ModuleBase):
         inps = [ 'INP%s' % x for x in letters ]
         # zip them together
         zipped = zip(inps, pvs)
-        for i in range(len(zipped)):        
-            recordName = '%s:STA%s' % (P, i+1)
+        for i in range(1,len(zipped)+1):        
+            recordName = '%s:STA%s' % (P, i)
             inpdict = dict(zipped[:i])
             CALC = '&'.join(['%s=1'%l for l in letters[:i]])
-            records.calc(recordName,CALC=CALC,**inpdict)
-        self.__super.__init__(**args)        
+            records.calc(recordName, CALC=CALC, **inpdict)
+        self.__super.__init__()        
                 
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
-        P = Simple('Device prefix for summary PV, records will be '\
+        P = Simple('Device prefix for summary PV, records will be '
                    '$(P):STA$(N) for 1<=N<=#objects', str),
-        objects = List('vacuumValve object', 12, Ident, vacuumValve_callback))
+        objects = List('vacuumValve object', 12, Ident, valve))
     

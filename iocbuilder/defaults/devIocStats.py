@@ -17,5 +17,3 @@ class ioc(Substitution, Device):
     # Device attributes    
     LibFileList = ['devIocStats']
     DbdFileList = ['iocAdmin']
-    
-#    IdenticalSim = True    

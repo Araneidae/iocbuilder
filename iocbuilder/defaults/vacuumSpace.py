@@ -27,7 +27,7 @@ class space(Substitution):
             return '%s-VA-GAUGE-%s'%(ob.args['dom'],ob.args['id'])
 
     def __init__(self, device, ionps = [None], gauges = [None], 
-            imgs = [None], pirgs = [None], valves = [None]):
+            imgs = [None], pirgs = [None], valves = [None], name = ''):
         # these are the different types of component we deal with
         components = dict(
             ionp = (digitelMpcIonpGroup, dummyIonp),
@@ -37,7 +37,7 @@ class space(Substitution):
             valve = (vacuumValveGroup,    dummyValve))
 
         # this is what we'll pass as the space.template arguments
-        argdict = dict(device=device)
+        argdict = dict(device=device, name=name)
         
         # loop over the component types
         for component, (group, dummy) in components.items():
@@ -81,12 +81,10 @@ class space(Substitution):
         gauges = List  ('Gauge objects', numobs, Ident, mks937aGauge),
         imgs   = List  ('Img objects',   numobs, Ident, mks937aImg),
         pirgs  = List  ('Pirg objects',  numobs, Ident, mks937aPirg),        
-        valves = List  ('Pirg objects',  numobs, Ident, valve))
+        valves = List  ('Pirg objects',  numobs, Ident, valve),
+        name   = Simple('Object name', str))        
 
     # Substutution attributes
-    Arguments = ['device', 'ionp', 'gauge', 'img', 'pirg', 'valve']
+    Arguments = ['name', 'device', 'ionp', 'gauge', 'img', 'pirg', 'valve']
     TemplateFile = 'space.template'
-    
-#    EdmScreen = ('space','device=%(device)s')
-#    IdenticalSim = True    
 

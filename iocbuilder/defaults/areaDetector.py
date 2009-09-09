@@ -15,10 +15,10 @@ class AreaDetector(Device):
 class ADBase(Substitution):
     Dependencies = (AreaDetector,)    
     
-    def __init__(self, P, R, PORT, MEMORY, BUFFERS = 16, TIMEOUT = 1):
+    def __init__(self, P, R, PORT, TIMEOUT = 1, ADDR = 0, **args):
         # These arguments are used by associated, rely on them to pick them up
         # before passing them down to ADBase
-        ADDR = 0
+        locals().update(args)
         self.__super.__init__(**filter_dict(locals(), self.Arguments))
 
     # __init__ arguments
@@ -26,67 +26,104 @@ class ADBase(Substitution):
         P       = Simple('Device Prefix', str),
         R       = Simple('Device Suffix', str),
         PORT    = Simple('Asyn Port name', str),
-        MEMORY  = Simple('Max memory to allocate, should be maxw*maxh*nbuffer for driver and all attached plugins', int),
-        BUFFERS = Simple('Maximum number of NDArray buffers to be created for plugin callbacks', int),
-        TIMEOUT = Simple('Timeout', int))
+        TIMEOUT = Simple('Timeout', int),
+        ADDR    = Simple('Asyn Port address', int))
 
     # Substitution attributes
-    Arguments = ('P', 'R', 'PORT', 'ADDR', 'TIMEOUT')    
+    Arguments = ArgInfo.Names()
     TemplateFile = 'ADBase.template'
 
 class NDPluginBase(ADBase):
 
-    def __init__(self, NDARRAY_PORT, NDARRAY_ADDR = 0, QUEUE = 16, BLOCK = 0, **args):
-        # ADBase will filter our argument for us, so just give it everything
-        self.__super.__init__(NDARRAY_PORT = NDARRAY_PORT, 
-            NDARRAY_ADDR = NDARRAY_ADDR, **args)
-
-    # __init__ arguments
-    ArgInfo = ADBase.ArgInfo + makeArgInfo(__init__,
-        NDARRAY_PORT = Simple('Input Array Port', str),
-        NDARRAY_ADDR = Simple('Input Array Address', str),
-        QUEUE        = Simple('Queue size', int),
-        BLOCK        = Simple('Blocking callbacks', int))
-
-    # Substitution attributes
-    Arguments = ('P', 'R', 'PORT', 'ADDR', 'TIMEOUT', 'NDARRAY_PORT', 'NDARRAY_ADDR')    
-    TemplateFile = 'NDPluginBase.template'
+    def __init__(self, NDARRAY_PORT, NDARRAY_ADDR = 0, **args):
+        # These arguments are used by associated, rely on them to pick them up
+        # before passing them down to ADBase
+        locals().update(args)
+        self.__super.__init__(**filter_dict(locals(), self.Arguments))
         
-class NDROIN(Substitution):
-    Dependencies = (AreaDetector,)
     # __init__ arguments
-    Arguments = ('P', 'R', 'PORT', 'ADDR', 'TIMEOUT', 'HIST_SIZE')
+    ArgInfo = ADBase.ArgInfo + makeArgInfo(__init__,        
+        NDARRAY_PORT = Simple('Input Array Port', str),
+        NDARRAY_ADDR = Simple('Input Array Address', str))
+
+    # Same but with a few more records
+    Arguments = ArgInfo.Names()    
+    TemplateFile = 'NDPluginBase.template'
+                        
+class NDROIN(Substitution):
     # Substitution attributes
+    Arguments = ADBase.Arguments +  ['HIST_SIZE']
     TemplateFile = 'NDROIN.template'
 
 class NDROI(Substitution, Device):
     Dependencies = (AreaDetector,)
     
-    def __init__(self, NROI = 1, HIST_SIZE = 256, **args):
+    def __init__(self,
+            MEMORY, NROI = 1, HIST_SIZE = 256, QUEUE = 16,
+            BLOCK = 0, BUFFERS = 16,  **args):
         # store things
-        self.__dict__.update(args)
-        self.NROI = NROI
+        ADDR = 0        
         locals().update(args)
-        ADDR = 0
+        self.__dict__.update(locals())
         # make NROI instances of NROIN
         for i in range(NROI):            
-            dargs = dict((k,locals()[v]) for k in NDROIN.Arguments)
+            dargs = filter_dict(locals(), NDROIN.Arguments)
             dargs['R'] += "%s:"%i
             dargs['ADDR'] = i
             NDROIN(**dargs)
         # make an instance of NDPluginBase
-        NDPluginBase(**args)
-        # initialise the Substitutions class
-        self.__super.__init__(**filter_dict(locals(), self.Arguments))
+        pb = NDPluginBase(**filter_dict(locals(),NDPluginBase.ArgInfo.Names()))
+        self.__dict__.update(pb.args)        
+        # init the substitution
+        self.__super.__init__(**filter_dict(locals(),self.Arguments))
 
     # __init__ arguments
-    ArgInfo = makeArgInfo(__init__,
+    ArgInfo = NDPluginBase.ArgInfo + makeArgInfo(__init__,
+        MEMORY    = Simple(
+            'Max memory to allocate, should be maxw*maxh*nbuffer for driver'
+            ' and all attached plugins', int),    
         NROI      = Simple('Number of ROIs', int),
-        HIST_SIZE = Simple('Histogram size', int))
+        HIST_SIZE = Simple('Histogram size', int),
+        QUEUE     = Simple('Queue size', int),
+        BLOCK     = Simple('Blocking callbacks', int),
+        BUFFERS   = Simple(
+            'Maximum number of NDArray buffers to be created for plugin'
+            ' callbacks', int))
 
     # Substitution attributes
-    Arguments = ('P', 'R', 'PORT', 'ADDR', 'TIMEOUT')
+    Arguments = ADBase.Arguments
     TemplateFile = 'NDROI.template'
-        
+                
     def Initialise(self):
-        print 'drvNDROIConfigure("%(PORT)s", %(QUEUE)d, %(BLOCK)d, "%(NDARRAY_PORT)s", "%(NDARRAY_ADDR)s", %(NROI)d, %(BUFFERS)d, %(MEMORY)d)'%self.__dict__
+        print 'drvNDROIConfigure("%(PORT)s", %(QUEUE)d, %(BLOCK)d,' \
+            ' "%(NDARRAY_PORT)s", "%(NDARRAY_ADDR)s", %(NROI)d,' \
+            ' %(BUFFERS)d, %(MEMORY)d)' % self.__dict__
+
+class simDetector(Device):
+    '''Creates a simulation detector'''
+    
+    # work out with args are for firewireDCAM.db, and which are for ADBase
+    def __init__(self, WIDTH, HEIGHT, MEMORY, BUFFERS = 16, **args):        
+        locals().update(args)
+        self.__dict__.update(locals())        
+        ADBase(**filter_dict(locals(), ADBase.ArgInfo.Names()))
+        self.__super.__init__()
+
+    # __init__ arguments
+    ArgInfo = ADBase.ArgInfo + makeArgInfo(__init__,
+        WIDTH  = Simple('Image Width', int),
+        HEIGHT = Simple('Image Height', int),
+        MEMORY  = Simple(
+            'Max memory to allocate, should be maxw*maxh*nbuffer for driver'
+            ' and all attached plugins', int),        
+        BUFFERS = Simple('Maximum number of NDArray buffers to be created for'
+            ' plugin callbacks', int))
+        
+    # Device attributes
+    LibFileList = ['simDetector']
+    DbdFileList = ['simDetectorSupport']    
+
+    def Initialise(self):
+        # ADBase has stored these for us       
+        print 'simDetectorConfig("%(PORT)s", %(WIDTH)s, %(HEIGHT)s, 1,' \
+            ' %(BUFFERS)d, %(MEMORY)d)' % self.__dict__

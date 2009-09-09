@@ -1,10 +1,10 @@
-from iocbuilder import Substitution
+from iocbuilder import Substitution, SetSimulation
 from iocbuilder.arginfo import *
 
 class Hy8401continuous_100k(Substitution):
     '''Continuous capturing of 1 8401 channel at 100KHz'''
 
-    def __init__(self, P, C, CH1, S = 0, NELM = 50000, FTVL = 'FLOAT'):
+    def __init__(self, P, C, CH1, S = 0, NELM = 50000, FTVL = 'FLOAT', name = ''):
         self.__super.__init__(**filter_dict(locals(), self.Arguments))
     
     # __init__ arguments
@@ -22,9 +22,13 @@ class Hy8401continuous_100k(Substitution):
     Arguments = ArgInfo.Names()
     TemplateFile = 'Hy8401continuous_100k.template'
 
-    
+# inform iocbuilder that there is no simulation
+SetSimulation(Hy8401continuous_100k, None)
+
+
 # TODO: Do this with a proper ai record
 class ai(Substitution):
+    Simulation = False
     def __init__(self, P, R, INP, name = '', desc = '', 
             DTYP = 'Hy8401ip', SCAN = '1 second', PREC = 4, EGUL = -10, 
             EGUF = 10, EGU = 'V', LINR = 'LINEAR', gda = False):
@@ -32,6 +36,9 @@ class ai(Substitution):
             gda_name, gda_desc = (name, desc)
         else:
             gda_name, gda_desc = ('', '')
+        if self.Simulation:
+            INP = ''
+            DTYP = 'Soft Channel'
         self.__super.__init__(**filter_dict(locals(), self.Arguments))
 
 
@@ -54,4 +61,8 @@ class ai(Substitution):
     # Substitution attributes
     TemplateFile = 'ai.template'
     Arguments = ArgInfo.Names(without = ['gda']) + ['gda_name', 'gda_desc']
-    
+
+# Set ai.Simulation = True if in simulation mode  
+class ai_sim(ai):
+    Simulation = True            
+SetSimulation(ai, ai_sim)

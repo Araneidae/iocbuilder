@@ -192,8 +192,6 @@ def Enum(desc, values):
 
 def Ident(desc, typ):
     # a choice of identifiers of a particular type
-    assert issubclass(typ, ModuleBase), \
-        '%s is not a ModuleBase subclass, can\'t do Ident lookup' % typ
     desc = '%s %s' % (desc, typ)        
     return ArgType(desc, typ, ident = True)
 

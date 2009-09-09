@@ -1,6 +1,6 @@
 # Hardware implementation for 8001 digital IO card.
 
-from iocbuilder import records, RecordFactory
+from iocbuilder import records, RecordFactory, SetSimulation
 from Carrier import IpCarrier
 from iocbuilder.arginfo import *
 
@@ -84,7 +84,6 @@ class Hy8001(IpCarrier):
         return _Hy8001bit(self, offset)
 
 
-
 class _Hy8001bit:
     def __init__(self, card, offset):
         assert card.low_bit <= offset and offset < 64, 'Bit out of range'
@@ -137,3 +136,7 @@ class _Hy8001register:
         assert 0 <= offset and offset + length <= self.length, \
                'Subregister out of range'
         return _Hy8001register(self.card, self.offset + offset, length)
+
+
+# inform iocbuilder that there is no simulation
+SetSimulation(Hy8001, None)

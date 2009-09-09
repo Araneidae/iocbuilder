@@ -1,15 +1,16 @@
 from iocbuilder import Substitution, Device
 from iocbuilder.arginfo import *
 
-__all__ = ['basic_asyn_motor', 'MotorController']
+__all__ = ['basic_asyn_motor', 'MotorController', 'MotorSimLib']
 
-'''
+
+from iocbuilder.modules.asyn import Asyn
+
 class MotorSimLib(Device):
-    Dependencies = (Asyn, Seq)
+    Dependencies = (Asyn,)
     LibFileList = [ "motorSimSupport" ]
     DbdFileList = [ "motorSimSupport" ]
     AutoInstantiate = True    
-'''
 
 class MotorController(Device):
     pass
@@ -26,7 +27,7 @@ class basic_asyn_motor(Substitution):
             UEIP = False, OFF = 0.0, RDBD = '', FOFF = 0, 
             name = '', gda = True, **args):
         # Default VMAX to VELO
-        if VMAX is not None:
+        if VMAX is None:
             VMAX = VELO
         # If gda then set gda_name = name and gda_desc = DESC
         if gda:
@@ -35,7 +36,8 @@ class basic_asyn_motor(Substitution):
             gda_name, gda_desc = ('', '')
         # Convert UEIP to an int
         UEIP = int(UEIP)        
-        PORT = Controller.DeviceName
+        PORT = Controller.DeviceName()
+        locals().update(args)
         self.__super.__init__(**filter_dict(locals(), self.Arguments))
 
     # __init__ arguments
@@ -76,10 +78,8 @@ class basic_asyn_motor(Substitution):
 
     # Substitution attributes
     TemplateFile = 'basic_asyn_motor.template'
-    Arguments = ['PORT', 'gda_name', 'gda_desc'] + \
-        ArgInfo.Names(without = ['Controller'])
-
-#    IdenticalSim = True        
+    Arguments = ['PORT'] + ArgInfo.Names(without = ['Controller', 'gda']) + \
+        ['gda_name', 'gda_desc']
                         
 
 class motorUtil(Substitution, Device):
@@ -96,7 +96,6 @@ class motorUtil(Substitution, Device):
     # Substitution attributes
     Arguments = ArgInfo.Names()
     TemplateFile = 'motorUtil.template'
-#    IdenticalSim = True  
 
     def Initialise(self):
         print 'motorUtilInit("%(P)s")' % self.__dict__

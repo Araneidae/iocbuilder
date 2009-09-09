@@ -1,4 +1,4 @@
-from iocbuilder import Substitution, Device
+from iocbuilder import Substitution, Device, SetSimulation
 from iocbuilder.arginfo import *
 
 class IOCinfo(Substitution, Device):
@@ -19,3 +19,6 @@ class IOCinfo(Substitution, Device):
     # Device attributes    
     DbdFileList = ['IOCinfo']
     LibFileList = ['IOCinfo']
+
+# Inform iocbuilder that there is no simulation
+SetSimulation(IOCinfo, None)

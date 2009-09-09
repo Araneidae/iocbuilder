@@ -3,7 +3,7 @@ from iocbuilder import Device, RecordFactory, IocDataFile, ModuleBase
 from iocbuilder import records, hardware, iocwriter
 from iocbuilder.configure import Call_TargetOS
 from iocbuilder.iocwriter import IocWriter
-from iocbuilder.iocinit import quote_IOC_string
+from iocbuilder.iocinit import quote_IOC_string, iocInit
 
 from asyn import AsynSerial
 
@@ -63,6 +63,7 @@ class streamProtocol(Device):
 
 class ProtocolFile(Device):
     Dependencies = (streamDevice,)
+    InitialisationPhase = Device.FIRST    
 
     # We'll need to post process the list of instances
     __ProtocolFiles = set()
@@ -89,7 +90,7 @@ class ProtocolFile(Device):
         # needs to be copied or if we are trying to use more than one
         # protocol directory then copying is needed.  (We could specify a
         # protocol path instead, but this isn't implemented yet.)
-        print "# Configure StreamDevice paths"
+        print '# Configure StreamDevice paths'
         if self.__ForceCopy:
             for file in self.__ProtocolFiles:
                 # Grab a copy of each data file.
@@ -102,15 +103,15 @@ class ProtocolFile(Device):
             Call_TargetOS(self, 'ProtocolPath', protocol_macronames)
 
     def ProtocolPath_linux(self, protocol_macronames):
-        protocol_dirs = [ "$(%s)/data" % x for x in protocol_macronames ]
-        print 'epicsEnvSet "STREAM_PROTOCOL_PATH", %s' % \
-            quote_IOC_string(':'.join(protocol_dirs))
+        protocol_dirs = [ '$(%s)/data' % x for x in protocol_macronames ]
+        print 'epicsEnvSet "STREAM_PROTOCOL_PATH", "%s"' % \
+            ':'.join(protocol_dirs)
 
     def ProtocolPath_vxWorks(self, protocol_macronames):
-        print "STREAM_PROTOCOL_DIR = malloc(%d)" % \
+        print 'STREAM_PROTOCOL_DIR = malloc(%d)' % \
             (IocWriter.IOCmaxLineLength_vxWorks * len(protocol_macronames))
-        if iocwriter.substitute_boot:
-            protocol_dirs = ["$(%s)/data" % x for x in protocol_macronames]
+        if iocInit.substitute_boot:
+            protocol_dirs = ['$(%s)/data' % x for x in protocol_macronames]
             print 'strcpy(STREAM_PROTOCOL_DIR,"%s")' % protocol_dirs[0]
             for x in protocol_dirs[1:]:
                 print 'strcat(STREAM_PROTOCOL_DIR,":%s")' % x            

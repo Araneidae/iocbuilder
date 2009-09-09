@@ -1,4 +1,4 @@
-from iocbuilder import Substitution
+from iocbuilder import Substitution, SetSimulation
 from iocbuilder.modules.streamDevice import AutoProtocol
 from iocbuilder.modules.asyn import AsynPort
 from iocbuilder.arginfo import *
@@ -19,25 +19,17 @@ class mks937a(Substitution, AutoProtocol):
     # AutoProtocol attributes
     ProtocolFiles = ['mks937a.protocol']    
 
-'''              
-class mks937a_sim(Substitution):
+# The simulation has a slightly different db file                      
+class mks937a_sim(mks937a):
+    TemplateFile = 'simulation_mks937a.template'    
+SetSimulation(mks937a, mks937a_sim)     
 
-    # Substitution attributes
-    TemplateFile = 'simulation_mks937a.template'
-    Arguments = ['device', 'port']
-    
-    # __init__ attributes
-    ArgInfo = makeArgInfo(Arguments,
-        device = Simple('Device Prefix', str),
-        port = Simple('Dummy Asyn Serial Port', str),
-    )
-'''
 
 class mks937aImg(Substitution):
     '''Template for controlling an IMG attached to an MKS 937a'''
     
     # get the port from mks937a, then init        
-    def __init__(self, device, controller, channel):
+    def __init__(self, device, controller, channel, name = ''):
         port = controller.args['port']
         self.__super.__init__(**filter_dict(locals(), self.Arguments))
 
@@ -46,24 +38,21 @@ class mks937aImg(Substitution):
         device     = Simple('Device Prefix', str),
         controller = Ident ('Parent mks937a instance', mks937a),
         channel    = Simple('Channel number', int),
-    )
+        name       = Simple('Object name', str))        
 
     # Substitution attributes
     Arguments = ArgInfo.Names(without = 'controller') + ['port']
     TemplateFile = 'mks937aImg.template'
 
-#    EdmScreen = ('mks937aImg','device=%(device)s')
-  
+      
 class mks937aPirg(mks937aImg):
     '''Template for controlling a PIRG attached to an MKS 937a'''
     
     # This is almost identical to the Img, just a different template
     # Substitution attributes
     TemplateFile = 'mks937aPirg.template'
-    
-#    EdmScreen = ('mks937aPirg','device=%(device)s')        
 
-'''
+
 try:
     # try to make some simulations, but need pressArr
     from iocbuilder.modules.pressArr_subrec import pressArr
@@ -71,13 +60,18 @@ try:
     class mks937aImg_sim(mks937aImg):
         Dependencies = (pressArr,)
         TemplateFile = 'simulation_mks937aImg.template'
+        
+    SetSimulation(mks937aImg, mks937aImg_sim)         
 
     class mks937aPirg_sim(mks937aPirg):
         Dependencies = (pressArr,)
         TemplateFile = 'simulation_mks937aPirg.template'
+        
+    SetSimulation(mks937aPirg, mks937aPirg_sim)         
+
 except ImportError:
-    pass
-'''                                    
+    print "# pressarr not included, cannot make mks937a simulations"
+
                                                                                                             
 class mks937aGauge(Substitution):
     '''Template for reading the analogue pressure from an MKS 937a'''
@@ -98,10 +92,11 @@ class mks937aGauge(Substitution):
     Arguments = ArgInfo.Names()
     TemplateFile = 'mks937aGauge.template'    
 
-'''    
+# The simulation has a slightly different db file
 class mks937aGauge_sim(mks937aGauge):
     TemplateFile = 'simulation_mks937aGauge.template'
-'''
+SetSimulation(mks937aGauge, mks937aGauge_sim)    
+
 
 class mks937aGaugeGroup(Substitution):
     Arguments = (
@@ -109,14 +104,14 @@ class mks937aGaugeGroup(Substitution):
         'gauge1', 'gauge2', 'gauge3', 'gauge4',
         'gauge5', 'gauge6', 'gauge7', 'gauge8')
     TemplateFile = 'mks937aGaugeGroup.template'
-#    IdenticalSim = True  
+
 
 class mks937aImgGroup(Substitution):
     Arguments = (
         'device',
         'img1', 'img2', 'img3', 'img4', 'img5', 'img6', 'img7', 'img8')
     TemplateFile = 'mks937aImgGroup.template'
-#    IdenticalSim = True  
+
 
 class mks937aPirgGroup(Substitution):
     Arguments = (
@@ -124,9 +119,9 @@ class mks937aPirgGroup(Substitution):
         'pirg1', 'pirg2', 'pirg3', 'pirg4',
         'pirg5', 'pirg6', 'pirg7', 'pirg8')
     TemplateFile = 'mks937aPirgGroup.template'
-#    IdenticalSim = True  
+
 
 class mks937aImgDummy(Substitution):
     Arguments = ('device',)
     TemplateFile = 'mks937aImgDummy.template'
-#    IdenticalSim = True  
+

@@ -10,8 +10,9 @@ from support import autosuper_meta, SameDirFile, CreateModule
 import hardware
 
 
-__all__ = ['ModuleVersion', 'ModuleBase', 'modules', 'autodepends', 
-    'SetSimulation']
+__all__ = [
+    'ModuleVersion', 'ModuleBase', 'modules', 'autodepends', 
+    'SetSimulation', 'DummySimulation']
 
 
 
@@ -453,11 +454,21 @@ modules = CreateModule('iocbuilder.modules')
 modules.LoadedModules = {}
 
 
+class DummySimulation(object):
+    '''Used to create simulation objects with no behaviour.'''
+    def __init__(self, **kwargs):
+        self.args = kwargs
+
+
 simulation_mode = False
 def SetSimulation(real, sim):
     '''If we are in simulation mode, then place sim instead of real in
     iocbuilder.modules and ModuleBase.ModuleBaseClasses.'''
     if simulation_mode:
+        if sim is None:
+            class sim(DummySimulation):
+                pass
+        
         # first replace it in the list of subclasses
         index = ModuleBase.ModuleBaseClasses.index(real)
         ModuleBase.ModuleBaseClasses[index] = sim
@@ -479,5 +490,3 @@ def SetSimulation(real, sim):
         except:
             pass
         return real
-        
-        

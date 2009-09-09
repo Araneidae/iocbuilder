@@ -1,4 +1,4 @@
-from iocbuilder import records, RecordFactory
+from iocbuilder import records, RecordFactory, SetSimulation
 from iocbuilder.modules.ipac import IpDevice, IpCarrier
 from iocbuilder.arginfo import *
 
@@ -88,8 +88,6 @@ class Hy8401(IpDevice):
     def channel(self, channel):
         return _ADCchannel(self, channel)
 
-
-
 # A single ADC channel on an ADC.  This class remembers all the information
 # required to create records to read from the adc
 class _ADCchannel:
@@ -118,3 +116,6 @@ class _ADCchannel:
     def _waveform_address(self, fields):
         params = _ReadField(fields, 'offset', 'OFFSET') 
         return '#C%d S%d @%s' % (self.adc.cardid, self.channel, params)
+
+# inform iocbuilder that there is no simulation
+SetSimulation(Hy8401, None)

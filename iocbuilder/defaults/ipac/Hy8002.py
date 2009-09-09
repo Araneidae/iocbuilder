@@ -1,6 +1,7 @@
 # Hardware definitions for 8002 and IP cards
 
 from Carrier import IpCarrier
+from iocbuilder import SetSimulation
 from iocbuilder.arginfo import *
 
 __all__ = ['Hy8002']
@@ -38,3 +39,6 @@ class Hy8002(IpCarrier):
         # The only initialisation an 8002 needs is to initialise the carrier.
         self.InitialiseCarrier(
             'EXTHy8002', self.slot, self.intLevel, self.swapint)
+
+# inform iocbuilder that there is no simulation
+SetSimulation(Hy8002, None)

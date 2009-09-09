@@ -7,8 +7,7 @@ from iocbuilder.modules.std import Std
 
 class generic_scan(Substitution):
     ''''''
-    Dependencies = (Calc,Sscan,Std)
-#    IdenticalSim = True    
+    Dependencies = (Calc,Sscan,Std)  
     
     def __init__(self, P, S = '', MPTS = 1000, Dets = [''], Posns = [''],
             Trigs = ['']):        
@@ -18,8 +17,8 @@ class generic_scan(Substitution):
             l = locals()[name]
             # extend it so it's at least 8 elements long
             l += ['']*8
-            # make a dict, e.g. d["D01"] = Dets[0]
-            d = dict(zip(getattr(self, "_"+name), l))
+            # make a dict, e.g. d['D01'] = Dets[0]
+            d = dict(zip(getattr(self, '_'+name), l))
             # update args with it
             args.update(d)
         self.__super.__init__(**args)
@@ -34,9 +33,9 @@ class generic_scan(Substitution):
         Trigs = List  ('Default Trigger PV', 4, Simple, str))
 
     # Substitution attributes
-    _Dets = [ "D%02d" % i for i in range(1, 8) ]
-    _Posns = [ "P%d" % i for i in range(1, 4) ]
-    _Trigs = [ "T%d" % i for i in range(1, 4) ]
+    _Dets = [ 'D%02d' % i for i in range(1, 9) ]
+    _Posns = [ 'P%d' % i for i in range(1, 5) ]
+    _Trigs = [ 'T%d' % i for i in range(1, 5) ]
     Arguments = ['P', 'S', 'MPTS'] + _Dets + _Posns + _Trigs
     TemplateFile = 'generic-scan.template'
     
