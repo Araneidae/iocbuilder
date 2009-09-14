@@ -1,5 +1,4 @@
-from iocbuilder import Substitution, ModuleBase, records
-from iocbuilder import SetSimulation, DummySimulation
+from iocbuilder import Substitution, ModuleBase, records, SetSimulation
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.HostLink import HostLink
@@ -21,8 +20,7 @@ class vacuumValveRead(Substitution):
 
 
 # Simulation is just a placeholder to satisfy vacuumValve_callback
-class vacuumValveRead_sim(DummySimulation): pass
-SetSimulation(vacuumValveRead, vacuumValveRead_sim)
+SetSimulation(vacuumValveRead, None)
 
 
 class valve(ModuleBase):
