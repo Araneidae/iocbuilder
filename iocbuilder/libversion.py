@@ -131,7 +131,7 @@ class ModuleVersion:
         self.home = home
         self.use_name = use_name
 
-        self.__macroname = libname.upper()
+        self.__macroname = PythonIdentifier(libname.upper())
         assert self.__macroname not in self.__MacroNames, \
             'Module with macro name %s already defined' % self.__macroname
         self.__MacroNames.add(self.__macroname)
@@ -476,7 +476,8 @@ def SetSimulation(real, sim):
         sim.__name__ = real.__name__
         sim.ModuleName = real.ModuleName
         sim.ArgInfo = real.ArgInfo
-        setattr(getattr(modules, real.ModuleName), real.__name__, sim)
+        modulename = real.ModuleVersion.ModuleName()
+        setattr(getattr(modules, modulename), real.__name__, sim)
         return sim
     else:
         # first replace it in the list of subclasses
@@ -486,7 +487,8 @@ def SetSimulation(real, sim):
             pass
         # now in iocbuilder.modules
         try:
-            delattr(getattr(modules, sim.ModuleName), sim.__name__)
+            modulename = sim.ModuleVersion.ModuleName()
+            delattr(getattr(modules, modulename), sim.__name__)
         except:
             pass
         return real
