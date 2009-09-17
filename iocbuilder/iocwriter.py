@@ -45,10 +45,10 @@ def PrintDisclaimerCommand(cmd):
     return f
     
 
-class WriteFile:
+class WriteFileWrapper:
     '''A support routine for writing files using the print mechanism.  This is
     simply a wrapper around sys.stdout redirection.  Use this thus:
-        output = WriteFile(filename)
+        output = WriteFileWrapper(filename)
         ... write to stdout using print etcetera ...
         output.Close()
     By default the standard disclaimer header is printed at the start of the
@@ -93,6 +93,15 @@ class WriteFile:
         sys.stdout = self.__stdout
 
 
+def WriteFile(filename, writer, *argv, **argk):
+    output = WriteFileWrapper(filename, **argk)
+    if callable(writer):
+        writer(*argv)
+    else:
+        print writer
+    output.Close()
+
+    
 class DataDirectory:
     '''Class to support the creation of data files, either dynamically
     generated inline, or copied from elsewhere.  Designed to be passed down
@@ -152,7 +161,7 @@ class Makefile:
             print line
 
     def Generate(self, root):
-        output = WriteFile(os.path.join(root, self.path, 'Makefile'))
+        output = WriteFileWrapper(os.path.join(root, self.path, 'Makefile'))
         self.__print(self.header)
         print
         self.__print(self.lines)
@@ -184,14 +193,14 @@ class IocWriter:
 
         # Printout of records and subsititution files
         self.PrintRecords = recordset.RecordSet.Print
-        self.PrintSubstitutions = recordset.SubstitutionSet.Print
-        self.SortedTemplateList = recordset.SubstitutionSet.SortedTemplateList
+        self.PrintSubstitutions = recordset.RecordsSubstitutionSet.Print
         # Alternative to mass expand substitution files at build time
         self.ExpandSubstitutions = \
-            recordset.SubstitutionSet.ExpandSubstitutions
+            recordset.RecordsSubstitutionSet.ExpandSubstitutions
 
         self.CountRecords = recordset.RecordSet.CountRecords
-        self.CountSubstitutions = recordset.SubstitutionSet.CountSubstitutions
+        self.CountSubstitutions = \
+            recordset.RecordsSubstitutionSet.CountSubstitutions
 
         # Print st.cmd for IOC
         self.PrintIoc = iocinit.iocInit.PrintIoc
@@ -214,13 +223,7 @@ class IocWriter:
     def WriteFile(self, filename, writer, *argv, **argk):
         if not isinstance(filename, types.StringTypes):
             filename = os.path.join(*filename)
-        output = WriteFile(
-            os.path.join(self.iocRoot, filename), **argk)
-        if callable(writer):
-            writer(*argv)
-        else:
-            print writer
-        output.Close()
+        WriteFile(os.path.join(self.iocRoot, filename), writer, *argv, **argk)
         
 
     def ResetRecords(self):
@@ -282,7 +285,7 @@ class DiamondIocWriter(IocWriter):
 
     '''
 
-    __all__ = ['WriteIoc', 'WriteNamedIoc']
+    __all__ = ['WriteIoc', 'WriteNamedIoc', 'AddDataFile']
     
 
     IOC_configure_Skeleton = {
@@ -450,6 +453,25 @@ int main(int argc,char *argv[])
         cls(path, ioc_name, **argk)
 
 
+    # List of files to be added to the data directory during the build.
+    DataFileList = []
+    
+    @classmethod
+    def AddDataFile(cls, filename, write_file=None):
+        '''Adds a data file to the build process.  First this ensures that a
+        line of the form
+            DATA += filename
+        appears in the <ioc>App/data/Makefile.  In turn, this line ensures
+        that the named file is build (if necessary and possible) and copied to
+        the top level data directory.
+
+        Second, if write_file is given then this will be called late during
+        IOC generation: this call should ensure that the necessary
+        prerequisites for filename are present, and it will be passed the
+        path to the data directory.'''
+        cls.DataFileList.append((filename, write_file))
+        
+
     # Top level IOC writer control
 
     def __init__(self, path, ioc_name,
@@ -482,6 +504,7 @@ int main(int argc,char *argv[])
             
         self.makefile_db   = Makefile(self.iocDbDir,   header, footer)
         self.makefile_src  = Makefile(self.iocSrcDir,  header, footer)
+        self.makefile_data = Makefile(self.iocDataDir, header, footer)
         self.makefile_boot = Makefile(self.iocBootDir, header, footer)
         self.makefile_top  = Makefile('',
             self.TOP_MAKEFILE_HEADER, self.TOP_MAKEFILE_FOOTER)
@@ -498,6 +521,7 @@ int main(int argc,char *argv[])
             'configure',
             self.iocDbDir,
             self.iocSrcDir,
+            self.iocDataDir,
             self.iocBootDir]
         for d in dirs:
             self.MakeDirectory(d)
@@ -508,17 +532,16 @@ int main(int argc,char *argv[])
         # Push IOC name and data directory out to components that need to know
         self.SetIocName(self.ioc_name, self.substitute_boot)
         self.SetDataPath(self.iocDataDir)
+        # Now tell all module base classes that IOC generation has begun.
+        libversion.ModuleBase.CallModuleMethod('Finalise')
 
         # Generate each of the output stages.  The order matters!
         self.CreateDatabaseFiles()
         self.CreateSourceFiles()
         self.CreateBootFiles()
         self.CreateConfigureFiles()
+        self.CreateDataFiles()
 
-        # Note that the data files have to be generated after almost
-        # everything else, as they can be generated by Initialise commands.
-        self.CopyDataFiles(self.iocRoot)
-    
         # Finally generate the make files
         self.WriteMakefiles()
         
@@ -526,6 +549,7 @@ int main(int argc,char *argv[])
         '''Outputs all the individual make files.'''
         self.makefile_top.Generate(self.iocRoot)
         self.makefile_boot.Generate(self.iocRoot)
+        self.makefile_data.Generate(self.iocRoot)
         self.makefile_src.Generate(self.iocRoot)
         self.makefile_db.Generate(self.iocRoot)
 
@@ -545,7 +569,7 @@ int main(int argc,char *argv[])
         # Generate the .db and substitutions files and compute the
         # appropriate makefile targets.
         if self.CountRecords():
-            self.WriteFile((self.iocDbDir, db), self.PrintRecords, )
+            self.WriteFile((self.iocDbDir, db), self.PrintRecords)
             self.AddDatabase(os.path.join('db', db))
             makefile.AddLine('DB += %s' % db)
             AutoSaveDatabaseHook(self.ioc_name, self.makefile_db, True)
@@ -639,6 +663,16 @@ int main(int argc,char *argv[])
                 '%s = %s' % (module.MacroName(), module.LibPath()))
         self.WriteFile('configure/RELEASE', '\n'.join(releases))
 
+
+    def CreateDataFiles(self):
+        # Note that the data files have to be generated after almost
+        # everything else, as they can be generated by Initialise commands.
+        self.CopyDataFiles(self.iocRoot)
+        for filename, write_file in self.DataFileList:
+            if write_file is not None:
+                write_file(os.path.join(self.iocRoot, self.iocDataDir))
+            self.makefile_data.AddLine("DATA += %s" % filename)
+        
 
 
 # This function is a special hack: this is called during autosave database

@@ -415,6 +415,20 @@ class ModuleBase(object):
         objects returned are ModuleVersion instances.'''
         return cls._ReferencedModules
 
+    @classmethod
+    def CallModuleMethod(cls, name, class_method=False, **args):
+        '''For every ModuleBase instance (or every sub-class if class_method
+        is True) checks for a method with the given name, and if found, calls
+        it.  Useful for binding events to all ModuleBase instances.'''
+        if class_method:
+            l = cls._ReferencedClasses
+        else:
+            l = cls._ModuleBaseInstances
+        for x in l:
+            f = getattr(x, name, None)
+            if f is not None:
+                f(**args)
+
         
 def autodepends(*devices):
     '''This is a decorator helper function designed to be used with functions

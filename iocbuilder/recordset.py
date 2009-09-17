@@ -5,15 +5,14 @@ import subprocess
 
 import recordnames
 from libversion import ModuleBase
-from support import Singleton
+import support
 
 
 __all__ = ['LookupRecord', 'Substitution']
 
 
 
-
-class RecordSet(Singleton):
+class RecordSet(support.Singleton):
     def __init__(self):
         self.Reset()
 
@@ -42,23 +41,18 @@ class RecordSet(Singleton):
         return len(self.__RecordSet)            
 
 
-        
-class SubstitutionSet(Singleton):
-    def __init__(self):
-        self.Reset()
 
-    def Reset(self):
+class SubstitutionSetBase(support.autosuper_object):
+    def __init__(self):
         # Dictionary indexed by substitution sub-classes.  For each sub-class
         # the entry consists of a list of substitution instances.
-        self.__Substitutions = {}
-        
+        #   We use an ordered dictionary so that we can print out
+        # substitutions in the order they were originally given.
+        self.__Substitutions = support.OrderedDict()
 
     def AddSubstitution(self, substitution):
-        subClass = substitution.__class__
-        if subClass not in self.__Substitutions:
-            self.__Substitutions[subClass] = []
-        self.__Substitutions[subClass].append(substitution)
-
+        self.__Substitutions.setdefault(
+            substitution.TemplateName(True), []).append(substitution)
 
     def ExpandSubstitutions(self, msiPath):
         '''Expand all the substitutions inline.  The path to locate the msi
@@ -67,33 +61,24 @@ class SubstitutionSet(Singleton):
             for substitution in subList:
                 substitution.ExpandSubstitution(msiPath)
 
-    def SortedTemplateList(self):
-        '''Returns a list of all current substitutions as a list of pairs
-        (substitution_class, instance_list) sorted by the name of the
-        template file associated with each subsitution class.'''
-        return sorted(
-            self.__Substitutions.items(),
-            key=lambda (s,l): s.TemplateFile)
-
     def Print(self, macro_name = True):
         '''Prints out a substitutions file.'''
         # Print out the list in canonical order to help with comparison
         # across minor changes.
-        for template, subList in self.SortedTemplateList():
+        for template, subList in self.__Substitutions.items():
             print
-            print 'file %s' % template.TemplateName(macro_name)
+            print 'file %s' % template
             print '{'
-            template.PrintPattern()
+            subList[0]._PrintPattern()
             for substitution in subList:
-                substitution.PrintSubstitution()
+                substitution._PrintSubstitution()
             print '}'
 
     def CountSubstitutions(self):
         return len(self.__Substitutions)
 
 
-
-class Substitution(ModuleBase):
+class SubstitutionBase(ModuleBase):
     '''Each sub-class of this class defines a Substitution.  A Substitution is
     defined by specifying the following class members in the subclass:
         Arguments = (...)
@@ -105,18 +90,23 @@ class Substitution(ModuleBase):
     '''
 
     BaseClass = True
-
     TemplateFile = None
+    SubstitutionSet = None
+    TemplateDir = None
 
-    @classmethod
-    def TemplateName(cls, macro_name = False):
+    def TemplateName(self, macro_name):
         '''Computes the template file name.  If macro_name is true then
         a form suitable for msi macro expansion is returned.'''
-        return os.path.join(
-            cls.LibPath(macro_name = macro_name), 'db', cls.TemplateFile)
+        assert self.TemplateFile is not None, 'No template file specified'
+        if self.TemplateDir is None:
+            return self.TemplateFile
+        else:
+            return os.path.join(
+                self.LibPath(macro_name = macro_name),
+                self.TemplateDir, self.TemplateFile)
 
     @classmethod
-    def PrintPattern(cls):
+    def _PrintPattern(cls):
         '''Outputs the substitution pattern line associated with this
         Substitution.  This is output in a format suitable for inclusion within
         a substitutions file.'''
@@ -127,7 +117,6 @@ class Substitution(ModuleBase):
         '''Creates a substitution instance with the given arguments.  The
         arguments need to match the arguments expected by the template to
         be expanded.'''
-        
         self.__super.__init__()
         
         # Check that all the required arguments have been given: we can't do
@@ -137,18 +126,22 @@ class Substitution(ModuleBase):
             'Arguments %s missing or not recognised' % \
                 list(set(args).symmetric_difference(set(self.Arguments)))
         # Check that the referenced template file actually exists!
-        template = self.TemplateName()
-        assert os.access(template, os.R_OK), \
-            'Can\'t find template file "%s"' % template
+        template = self.TemplateName(False)
+        if self.TemplateDir is not None:
+            assert os.access(template, os.R_OK), \
+                'Can\'t find template file "%s"' % template
+        else:
+            print 'Not validating template file "%s"' % template
 
         # Add ourself to the list of substitutions.
         self.args = args
-        SubstitutionSet.AddSubstitution(self)
+        if self.SubstitutionSet is not None:
+            self.SubstitutionSet.AddSubstitution(self)
 
 
-    def PrintSubstitution(self):
+    def _PrintSubstitution(self):
         '''Outputs a single substitution line, in order of arguments.  This
-        should be preceded by a call to PrintPattern().'''
+        should be preceded by a call to _PrintPattern().'''
         print '    {', ', '.join(
             [QuoteArgument(self.args[arg]) for arg in self.Arguments]), \
             '}'
@@ -158,7 +151,7 @@ class Substitution(ModuleBase):
         
         argList = ['%s=%s' % (arg, QuoteArgument(self.args[arg]))
                    for arg in self.Arguments]
-        template = self.TemplateName()
+        template = self.TemplateName(False)
 
         print
         print '#', 75 * '-'
@@ -175,7 +168,15 @@ class Substitution(ModuleBase):
             print line,
         assert p.wait() == 0, 'Error running msi'
 
-        
+
+
+class Substitution(SubstitutionBase):
+    BaseClass = True
+    SubstitutionSet = SubstitutionSetBase()
+    TemplateDir = 'db'
+
+RecordsSubstitutionSet = Substitution.SubstitutionSet
+
 
 def QuoteArgument(argument):
     '''Converts a string into a form suitable for passing to the database

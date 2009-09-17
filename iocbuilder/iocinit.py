@@ -261,11 +261,12 @@ class IocDataSet(Singleton):
         assert self.__DataPath is not None, 'IOC data path not yet defined'
         return self.__DataPath
 
-    def CopyDataFiles(self, targetDir):
+    def CopyDataFiles(self, targetDir, make_dirs=False):
         assert self.__DataPath is not None, 'IOC data path not yet defined'
         if self.__DataFileList:
             targetDir = os.path.join(targetDir, self.__DataPath)
-            os.makedirs(targetDir)
+            if make_dirs:
+                os.makedirs(targetDir)
             for filename, file_object in self.__DataFileList.items():
                 file_object._CopyFile(os.path.join(targetDir, filename))
 

@@ -89,6 +89,40 @@ def quote_c_string(s):
     return '"%s"' % unsafe_chars.sub(replace, str(s))
 
 
+# An ordered dictionary, similar to that provided by Python 3, but not quite
+# as complete.
+class OrderedDict(dict):
+    def __init__(self):
+        self._keys = []
+        dict.__init__(self)
+
+    def __setitem__(self, key, value):
+        if key not in self:
+            self._keys.append(key)
+        dict.__setitem__(self, key, value)
+
+    def __delitem__(self, key):
+        dict.__delitem__(self, key)
+        self._keys.remove(key)
+
+    def __iter__(self):
+        return iter(self._keys)
+
+    def items(self):
+        return [(k, self[k]) for k in self._keys]
+    def keys(self):
+        return self._keys
+    def values(self):
+        return [self[k] for k in self._keys]
+
+    def setdefault(self, key, value):
+        if key in self:
+            return self[key]
+        else:
+            self[key] = value
+            return value
+
+
 
 # The role of this Singleton class is a little unclear.  It can readily be
 # argued that a Singleton class is functionally identical to a module.  Very

@@ -1,9 +1,13 @@
-from iocbuilder import Device, SetSimulation, IocDataStream, iocwriter
+from iocbuilder import Device, SetSimulation, IocDataStream, AddDataFile
+from iocbuilder.recordset import SubstitutionSetBase, SubstitutionBase
+from iocbuilder.iocwriter import WriteFile
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.asyn import AsynPort, Asyn
 from iocbuilder.modules.motor import MotorLib, MotorController, MotorSimLib
-import sys 
+
+import sys
+import os.path
 
 PMAC = 0
 GEOBRICK = 1
@@ -15,10 +19,33 @@ class tpmac(Device):
 class DeltaTau(AsynPort, MotorController):
     Dependencies = (tpmac,)        
 
+
+class _PmcDataFile(SubstitutionSetBase):
+    def __init__(self, device):
+        self.device = device
+        self.__super.__init__()
+
+    def Generate(self, datadir):
+        WriteFile(
+            os.path.join(datadir, self.device + '.substitutions'), self.Print)
+        
+
+class PmcSubstitution(SubstitutionBase):
+    BaseClass = True
+    Dependencies = (tpmac,)
+    TemplateDir = 'data'
+
+    def __init__(self, Controller, Filename=None, **args):
+        if Filename is not None:
+            self.TemplateFile = Filename
+        self.__super.__init__(**args)
+        Controller.IncludePmc(self)
+    
+
 class GeoBrick(DeltaTau):
     ctype = GEOBRICK
-    LibFileList = [ "pmacAsynIPPort", "pmacAsynMotor" ]
-    DbdFileList = [ "pmacAsynIPPort", "pmacAsynMotor" ]    
+    LibFileList = [ 'pmacAsynIPPort', 'pmacAsynMotor' ]
+    DbdFileList = [ 'pmacAsynIPPort', 'pmacAsynMotor' ]    
     _Cards = []
     
     def __init__(self, DeviceName, IP, PortName = None, NAxes = 8, 
@@ -26,7 +53,7 @@ class GeoBrick(DeltaTau):
         # First create an asyn IP port to connect to
         if PortName is None:
             PortName = DeviceName + 'port'        
-        if ":" not in IP:
+        if ':' not in IP:
             IP = IP + ':1025'            
         self.IP = IP
         self.PortName = PortName
@@ -49,52 +76,44 @@ class GeoBrick(DeltaTau):
         IdlePoll   = Simple('Idle Poll Period in ms', int),
         MovingPoll = Simple('Moving Poll Period in ms', int))
     
-    def IncludePmc(self,filename,macrodict={}):
-        if not hasattr(self,"pmc"):
-            self.pmc = IocDataStream(self.DeviceName()+".substitutions")
-            iocwriter.pmcs.append(self.DeviceName()+".substitutions")
-        if not macrodict:
-            macrodict = dict(x = "x")
-        self.pmc.write("file %s\n{ pattern\n{" % filename)
-        keys = []
-        values = []
-        for k in sorted(macrodict.keys()):
-            keys.append(k)
-            values.append('"%s"' % macrodict[k])
-        self.pmc.write(", ".join(keys)+"}\n{")
-        self.pmc.write(", ".join(values)+"}\n}\n\n")        
+    def IncludePmc(self, pmc_substitution):
+        if not hasattr(self, 'pmc'):
+            self.pmc = _PmcDataFile(self.DeviceName())
+            AddDataFile(self.DeviceName() + '.pmc', self.pmc.Generate)
+        self.pmc.AddSubstitution(pmc_substitution)
+        
                     
     def Initialise(self):
         print '# Create IP Port (IPPort, IPAddr)'    
-        print 'pmacAsynIPConfigure("%(PortName)s", "%(IP)s")'\
-            %self.__dict__
+        print 'pmacAsynIPConfigure("%(PortName)s", "%(IP)s")' % \
+            self.__dict__
         print '# Create GeoBrick (IPPort, Addr, BrickNum, NAxes)'    
-        print 'pmacAsynMotorCreate("%(PortName)s", 0, %(Card)d, %(NAxes)d)'\
-            %self.__dict__
-        print '# Configure GeoBrick (PortName, DriverName, BrickNum, NAxes+1)'            
-        print 'drvAsynMotorConfigure("%s", "pmacAsynMotor", %d, %d)'%(
+        print 'pmacAsynMotorCreate("%(PortName)s", 0, %(Card)d, %(NAxes)d)' % \
+            self.__dict__
+        print '# Configure GeoBrick (PortName, DriverName, BrickNum, NAxes+1)'
+        print 'drvAsynMotorConfigure("%s", "pmacAsynMotor", %d, %d)' % (
             self.DeviceName(), self.Card, self.NAxes+1)            
-        print 'pmacSetIdlePollPeriod(%(Card)d, %(IdlePoll)d)'%self.__dict__
-        print 'pmacSetMovingPollPeriod(%(Card)d, %(MovingPoll)d)'%self.__dict__
+        print 'pmacSetIdlePollPeriod(%(Card)d, %(IdlePoll)d)' % self.__dict__
+        print 'pmacSetMovingPollPeriod(%(Card)d, %(MovingPoll)d)' % \
+            self.__dict__
 
 
 class GeoBrick_sim(GeoBrick):
     Dependencies = (MotorSimLib,)
 
     def InitialiseOnce(self):
-        print 'motorSimCreate( 100, 0, -150000, 150000, 3, %d, %d )'\
+        print 'motorSimCreate( 100, 0, -150000, 150000, 3, %d, %d )' \
             %(len(self._Cards),self.NAxes+1)
 
     def Initialise(self):
-        print 'drvAsynMotorConfigure("%s", "motorSim", %d, %d)'%(
-            self.DeviceName(), self.Card+100, 
-            self.NAxes+1)            
+        print 'drvAsynMotorConfigure("%s", "motorSim", %d, %d)' % (
+            self.DeviceName(), self.Card+100, self.NAxes + 1)
 SetSimulation(GeoBrick, GeoBrick_sim)
                   
 class CS(DeltaTau):
     Dependencies = (tpmac,)
-    LibFileList = [ "pmacAsynCoord" ]
-    DbdFileList = [ "pmacAsynCoord" ]
+    LibFileList = [ 'pmacAsynCoord' ]
+    DbdFileList = [ 'pmacAsynCoord' ]
     _CSs = []
        
     def __init__(self, DeviceName, Controller, CS, PLCNum = None, NAxes = 9, 
@@ -121,7 +140,9 @@ class CS(DeltaTau):
      
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
-        DeviceName = Simple('CS Name (for asyn port that motor records are connected to)', str),
+        DeviceName = Simple(
+            'CS Name (for asyn port that motor records are connected to)',
+            str),
         Controller = Ident ('Underlying PMAC or GeoBrick object', DeltaTau),
         CS         = Simple('CS number', int),
         PLCNum     = Simple('PLC Number, defaults to CS + 15', int),
@@ -132,23 +153,25 @@ class CS(DeltaTau):
 
     def Initialise(self):
         print '# Create CS (ControllerPort, Addr, CSNumber, CSRef, Prog)'
-        print 'pmacAsynCoordCreate("%(PortName)s", 0, %(CS)d, %(Ref)d, '\
-            '%(Program)s)'%self.__dict__
+        print 'pmacAsynCoordCreate("%(PortName)s", 0, %(CS)d, %(Ref)d, ' \
+            '%(Program)s)' % self.__dict__
         print '# Configure CS (PortName, DriverName, CSRef, NAxes)'
-        print 'drvAsynMotorConfigure("%s", "pmacAsynCoord", %d, %d)'%(
+        print 'drvAsynMotorConfigure("%s", "pmacAsynCoord", %d, %d)' % (
             self.DeviceName(), self.Ref, self.NAxes)                 
         print '# Set Idle and Moving poll periods (CS_Ref, PeriodMilliSeconds)'
-        print 'pmacSetCoordIdlePollPeriod(%(Ref)d, %(IdlePoll)d)'%self.__dict__
-        print 'pmacSetCoordMovingPollPeriod(%(Ref)d, %(MovingPoll)d)'%self.__dict__
+        print 'pmacSetCoordIdlePollPeriod(%(Ref)d, %(IdlePoll)d)' % \
+            self.__dict__
+        print 'pmacSetCoordMovingPollPeriod(%(Ref)d, %(MovingPoll)d)' % \
+            self.__dict__
 
 class CS_sim(CS):
     Dependencies = (MotorSimLib,)
     
     def InitialiseOnce(self):
-        print 'motorSimCreate( 200, 0, -150000, 150000, 3, %d, %d )'\
-            %(len(self._CSs),self.NAxes+1)
+        print 'motorSimCreate( 200, 0, -150000, 150000, 3, %d, %d )' \
+            % (len(self._CSs), self.NAxes + 1)
 
     def Initialise(self):
-        print 'drvAsynMotorConfigure("%s", "motorSim", %d, %d)'%(
+        print 'drvAsynMotorConfigure("%s", "motorSim", %d, %d)' % (
             self.DeviceName(), self.Ref+200, self.NAxes)  
 SetSimulation(CS, CS_sim)
