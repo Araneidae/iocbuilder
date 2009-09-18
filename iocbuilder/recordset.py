@@ -110,7 +110,8 @@ class SubstitutionBase(ModuleBase):
         '''Outputs the substitution pattern line associated with this
         Substitution.  This is output in a format suitable for inclusion within
         a substitutions file.'''
-        print 'pattern {', ', '.join(cls.Arguments), '}'
+        if cls.Arguments:
+            print 'pattern {', ', '.join(cls.Arguments), '}'
         
 
     def __init__(self, **args):
@@ -142,9 +143,13 @@ class SubstitutionBase(ModuleBase):
     def _PrintSubstitution(self):
         '''Outputs a single substitution line, in order of arguments.  This
         should be preceded by a call to _PrintPattern().'''
-        print '    {', ', '.join(
-            [QuoteArgument(self.args[arg]) for arg in self.Arguments]), \
-            '}'
+        if self.Arguments:
+            print '    {', ', '.join(
+                [QuoteArgument(self.args[arg]) for arg in self.Arguments]), \
+                '}'
+        else:
+            # Work around msi bug if no arguments given!
+            print '    { _ }'
 
     def ExpandSubstitution(self, msiPath):
         '''Directly expand the substitution inline.'''
