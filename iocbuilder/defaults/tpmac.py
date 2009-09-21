@@ -1,6 +1,6 @@
 from iocbuilder import Device, SetSimulation, IocDataStream, AddDataFile
 from iocbuilder.recordset import SubstitutionSetBase, SubstitutionBase
-from iocbuilder.iocwriter import WriteFile
+from iocbuilder.iocwriter import WriteFile, PrintDisclaimer
 from iocbuilder.arginfo import *
 
 from iocbuilder.modules.asyn import AsynPort, Asyn
@@ -27,7 +27,8 @@ class _PmcDataFile(SubstitutionSetBase):
 
     def Generate(self, datadir):
         WriteFile(
-            os.path.join(datadir, self.device + '.substitutions'), self.Print)
+            os.path.join(datadir, self.device + '.substitutions'), self.Print,
+            header = None)
         
 
 class PmcSubstitution(SubstitutionBase):
