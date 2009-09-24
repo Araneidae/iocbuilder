@@ -27,6 +27,22 @@ class Record(object):
     '''Base class for all record types.'''
 
     @classmethod
+    def CreateSubclass(cls, recordType, validate):
+        '''Creates a subclass of the record with the given record type and
+        validator bound to the subclass.'''
+        # Each record we publish is a class so that individual record
+        # classes can be subclassed when convenient.
+        class BuildRecord(Record):
+            _validate = validate
+            _type = recordType
+        BuildRecord.__name__ = recordType
+
+        # Perform any class extension required for this particular record type.
+        import bits
+        return bits.ExtendClass(BuildRecord)
+        
+
+    @classmethod
     def RecordName(cls, name):
         '''Converts a short form record name into the full record name as it
         will appear in the generated database.'''
@@ -59,7 +75,7 @@ class Record(object):
     
     # Builds standard record name using the currently configured RecordName
     # hook.
-    def __init__(self, type, validate, record, **fields):
+    def __init__(self, record, **fields):
         '''Record constructor.  Needs to be told the type of record that
         this will be, a field validation object (which will be used to
         check field names and field value assignments), the name of the
@@ -67,8 +83,6 @@ class Record(object):
         
         # These assignment have to be directly into the dictionary to
         # bypass the tricksy use of __setattr__.
-        self.__setattr('__type', type)
-        self.__setattr('__validate', validate)
         self.__setattr('__fields', {})
         self.__setattr('name', self.RecordName(record))
 
@@ -98,7 +112,7 @@ class Record(object):
         print
         for hook in self.__MetadataHooks:
             hook(self)
-        print 'record(%s, "%s")' % (self.__type, self.name)
+        print 'record(%s, "%s")' % (self._type, self.name)
         print '{'
         # Print the fields in alphabetical order.  This is more convenient
         # to the eye and has the useful side effect of bypassing a bug
@@ -122,7 +136,7 @@ class Record(object):
     # The representation string for a record identifies its type and name,
     # but we can't do much more.
     def __repr__(self):
-        return '<record %s "%s">' % (self.__type, self.name)
+        return '<record %s "%s">' % (self._type, self.name)
 
     # Calling the record generates a self link with a list of specifiers.
     def __call__(self, *specifiers):
@@ -157,7 +171,7 @@ class Record(object):
         if hasattr(value, 'Validate'):
             value.Validate(self, fieldname)
         else:
-            self.__validate.ValidFieldValue(fieldname, str(value))
+            self._validate.ValidFieldValue(fieldname, str(value))
 
     # Allow individual fields to be deleted from the record.
     def __delattr__(self, fieldname):
@@ -170,27 +184,32 @@ class Record(object):
     def __getattr__(self, fieldname):
         if fieldname == 'address':
             fieldname = self.__address
-        self.__validate.ValidFieldName(fieldname)
+        self._validate.ValidFieldName(fieldname)
         return _Link(self, fieldname)
 
-    def ValidFieldName(self, fieldname):
+    @classmethod
+    def ValidFieldName(cls, fieldname):
         '''Can be called to validate the given field name, returns True iff
         this record type supports the given field name.'''
         try:
             # The validator is specified to raise an AttributeError exception
             # if the field name cannot be validated.  We translate this into
             # a boolean here.
-            self.__validate.ValidFieldName(fieldname)
+            cls._validate.ValidFieldName(fieldname)
         except AttributeError:
             return False
         else:
             return True
 
+    @classmethod
+    def ValidNames(cls):
+        return cls._validate.ValidNames
+
     # When a record is pickled for export it will reappear as an ImportRecord
     # instance.  This makes more sense (as the record has been fully generated
     # already), and avoids a lot of trouble.
     def __reduce__(self):
-        return (ImportRecord, (self.name, self.__type))
+        return (ImportRecord, (self.name, self._type))
 
 
 

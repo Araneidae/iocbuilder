@@ -22,20 +22,9 @@ class RecordTypes(Singleton):
         self.__RecordTypes = set()
 
     def PublishRecordType(self, recordType, validate):
-        # Each record we publish is a class so that individual record
-        # classes can be subclassed when convenient.
-        class BuildRecord(Record):
-            def __init__(self, record, **fields):
-                Record.__init__(
-                    self, recordType, validate, record, **fields)
-        BuildRecord.__name__ = recordType
-
-        # Perform any class extension required for this particular record type.
-        import bits
-        BuildRecord = bits.ExtendClass(BuildRecord)
         # Publish this record type and remember it
         self.__RecordTypes.add(recordType)
-        setattr(self, recordType, BuildRecord)
+        setattr(self, recordType, Record.CreateSubclass(recordType, validate))
 
     def __contains__(self, recordType):
         '''Checks whether the given recordType names a known valid record
@@ -54,20 +43,19 @@ records = RecordTypes
 class ValidateDbField:
     def __init__(self, dbEntry):
         self.dbEntry = mydbstatic.dbCopyEntry(dbEntry)
+        names = []
+        status = mydbstatic.dbFirstField(self.dbEntry, 0)
+        while status == 0:
+            names.append(mydbstatic.dbGetFieldName(self.dbEntry))
+            status = mydbstatic.dbNextField(self.dbEntry, 0)
+        self.ValidNames = names
+        self.ValidNamesSet = set(names)
 
     # This method raises an attribute error if the given field name is
     # invalid.  As an important side effect it also sets the database
     # cursor to the appropriate database descriptor.
     def ValidFieldName(self, name):
-        # Search for the named field in the database
-        status = mydbstatic.dbFirstField(self.dbEntry, 0)
-        while status == 0:
-            if mydbstatic.dbGetFieldName(self.dbEntry) == name:
-                # Good, found it
-                break
-            status = mydbstatic.dbNextField(self.dbEntry, 0)
-        else:
-            # Hmm.  Got to end of loop without finding the name.  No good
+        if name not in self.ValidNamesSet:
             raise AttributeError, 'Invalid field name %s' % name
 
     # This method raises an exeption if the given field name does not exist
@@ -76,6 +64,13 @@ class ValidateDbField:
         # First check the field name is valid and set the cursor in focus.
         self.ValidFieldName(name)
         value = str(value)
+
+        # Set the database cursor to the field
+        status = mydbstatic.dbFirstField(self.dbEntry, 0)
+        while status == 0:
+            if mydbstatic.dbGetFieldName(self.dbEntry) == name:
+                break
+            status = mydbstatic.dbNextField(self.dbEntry, 0)
 
         # Now see if we can write the value to it
         message = mydbstatic.dbVerify(self.dbEntry, value)

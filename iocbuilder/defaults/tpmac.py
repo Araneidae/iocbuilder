@@ -1,4 +1,5 @@
-from iocbuilder import Device, SetSimulation, IocDataStream, AddDataFile
+from iocbuilder import Device, records, RecordFactory
+from iocbuilder import SetSimulation, IocDataStream, AddDataFile
 from iocbuilder.recordset import SubstitutionSetBase, SubstitutionBase
 from iocbuilder.iocwriter import WriteFile, PrintDisclaimer
 from iocbuilder.arginfo import *
@@ -9,11 +10,13 @@ from iocbuilder.modules.motor import MotorLib, MotorController, MotorSimLib
 import sys
 import os.path
 
+__all__ = ['GeoBrick', 'CS']
+
 PMAC = 0
 GEOBRICK = 1
 
 class tpmac(Device):
-    Dependencies = (Asyn,MotorLib)
+    Dependencies = (Asyn, MotorLib)
     AutoInstantiate = True  
 
 class DeltaTau(AsynPort, MotorController):
@@ -45,22 +48,25 @@ class PmcSubstitution(SubstitutionBase):
 
 class GeoBrick(DeltaTau):
     ctype = GEOBRICK
-    LibFileList = [ 'pmacAsynIPPort', 'pmacAsynMotor' ]
-    DbdFileList = [ 'pmacAsynIPPort', 'pmacAsynMotor' ]    
+    LibFileList = ['pmacAsynIPPort', 'pmacAsynMotor']
+    DbdFileList = ['pmacAsynIPPort', 'pmacAsynMotor']
+    
     _Cards = []
     
-    def __init__(self, DeviceName, IP, PortName = None, NAxes = 8, 
+    def __init__(self, IP, DeviceName = None, PortName = None, NAxes = 8, 
         IdlePoll = 500, MovingPoll = 50):
+        # Now add self to list of cards
+        self.Card = len(self._Cards)
+        self._Cards.append(self)                
         # First create an asyn IP port to connect to
+        if DeviceName is None:
+            DeviceName = "BRICK%d" % (self.Card + 1)
         if PortName is None:
             PortName = DeviceName + 'port'        
         if ':' not in IP:
             IP = IP + ':1025'            
         self.IP = IP
         self.PortName = PortName
-        # Now add self to list of cards
-        self.Card = len(self._Cards)
-        self._Cards.append(self)        
         # Store other attributes
         self.NAxes = NAxes
         self.IdlePoll = IdlePoll
@@ -70,8 +76,8 @@ class GeoBrick(DeltaTau):
     
     # __init__ arguments
     ArgInfo = makeArgInfo(__init__,
-        DeviceName = Simple('Name to use for the asyn port', str),
         IP         = Simple('IP address of the geobrick', str),
+        DeviceName = Simple('Name to use for the asyn port', str),        
         PortName   = Simple('Port Name, defaults to DeviceName+"port"', str),
         NAxes      = Simple('Number of axes', int),
         IdlePoll   = Simple('Idle Poll Period in ms', int),
@@ -97,6 +103,19 @@ class GeoBrick(DeltaTau):
         print 'pmacSetIdlePollPeriod(%(Card)d, %(IdlePoll)d)' % self.__dict__
         print 'pmacSetMovingPollPeriod(%(Card)d, %(MovingPoll)d)' % \
             self.__dict__
+
+    def channel(self, channel):
+        assert 0 <= channel < self.NAxes, \
+               'Channel %d out of range' % channel
+        return _GeoBrickChannel(self.DeviceName(), channel)
+
+
+class _GeoBrickChannel:
+    def __init__(self, device, channel):
+        self.motor = RecordFactory(
+            records.motor, 'asynMotor', 'OUT',
+            '@asyn(%s,%d)' % (device, channel + 1))
+    
 
 
 class GeoBrick_sim(GeoBrick):

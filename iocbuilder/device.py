@@ -268,3 +268,6 @@ class RecordFactory:
         if self.post:
             self.post(record)
         return record
+
+    def ValidNames(self):
+        return self.factory.ValidNames()

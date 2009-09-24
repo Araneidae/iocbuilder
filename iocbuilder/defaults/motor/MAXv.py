@@ -1,6 +1,4 @@
 from iocbuilder import Device, records, RecordFactory
-from iocbuilder.modules.asyn import Asyn
-from iocbuilder.modules.seq import Seq
 
 from Oms import OmsVme
 
