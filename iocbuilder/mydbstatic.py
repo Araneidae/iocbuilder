@@ -16,7 +16,13 @@ _FunctionList = (
     ('dbCopyEntry',         c_void_p, (c_void_p,)),
     ('dbFirstField',        c_int, (c_void_p,)),
     ('dbGetFieldName',      c_char_p, (c_void_p,)),
+    ('dbGetPrompt',         c_char_p, (c_void_p,)),  
+    ('dbGetPromptGroup',    c_int, (c_void_p,)),  
+    ('dbGetFieldType',      c_int, (c_void_p,)),      
+    ('dbGetNMenuChoices',   c_int, (c_void_p,)),
+    ('dbGetMenuChoices',    c_void_p, (c_void_p,)),
     ('dbNextField',         c_int, (c_void_p,)),
+    ('dbGetString',         c_char_p, (c_void_p,)),    
     ('dbVerify',            c_char_p, (c_void_p, c_char_p)),
 )
 

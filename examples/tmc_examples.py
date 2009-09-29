@@ -65,7 +65,7 @@ class ex3(Substitution):
         # or a float
         arg2 = Simple('Argument 2 description', float),
         # or a bool
-        arg3 = Simple('Argument 3 description', bool)
+        arg3 = Simple('Argument 3 description', bool),
         # or an int
         arg4 = Simple('Argument 4 description', int))
         
@@ -94,7 +94,7 @@ class ex4(Substitution):
         # The Choice function gives a selection of one of the list
         arg3   = Choice('Argument 3 description', ["a", "b", "c"]),        
         # The Enum function displays a choice, but stores the index of the list
-        arg4   = Enum  ('Argument 4 description', ["ZERO", "ONE", "TWO"]))                
+        arg4   = Enum  ('Argument 4 description', ["ZERO", "ONE", "TWO"]),             
         # The Sevr function is just a choice of epics severities
         arg5   = Sevr  ('Argument 5 description'))
 
@@ -111,13 +111,13 @@ class ex5(Substitution, AutoProtocol):
     # __init__ attributes
     ArgInfo = makeArgInfo(
         device = Simple('Device Prefix', str),
-        port   = Ident ('Asyn Serial Port', AsynPort))
+        port   = Ident ('Asyn Serial Port', AsynOctetInterface))
         
     # Substitution attributes
     TemplateFile = 'ex5.template'        
     Arguments = ArgInfo.Names()
     
-    ## AutoProtocol attributes
+    # AutoProtocol attributes
     # This is the list of protocol files streamdevice needs to know about
     ProtocolFiles = ['ex5.proto']
     

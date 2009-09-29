@@ -202,8 +202,8 @@ class Record(object):
             return True
 
     @classmethod
-    def ValidNames(cls):
-        return cls._validate.ValidNames
+    def FieldInfo(cls):
+        return cls._validate.FieldInfo()
 
     # When a record is pickled for export it will reappear as an ImportRecord
     # instance.  This makes more sense (as the record has been fully generated

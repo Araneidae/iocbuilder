@@ -114,7 +114,11 @@ class OrderedDict(dict):
         return self._keys
     def values(self):
         return [self[k] for k in self._keys]
-
+    def pop(self, key):
+        if key in self._keys:
+            self._keys.remove(key)
+        return dict.pop(self, key)
+        
     def setdefault(self, key, value):
         if key in self:
             return self[key]

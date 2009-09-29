@@ -5,7 +5,8 @@ import ctypes
 
 import mydbstatic   # Pick up interface to EPICS dbd files
 import paths
-from support import Singleton
+import arginfo
+from support import Singleton, OrderedDict
 
 from recordbase import Record
 
@@ -21,7 +22,10 @@ class RecordTypes(Singleton):
     def __init__(self):
         self.__RecordTypes = set()
 
-    def PublishRecordType(self, recordType, validate):
+    def GetRecords(self):
+        return sorted(self.__RecordTypes)
+
+    def _PublishRecordType(self, recordType, validate):
         # Publish this record type and remember it
         self.__RecordTypes.add(recordType)
         setattr(self, recordType, Record.CreateSubclass(recordType, validate))
@@ -36,26 +40,67 @@ class RecordTypes(Singleton):
 # collection of available record types.
 records = RecordTypes
 
-
+# Possible field types as returned by dbGetFieldType
+DCT_STRING = 0
+DCT_INTEGER = 1
+DCT_REAL = 2
+DCT_MENU = 3
+DCT_MENUFORM = 4
+DCT_INLINK = 5
+DCT_OUTLINK = 6
+DCT_FWDLINK = 7
+DCT_NOACCESS = 8
 
 # This class uses a the static database to validate whether the associated
 # record type allows a given value to be written to a given field.
 class ValidateDbField:
     def __init__(self, dbEntry):
         self.dbEntry = mydbstatic.dbCopyEntry(dbEntry)
-        names = []
-        status = mydbstatic.dbFirstField(self.dbEntry, 0)
-        while status == 0:
-            names.append(mydbstatic.dbGetFieldName(self.dbEntry))
-            status = mydbstatic.dbNextField(self.dbEntry, 0)
-        self.ValidNames = names
-        self.ValidNamesSet = set(names)
+        self._FieldInfo = None
+        self._ValidNamesSet = None        
+        
+    def FieldInfo(self):
+        if self._FieldInfo is None:
+            # ordered dict of field_name -> arginfo                
+            self._FieldInfo = OrderedDict()
+            status = mydbstatic.dbFirstField(self.dbEntry, 0)
+            while status == 0:   
+                name = mydbstatic.dbGetFieldName(self.dbEntry)
+                desc = mydbstatic.dbGetPrompt(self.dbEntry)
+                typ = mydbstatic.dbGetFieldType(self.dbEntry)
+                group = mydbstatic.dbGetPromptGroup(self.dbEntry)
+                if typ in [DCT_STRING, DCT_INLINK, DCT_OUTLINK, DCT_FWDLINK]:
+                    ArgInfo = arginfo.Simple(desc, str)
+                elif typ in [DCT_INTEGER]:
+                    ArgInfo = arginfo.Simple(desc, int)
+                elif typ in [DCT_REAL]:
+                    ArgInfo = arginfo.Simple(desc, float)
+                elif typ in [DCT_MENU, DCT_MENUFORM]:
+                    n_choices = mydbstatic.dbGetNMenuChoices(self.dbEntry)
+                    if n_choices > 0:
+                        menu_void = mydbstatic.dbGetMenuChoices(self.dbEntry) 
+                        menu_p = ctypes.cast(menu_void,
+                            ctypes.POINTER(ctypes.c_char_p * n_choices))
+                        ArgInfo = arginfo.Choice(desc, list(menu_p[0]))
+                    else:
+                        ArgInfo = arginfo.Simple(desc, str)
+                else:
+                    ArgInfo = None
+                if name != "NAME" and ArgInfo is not None:
+                    self._FieldInfo[name] = ArgInfo
+                status = mydbstatic.dbNextField(self.dbEntry, 0)            
+        return self._FieldInfo
+                
+    def ValidNamesSet(self):
+        if self._ValidNamesSet is None:
+            self._ValidNamesSet = set(self.FieldInfo().keys())
+        return self._ValidNamesSet
 
     # This method raises an attribute error if the given field name is
     # invalid.  As an important side effect it also sets the database
     # cursor to the appropriate database descriptor.
     def ValidFieldName(self, name):
-        if name not in self.ValidNamesSet:
+        if name not in self.ValidNamesSet():
             raise AttributeError, 'Invalid field name %s' % name
 
     # This method raises an exeption if the given field name does not exist
@@ -105,6 +150,6 @@ def LoadDbdFile(dbdDir, dbdfile):
         recordType = mydbstatic.dbGetRecordTypeName(entry)
         if not hasattr(RecordTypes, recordType):
             validate = ValidateDbField(entry)
-            RecordTypes.PublishRecordType(recordType, validate)
+            RecordTypes._PublishRecordType(recordType, validate)
         status = mydbstatic.dbNextRecordType(entry)
     mydbstatic.dbFreeEntry(entry)

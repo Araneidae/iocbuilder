@@ -269,5 +269,5 @@ class RecordFactory:
             self.post(record)
         return record
 
-    def ValidNames(self):
-        return self.factory.ValidNames()
+    def FieldInfo(self):
+        return self.factory.FieldInfo()
