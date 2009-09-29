@@ -57,43 +57,56 @@ class ValidateDbField:
     def __init__(self, dbEntry):
         self.dbEntry = mydbstatic.dbCopyEntry(dbEntry)
         self._FieldInfo = None
-        self._ValidNamesSet = None        
+        self._ValidNamesSet = None
+
+    # Computes list of valid names and creates associated arginfo
+    # definitions.  This is postponed quite late to try and ensure the menus
+    # are fully populated, in other words we don't want to fire this until
+    # all the dbd files have been loaded.
+    def __ProcessDbd(self):
+        # ordered dict of field_name -> arginfo                
+        self._FieldInfo = OrderedDict()
+        valid_names = []
+        status = mydbstatic.dbFirstField(self.dbEntry, 0)
+        while status == 0:   
+            name = mydbstatic.dbGetFieldName(self.dbEntry)
+            desc = mydbstatic.dbGetPrompt(self.dbEntry)
+            typ = mydbstatic.dbGetFieldType(self.dbEntry)
+            group = mydbstatic.dbGetPromptGroup(self.dbEntry)
+            if typ in [DCT_STRING, DCT_INLINK, DCT_OUTLINK, DCT_FWDLINK]:
+                ArgInfo = arginfo.Simple(desc, str)
+            elif typ in [DCT_INTEGER]:
+                ArgInfo = arginfo.Simple(desc, int)
+            elif typ in [DCT_REAL]:
+                ArgInfo = arginfo.Simple(desc, float)
+            elif typ in [DCT_MENU, DCT_MENUFORM]:
+                n_choices = mydbstatic.dbGetNMenuChoices(self.dbEntry)
+                if n_choices > 0:
+                    menu_void = mydbstatic.dbGetMenuChoices(self.dbEntry) 
+                    menu_p = ctypes.cast(menu_void,
+                        ctypes.POINTER(ctypes.c_char_p * n_choices))
+                    ArgInfo = arginfo.Choice(desc, list(menu_p[0]))
+                else:
+                    ArgInfo = arginfo.Simple(desc, str)
+            else:
+                # No access field.
+                ArgInfo = None
+            if name != "NAME":
+                valid_names.append(name)
+                if ArgInfo is not None:
+                    self._FieldInfo[name] = ArgInfo
+            status = mydbstatic.dbNextField(self.dbEntry, 0)
+
+        self._ValidNamesSet = set(valid_names)
         
     def FieldInfo(self):
         if self._FieldInfo is None:
-            # ordered dict of field_name -> arginfo                
-            self._FieldInfo = OrderedDict()
-            status = mydbstatic.dbFirstField(self.dbEntry, 0)
-            while status == 0:   
-                name = mydbstatic.dbGetFieldName(self.dbEntry)
-                desc = mydbstatic.dbGetPrompt(self.dbEntry)
-                typ = mydbstatic.dbGetFieldType(self.dbEntry)
-                group = mydbstatic.dbGetPromptGroup(self.dbEntry)
-                if typ in [DCT_STRING, DCT_INLINK, DCT_OUTLINK, DCT_FWDLINK]:
-                    ArgInfo = arginfo.Simple(desc, str)
-                elif typ in [DCT_INTEGER]:
-                    ArgInfo = arginfo.Simple(desc, int)
-                elif typ in [DCT_REAL]:
-                    ArgInfo = arginfo.Simple(desc, float)
-                elif typ in [DCT_MENU, DCT_MENUFORM]:
-                    n_choices = mydbstatic.dbGetNMenuChoices(self.dbEntry)
-                    if n_choices > 0:
-                        menu_void = mydbstatic.dbGetMenuChoices(self.dbEntry) 
-                        menu_p = ctypes.cast(menu_void,
-                            ctypes.POINTER(ctypes.c_char_p * n_choices))
-                        ArgInfo = arginfo.Choice(desc, list(menu_p[0]))
-                    else:
-                        ArgInfo = arginfo.Simple(desc, str)
-                else:
-                    ArgInfo = None
-                if name != "NAME" and ArgInfo is not None:
-                    self._FieldInfo[name] = ArgInfo
-                status = mydbstatic.dbNextField(self.dbEntry, 0)            
+            self.__ProcessDbd()
         return self._FieldInfo
                 
     def ValidNamesSet(self):
         if self._ValidNamesSet is None:
-            self._ValidNamesSet = set(self.FieldInfo().keys())
+            self.__ProcessDbd()
         return self._ValidNamesSet
 
     # This method raises an attribute error if the given field name is
