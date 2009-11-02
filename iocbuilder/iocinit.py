@@ -89,7 +89,7 @@ class iocInit(Singleton):
         # to put off creating it until configure tells us to initialise.
         ModuleVersion('EPICS_BASE', home = paths.EPICS_BASE, use_name = False)
         from modules.EPICS_BASE import epicsBase
-        epicsBase()
+        epicsBase(self)
 
         # Now the architecture has been set (assuming it has), set up the
         # appropriate IOC string quoting function.
@@ -112,7 +112,6 @@ class iocInit(Singleton):
         if not self.substitute_boot:        
             print '< cdCommands'        
         self.cd_home()        
-        print 'ld < bin/%s/%s.munch' % (Architecture(), self.ioc_name)
         print 'tyBackspaceSet(127)'
 
     def PrintHeader_linux(self, ioc_root):
@@ -145,10 +144,6 @@ class iocInit(Singleton):
             print 'sysClkRateSet %d' % self.__ClockRate
         if self.__Gateway:
             print 'routeAdd "0", %s' % quote_IOC_string(self.__Gateway)
-        print 
-        print 'dbLoadDatabase "dbd/%s.dbd"' % self.ioc_name
-        print '%s_registerRecordDeviceDriver(pdbbase)'% \
-            self.ioc_name.replace('-', '_')        
                     
 
     def PrintFooter(self):

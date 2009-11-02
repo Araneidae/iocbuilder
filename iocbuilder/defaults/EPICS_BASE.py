@@ -2,10 +2,30 @@
 # in iocinit.
 
 from iocbuilder import Device, IocCommand, ModuleBase
+from iocbuilder import configure
 from iocbuilder.arginfo import *
 
 class epicsBase(Device):
     DbdFileList = ['base']
+
+    InitialisationPhase = Device.FIRST
+
+    def __init__(self, ioc_init):
+        self.__super.__init__()
+        self.ioc_init = ioc_init
+
+    def Initialise_vxWorks(self):
+        print 'ld < bin/%s/%s.munch' % (
+            configure.Architecture(), self.ioc_init.ioc_name)
+        
+    def Initialise(self):
+        self.ioc_init.cd_home()
+        configure.Call_TargetOS(self, 'Initialise')
+        print 
+        print 'dbLoadDatabase "dbd/%s.dbd"' % self.ioc_init.ioc_name
+        print '%s_registerRecordDeviceDriver(pdbbase)'% \
+            self.ioc_init.ioc_name.replace('-', '_')        
+
 
 class StartupCommand(ModuleBase):
     def __init__(self, command, post_init=False):

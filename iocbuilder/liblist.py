@@ -55,6 +55,7 @@ class Hardware(Singleton):
     # initialised as appropriate. 
     def PrintBody(self):
         # Now load all the dependent libraries
+        print
         print '# Loading libraries'
         print '# -----------------'
         for l in self.__LibraryList:
