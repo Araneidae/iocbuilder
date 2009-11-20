@@ -561,8 +561,8 @@ int main(int argc,char *argv[])
     def CreateDatabaseFiles(self):
         # Names of the db files we're about to build
         db = self.ioc_name + '.db'
-        substitutions = self.ioc_name + '.expanded.substitutions'
-        expanded = self.ioc_name + '.expanded.db'
+        substitutions = self.ioc_name + '_expanded.substitutions'
+        expanded = self.ioc_name + '_expanded.db'
         makefile = self.makefile_db
 
         makefile.AddLine('PATH := $(PATH):%s' % paths.msiPath)
@@ -580,7 +580,7 @@ int main(int argc,char *argv[])
             self.AddDatabase(os.path.join('db', expanded))
             makefile.AddLine('DB += %s' % expanded)
             AutoSaveDatabaseHook(
-                self.ioc_name + '.expanded', self.makefile_db, False)
+                self.ioc_name + '_expanded', self.makefile_db, False)
 
 
     def CreateSourceFiles(self):
