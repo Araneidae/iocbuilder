@@ -22,8 +22,8 @@ class ArgInfo(object):
             ... do other stuff...
 
         ArgInfo = makeArgInfo(__init__,
-            arg1 = (str, 'Description for arg1'),
-            arg2 = (int, 'Description for arg2'))    
+            arg1 = Simple('Description for arg1', str),
+            arg2 = Simple('Description for arg2', int))
     
 
     Here ArgInfo contains the following fields:

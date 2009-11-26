@@ -280,13 +280,12 @@ class ModuleBase(object):
     # 
     # Optionally the ModuleName can be inherited from the base class if the
     # symbol InheritModuleName is set to True.
-    class __ModuleBaseMeta(autosuper_meta):
+    class ModuleBaseMeta(autosuper_meta):
         def __init__(cls, name, bases, dict):
             # This could more simply be written as autosuper_meta.__..., but
             # then subclassing might go astray.  Module instances are already
             # heavily subclassed, so we ought to play by the rules.
-            super(cls._ModuleBase__ModuleBaseMeta, cls).\
-                __init__(name, bases, dict)
+            super(cls.ModuleBaseMeta, cls).__init__(name, bases, dict)
 
             # Bind to the module context.
             cls.__BindModule(name, dict)
@@ -343,7 +342,7 @@ class ModuleBase(object):
                         Dependencies = dependency + Dependencies
                 cls.Dependencies = Dependencies
 
-    __metaclass__ = __ModuleBaseMeta
+    __metaclass__ = ModuleBaseMeta
 
     # The BaseClass attribute should be set to True in classes which are
     # intended to be base classes for other classes, and which are not

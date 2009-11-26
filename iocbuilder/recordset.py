@@ -50,6 +50,10 @@ class SubstitutionSetBase(support.autosuper_object):
         # substitutions in the order they were originally given.
         self.__Substitutions = support.OrderedDict()
 
+    def Reset(self):
+        '''Erase all recorded substitution instances.'''
+        self.__Substitutions.clear()
+
     def AddSubstitution(self, substitution):
         self.__Substitutions.setdefault(
             substitution.TemplateName(True), []).append(substitution)
@@ -207,4 +211,4 @@ LookupRecord = RecordSet.LookupRecord
 # Special recordset reset.
 def Reset():
     RecordSet.Reset()
-    SubstitutionSet.Reset()
+    RecordsSubstitutionSet.Reset()
