@@ -106,7 +106,6 @@ class SubstitutionBase(ModuleBase):
     TemplateFiles = []
     SubstitutionSet = None
     TemplateDir = None
-    Defaults = {}
 
     def TemplateName(self, macro_name):
         '''Computes the template file name.  If macro_name is true then
@@ -135,7 +134,8 @@ class SubstitutionBase(ModuleBase):
         self.__super.__init__()
         
         # If we have Defaults, then update the argdict with them
-        args = dict(self.Defaults, **args)
+        if hasattr(self, "Defaults"):
+            args = dict(self.Defaults, **args)
         
         # Check that all the required arguments have been given: we can't do
         # template expansion unless every argument is specified.

@@ -15,11 +15,11 @@ epics_parser_re = re.compile(r'^#[ \t]*%')
 # A description is terminated by a 'blank' line which may optionally contain
 # a hash and multiple spaces or tabs.
 macro_desc_re = re.compile(
-    r'\n#[ \t]*%[ \t]*macro[ \t]*,[ \t]*' # This is the #% macro, prefix
+    r'^#[ \t]*%[ \t]*macro[ \t]*,[ \t]*' # This is the #% macro, prefix
     r'([^, \t]+)[ \t]*,[ \t]*' # This captures the macro name and discards comma
     r'([^\n]+' # This start the description capture and the first line
-    r'(?:\n#[ \t]*[^\n \t%][^\n]*)*)' # This is any subsequent non-'blank' line
-)
+    r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # This is any subsequent non-'blank' line
+    re.MULTILINE)
 
 # This re matches the $( msi syntax until the first ) or (
 macro_start = re.compile(r'\$\(([^\(\)]*)')
@@ -124,7 +124,9 @@ def populate_class(cls, template_file):
                 
                          
     for name, desc in macro_desc_re.findall(text):
-        desc = re.sub(r'\n#[ \t]*', '\n', desc)
+        search = re.search(r"\n#[ \t]*", desc)
+        if search:
+            desc = re.sub(search.group(), "\n", desc)    
         # a __doc__ macro is the docstring for the object
         if name == '__doc__':
             doc = desc
