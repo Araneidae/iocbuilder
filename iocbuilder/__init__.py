@@ -30,7 +30,7 @@ __all__ = ['hardware']
 __all__ += support.ExportModules(globals(),
     'configure', 'support', 'dbd',
     'libversion', 'recordbase', 'recordset', 'iocinit', 'device',
-    'fanout', 'recordnames', 'iocwriter', 'arginfo')
+    'fanout', 'recordnames', 'iocwriter', 'arginfo', 'autosubst')
 
 
 # Hacks for configure support.  The Configure class is allowed to add to the

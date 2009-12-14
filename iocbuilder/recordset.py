@@ -93,10 +93,20 @@ class SubstitutionBase(ModuleBase):
             looked for in the db subdirectory of the library.
     '''
 
+    class SubstitutionMeta(ModuleBase.ModuleBaseMeta):
+        def __init__(cls, name, bases, dict_):
+            super(cls.SubstitutionMeta, cls).__init__(name, bases, dict_)
+            if cls.TemplateFile:
+                cls.TemplateFiles.append(cls.TemplateFile)
+
+    __metaclass__ = SubstitutionMeta
+
     BaseClass = True
     TemplateFile = None
+    TemplateFiles = []
     SubstitutionSet = None
     TemplateDir = None
+    Defaults = {}
 
     def TemplateName(self, macro_name):
         '''Computes the template file name.  If macro_name is true then
@@ -123,6 +133,9 @@ class SubstitutionBase(ModuleBase):
         arguments need to match the arguments expected by the template to
         be expanded.'''
         self.__super.__init__()
+        
+        # If we have Defaults, then update the argdict with them
+        args = dict(self.Defaults, **args)
         
         # Check that all the required arguments have been given: we can't do
         # template expansion unless every argument is specified.
@@ -176,8 +189,7 @@ class SubstitutionBase(ModuleBase):
         for line in p.stdout:
             print line,
         assert p.wait() == 0, 'Error running msi'
-
-
+        
 
 class Substitution(SubstitutionBase):
     BaseClass = True

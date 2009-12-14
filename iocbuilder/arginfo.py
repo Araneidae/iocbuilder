@@ -1,9 +1,9 @@
 # Meta data argument info support.
 
-import inspect
+import inspect, sys
 from libversion import ModuleBase
 
-__all__ = ['makeArgInfo', 'addArgInfo', 'filter_dict']
+__all__ = ['makeArgInfo', 'filter_dict']
 
 
 def filter_dict(d, l):
@@ -124,21 +124,35 @@ class ArgInfo(object):
         result.default_names  = self.default_names  + other.default_names
         result.default_values = self.default_values + other.default_values
         result.optional_names = self.optional_names + other.optional_names
-        self.__validate()
+        result.descriptions = self.descriptions.copy()
+        result.descriptions.update(other.descriptions)
+        result.__validate()
         return result
         
-
+    def filtered(self, including = None, without = None):
+        assert including is None or without is None, \
+            'Can\'t filter and filter-out argInfo in the same operation'
+        result = ArgInfo()
+        result.descriptions = dict()
+        names = self.Names()
+        if without is not None:
+            names = [name for name in names if name not in without]
+        elif including is not None:
+            names = [name for name in names if name in including]
+        for name in names:
+            if name in self.required_names:
+                result.required_names.append(name)
+            elif name in self.default_names:
+                result.default_names.append(name)                
+                result.default_values.append(
+                    self.default_values[self.default_names.index(name)])
+            elif name in self.optional_names:
+                result.optional_names.append(name)
+            result.descriptions[name] = self.descriptions[name]
+        result.__validate()     
+        return result                       
+    
 makeArgInfo = ArgInfo
-
-
-def addArgInfo(__method=False, **descs):
-    '''This is a decorator used to automatically add an ArgInfo attribute to
-    a function.'''
-    def decorator(f):
-        f.ArgInfo = makeArgInfo(f, __method = __method, **descs)
-        ModuleBase.ModuleBaseClasses.append(f)
-        return f
-    return decorator
 
 
 
@@ -159,7 +173,7 @@ class ArgType(object):
             assert k in self._extras, '%s is not one of %s' % (k, self._extras)
         self.__dict__.update(extras)        
             
-def Simple(desc, typ):
+def Simple(desc, typ=str):
     # just a simple type
     assert typ in _simpleTypes, \
         '%s is not a supported simple type %s' % (typ, _simpleTypes)    
@@ -197,6 +211,7 @@ def Ident(desc, typ):
 
 def List(desc, num, func, *args, **kwargs):
     # list of argtypes
+    print >> sys.stderr, '***Warning, List ArgInfo item is deprecated'
     return [ func('%s %d'%(desc,i), *args, **kwargs) for i in range(num) ]
 
 def Sevr(desc):

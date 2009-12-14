@@ -205,9 +205,16 @@ class autosuper_meta(type):
     __super = property(lambda subcls: super(autosuper_meta, subcls))
 
     def __init__(cls, name, bases, dict):
+        # Support renaming.
+        if 'TrueName' in dict:
+            name = dict['TrueName']
+            cls.__name__ = name
+
         cls.__super.__init__(name, bases, dict)
         
         super_name = '_%s__super' % name.lstrip('_')
+        assert not hasattr(cls, super_name), \
+            'Can\'t set super_name on class %s, name conflict' % name
         setattr(cls, super_name, super(cls))
 
         # To support __super for classes, if we want the extra magic of

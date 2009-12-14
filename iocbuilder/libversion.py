@@ -286,6 +286,7 @@ class ModuleBase(object):
             # then subclassing might go astray.  Module instances are already
             # heavily subclassed, so we ought to play by the rules.
             super(cls.ModuleBaseMeta, cls).__init__(name, bases, dict)
+            name = cls.__name__     # In case it's changed
 
             # Bind to the module context.
             cls.__BindModule(name, dict)
@@ -486,18 +487,17 @@ def SetSimulation(real, sim):
         index = ModuleBase.ModuleBaseClasses.index(real)
         ModuleBase.ModuleBaseClasses[index] = sim
         # now in iocbuilder.modules
-        sim.__name__ = real.__name__
-        sim.ModuleName = real.ModuleName
-        sim.ArgInfo = real.ArgInfo
+        for attr in [
+                '__name__', 'ModuleName', 'ArgInfo', 'Defaults', 'Arguments']:
+            if hasattr(real, attr):
+                setattr(sim, attr, getattr(real, attr))
         modulename = real.ModuleVersion.ModuleName()
         setattr(getattr(modules, modulename), real.__name__, sim)
         return sim
     else:
         # first replace it in the list of subclasses
-        try:
+        if sim in ModuleBase.ModuleBaseClasses:
             ModuleBase.ModuleBaseClasses.remove(sim)
-        except:
-            pass
         # now in iocbuilder.modules
         try:
             modulename = sim.ModuleVersion.ModuleName()
