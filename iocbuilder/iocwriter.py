@@ -185,7 +185,6 @@ class IocWriter:
     IOCmaxLineLength_vxWorks = 126      # Oops
     IOCmaxLineLength_linux = 0          # EPICS shell is better behaved
 
-
     def __init__(self, iocRoot=''):
         self.iocRoot = iocRoot
         
@@ -551,15 +550,24 @@ int main(int argc,char *argv[])
             self.WriteFile((self.iocDbDir, db), self.PrintRecords)
             self.AddDatabase(os.path.join('db', db))
             makefile.AddLine('DB += %s' % db)
+            # this call is deprecated
             AutoSaveDatabaseHook(self.ioc_name, self.makefile_db, True)
         if self.CountSubstitutions():
             self.WriteFile(
                 (self.iocDbDir, substitutions), self.PrintSubstitutions)
             self.AddDatabase(os.path.join('db', expanded))
             makefile.AddLine('DB += %s' % expanded)
+            # this call is deprecated
             AutoSaveDatabaseHook(
                 self.ioc_name + '_expanded', self.makefile_db, False)
-
+        for func in _DbMakefileHooks:
+            db_filename = ''
+            if self.CountRecords(): 
+                db_filename = db
+            expanded_filename = ''
+            if self.CountSubstitutions():
+                expanded_filename = expanded
+            func(makefile, self.ioc_name, db_filename, expanded_filename)
 
     def CreateSourceFiles(self):
         makefile = self.makefile_src
@@ -653,5 +661,15 @@ int main(int argc,char *argv[])
 # This function is a special hack: this is called during autosave database
 # generation, and is designed to be overwritten by the autosave component
 # when it is created.
+# Deprecated, use AddDbMakefileHook instead
 def AutoSaveDatabaseHook(db_name, makefile, own_records):
     pass
+
+# functions to be called when generating Db/Makefile
+_DbMakefileHooks = []
+
+def AddDbMakefileHook(func):
+    '''This registers func as a Db/Makefile generation. It will be called
+    just before the Db/Makefile is generated like this:
+    func(makefile, iocname, db_filename, expanded_filename)'''
+    _DbMakefileHooks.append(func)
