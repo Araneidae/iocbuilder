@@ -1,7 +1,7 @@
 # EPICS_BASE ensures base.dbd is loaded.  Everything else is currently done
 # in iocinit.
 
-from iocbuilder import Device, IocCommand, ModuleBase
+from iocbuilder import Device, IocCommand, ModuleBase, EpicsEnvSet
 from iocbuilder import configure
 from iocbuilder.arginfo import *
 
@@ -28,6 +28,7 @@ class epicsBase(Device):
 
 
 class StartupCommand(ModuleBase):
+    '''Add some text to the startup script'''
     def __init__(self, command, post_init=False):
         IocCommand(command, post_init)
         self.__super.__init__()
@@ -35,3 +36,14 @@ class StartupCommand(ModuleBase):
     ArgInfo = makeArgInfo(__init__,
         command   = Simple('Startup command', str),
         post_init = Simple('If True, do this after iocInit', bool))
+
+class EpicsEnvSet(ModuleBase):
+    '''Set a variable in the EPICS environment'''
+    _EpicsEnvSet = EpicsEnvSet
+    def __init__(self, key, value):
+        self._EpicsEnvSet(key, value)
+        self.__super.__init__()
+        
+    ArgInfo = makeArgInfo(__init__,
+        key   = Simple('Variable to set', str),
+        value = Simple('Value to set it to', str))

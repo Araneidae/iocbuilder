@@ -550,16 +550,11 @@ int main(int argc,char *argv[])
             self.WriteFile((self.iocDbDir, db), self.PrintRecords)
             self.AddDatabase(os.path.join('db', db))
             makefile.AddLine('DB += %s' % db)
-            # this call is deprecated
-            AutoSaveDatabaseHook(self.ioc_name, self.makefile_db, True)
         if self.CountSubstitutions():
             self.WriteFile(
                 (self.iocDbDir, substitutions), self.PrintSubstitutions)
             self.AddDatabase(os.path.join('db', expanded))
             makefile.AddLine('DB += %s' % expanded)
-            # this call is deprecated
-            AutoSaveDatabaseHook(
-                self.ioc_name + '_expanded', self.makefile_db, False)
         for func in _DbMakefileHooks:
             db_filename = ''
             if self.CountRecords(): 
@@ -657,13 +652,6 @@ int main(int argc,char *argv[])
         self.CopyDataFiles(self.iocRoot, True)
         
 
-
-# This function is a special hack: this is called during autosave database
-# generation, and is designed to be overwritten by the autosave component
-# when it is created.
-# Deprecated, use AddDbMakefileHook instead
-def AutoSaveDatabaseHook(db_name, makefile, own_records):
-    pass
 
 # functions to be called when generating Db/Makefile
 _DbMakefileHooks = []
