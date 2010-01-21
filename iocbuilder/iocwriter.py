@@ -18,13 +18,20 @@ import paths
 from liblist import Hardware
 
 
-__all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter']
+__all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter', 'SetSource']
 
+_Source = os.path.realpath(sys.argv[0])
+
+def SetSource(s):
+    '''Set Source that appears in headers to be something other than the calling
+    program'''
+    global _Source
+    _Source = s
 
 def PrintDisclaimer(s, m=None, e=''):
     if m is None:  m = s
     now = time.strftime('%a %d %b %Y %H:%M:%S %Z')
-    source = os.path.realpath(sys.argv[0])
+    source = _Source
     message = \
 '''This file was automatically generated on %(now)s from
 source: %(source)s
@@ -638,6 +645,7 @@ int main(int argc,char *argv[])
         # Write out configure/RELEASE
         releases = []
         for module in sorted(libversion.ModuleBase.ListModules()):
+## \todo Do something sensible on check_release        
 # Something like this might be a good idea --
 #             if self.check_release:
 #                 module.CheckDependencies()
