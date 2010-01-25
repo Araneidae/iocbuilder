@@ -5,11 +5,11 @@ from libversion import ModuleBase
 
 __all__ = ['makeArgInfo', 'filter_dict']
 
-
+## Returns dictionary \c d with keys restricted to entries in the list \c l
+# \param d Dictionary to filter
+# \param l List to filter dictionary keys by
 def filter_dict(d, l):
-    '''Returns dictionary restricted to entries in given list.'''
     return dict((n, d[n]) for n in set(l) & set(d))
-
     
 class ArgInfo(object):
     '''This function produces an ArgInfo list for the xml frontend to 
@@ -130,6 +130,10 @@ class ArgInfo(object):
         return result
         
     def filtered(self, including = None, without = None):
+        '''Return a new ArgInfo object. If including is specified, then
+        only include the argument descriptions for each arg in including. If
+        without is specified, then don't include argument descriptions for
+        each arg in without'''        
         assert including is None or without is None, \
             'Can\'t filter and filter-out argInfo in the same operation'
         result = ArgInfo()
@@ -162,8 +166,11 @@ makeArgInfo = ArgInfo
 
 __all__ += ['Simple', 'Choice', 'Enum', 'Ident', 'List', 'Sevr']
 
+## These are the types supported by the Simple function
 _simpleTypes = [int, str, float, bool]
 
+## This is the base class that Simple, Choice, etc. create instanced of. It 
+#  is not meant to be instantiated directly'''
 class ArgType(object):
     _extras = ['values', 'labels', 'ident']
     def __init__(self, desc, typ, **extras):
@@ -172,16 +179,22 @@ class ArgType(object):
         for k in extras:
             assert k in self._extras, '%s is not one of %s' % (k, self._extras)
         self.__dict__.update(extras)        
-            
+        
+## Just a simple type.
+# \param desc Description of the argument
+# \param typ Type of the argument, one of _simpleTypes          
 def Simple(desc, typ=str):
-    # just a simple type
     assert typ in _simpleTypes, \
         '%s is not a supported simple type %s' % (typ, _simpleTypes)    
     desc = '%s %s' % (desc, typ)
     return ArgType(desc, typ)
-    
+
+## A choice of different values, with optional different labels
+# \param desc Description of the argument
+# \param values List of possible values, type must be one of _simpleTypes, and
+# the same for all in the list of values
+# \param labels List of optional labels for the values        
 def Choice(desc, values, labels = None):
-    # a choice of different values, with optional different labels
     typ = type(values[0])
     assert typ in _simpleTypes, \
         '%s is not a supported simple type %s' % (typ, _simpleTypes)     
@@ -200,20 +213,28 @@ def Choice(desc, values, labels = None):
         desc += '\n '.join(argdescs)
         return ArgType(desc, typ, values = values, labels = labels)
 
+## Like Choice, but stores the index instead of the value
+# \param desc Description of the argument
+# \param values List of possible values, type must be one of _simpleTypes, and
+# the same for all in the list of values
 def Enum(desc, values):
-    # a choice of different values, stores the index
     return Choice(desc, range(len(values)), values)
 
+## A choice of identifiers of a particular type
+# \param desc Description of the argument
+# \param typ Class of the argument, argument must be a subclass of this class.
+# xmlbuilder will look at all the defined objects so far, and offer a selection
+# of those that are a subclass of \c typ as options for this argument
 def Ident(desc, typ):
-    # a choice of identifiers of a particular type
     desc = '%s %s' % (desc, typ)        
     return ArgType(desc, typ, ident = True)
 
 def List(desc, num, func, *args, **kwargs):
-    # list of argtypes
+    '''Deprecated. Do not use'''
     print >> sys.stderr, '***Warning, List ArgInfo item is deprecated'
     return [ func('%s %d'%(desc,i), *args, **kwargs) for i in range(num) ]
 
+## choice of possible values for SEVR field
+# \param desc Description of the argument
 def Sevr(desc):
-    # choice of possible values for SEVR field
     return Choice(desc, ['NO_ALARM', 'MINOR', 'MAJOR', 'INVALID'])

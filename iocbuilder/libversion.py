@@ -345,25 +345,25 @@ class ModuleBase(object):
 
     __metaclass__ = ModuleBaseMeta
 
-    # The BaseClass attribute should be set to True in classes which are
+    ## The BaseClass attribute should be set to True in classes which are
     # intended to be base classes for other classes, and which are not
     # indended to be instantiated.
     BaseClass = True
 
-    # Dependencies are used to trigger relationships between classes.
+    ## Dependencies are used to trigger relationships between classes.
     # Dependencies are triggered when the class is first instantiated.
     Dependencies = ()
     # If this flag is set it allows this class to be automatically
     # instantiated if necessary.
     AutoInstantiate = False
 
-    # Set of instantiated modules as ModuleVersion instances
+    ## Set of instantiated modules as ModuleVersion instances
     _ReferencedModules = set()
-    # List of subclasses (direct or indirect)
+    ## List of subclasses (direct or indirect)
     ModuleBaseClasses = []
-    # List of instantiated classes
+    ## List of instantiated classes
     _ReferencedClasses = []
-    # List of all instances
+    ## List of all instances
     _ModuleBaseInstances = []
 
     @classmethod

@@ -190,15 +190,23 @@ def ParseRelease(dependency_tree, release, sup_release=None, debug=False):
     return vs                        
             
 # An options parser for the standard gui options
-def ParseEtcArgs(dependency_tree, architecture = 'vxWorks-ppc604_long'):
+def ParseEtcArgs(dependency_tree=None, architecture = 'vxWorks-ppc604_long'):
     '''Does the following:
     * Parse sys.argv using the options parser
     * Run Configure with the supplied information
     * Parse <iocname>_RELEASE if it exists and do ModuleVersion calls from it
-    * Return the options object'''
+    * Return the options object
+    The options object has the following attributes:
+    * iocname: the name of the ioc that is to be built
+    * iocpath: the path to the ioc directory
+    * debug: if True, then debugging should happen
+    * simarch: the architecture'''
     # first parse the normal options
     from optparse import OptionParser
-    parser = OptionParser('usage: %prog [options] <ioc_name> <out_dir>')
+    parser = OptionParser('''usage: %prog [options] <ioc_name>
+    
+This program will configure iocbuilder to write an ioc structure. It should
+be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
     parser.add_option('-d', action='store_true', dest='debug', 
         help='Print lots of debug information')
     parser.add_option('--sim', dest='simarch', 
@@ -225,7 +233,8 @@ def ParseEtcArgs(dependency_tree, architecture = 'vxWorks-ppc604_long'):
         register_dbd = True, 
         simulation   = options.simarch)    
     # Parse a RELEASE file to do the ModuleVersion calls
-    ParseRelease(dependency_tree,
-        options.iocname + '_RELEASE', '../../configure/RELEASE',
-        options.debug)    
+    if dependency_tree is not None:
+        ParseRelease(dependency_tree,
+            options.iocname + '_RELEASE', '../../configure/RELEASE',
+            options.debug)    
     return options

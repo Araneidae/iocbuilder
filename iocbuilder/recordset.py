@@ -4,7 +4,7 @@ import os.path
 import subprocess
 
 import recordnames
-from libversion import ModuleBase
+import libversion
 import support
 
 
@@ -42,7 +42,7 @@ class RecordSet(support.Singleton):
 
 
 
-class SubstitutionSetBase(support.autosuper_object):
+class SubstitutionSet(support.autosuper_object):
     def __init__(self):
         # Dictionary indexed by substitution sub-classes.  For each sub-class
         # the entry consists of a list of substitution instances.
@@ -82,7 +82,7 @@ class SubstitutionSetBase(support.autosuper_object):
         return len(self.__Substitutions)
 
 
-class SubstitutionBase(ModuleBase):
+class Substitution(libversion.ModuleBase):
     '''Each sub-class of this class defines a Substitution.  A Substitution is
     defined by specifying the following class members in the subclass:
         Arguments = (...)
@@ -93,7 +93,7 @@ class SubstitutionBase(ModuleBase):
             looked for in the db subdirectory of the library.
     '''
 
-    class SubstitutionMeta(ModuleBase.ModuleBaseMeta):
+    class SubstitutionMeta(libversion.ModuleBase.ModuleBaseMeta):
         def __init__(cls, name, bases, dict_):
             super(cls.SubstitutionMeta, cls).__init__(name, bases, dict_)
             if cls.TemplateFile:
@@ -104,8 +104,11 @@ class SubstitutionBase(ModuleBase):
     BaseClass = True
     TemplateFile = None
     TemplateFiles = []
-    SubstitutionSet = None
     TemplateDir = None
+    SubstitutionSet = SubstitutionSet()
+    TemplateDir = 'db'   
+    ## These are the arguments that any instance of the class will expect
+    Arguments = None
 
     def TemplateName(self, macro_name):
         '''Computes the template file name.  If macro_name is true then
@@ -140,6 +143,7 @@ class SubstitutionBase(ModuleBase):
         # Check that all the required arguments have been given: we can't do
         # template expansion unless every argument is specified.
         assert self.TemplateFile, 'Must specify template file'
+        assert self.Arguments is not None, 'Must specify some Arguments'
         assert set(args) == set(self.Arguments), \
             'Arguments %s missing or not recognised' % \
                 list(set(args).symmetric_difference(set(self.Arguments)))
@@ -190,11 +194,6 @@ class SubstitutionBase(ModuleBase):
             print line,
         assert p.wait() == 0, 'Error running msi'
         
-
-class Substitution(SubstitutionBase):
-    BaseClass = True
-    SubstitutionSet = SubstitutionSetBase()
-    TemplateDir = 'db'
 
 RecordsSubstitutionSet = Substitution.SubstitutionSet
 

@@ -27,6 +27,8 @@ class RecordTypes(Singleton):
 
     def _PublishRecordType(self, recordType, validate):
         # Publish this record type and remember it
+        # \todo If we remember which dbd the record came from we can be 
+        # intelligent about loading it again
         self.__RecordTypes.add(recordType)
         setattr(self, recordType, Record.CreateSubclass(recordType, validate))
 

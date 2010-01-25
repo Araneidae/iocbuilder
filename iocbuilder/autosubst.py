@@ -1,34 +1,9 @@
-from recordset import Substitution
 from libversion import ModuleBase, modules
 import os, re, sys
+import recordset
 from arginfo import *
 
 __all__ = ['AutoSubstitution']    
-
-# This re matches an line like #% autosave 1 or # % gda_tag, template, ...
-epics_parser_re = re.compile(r'^#[ \t]*%')
-
-# This re matches a macro description line like #% macro, P, Pv Prefix.
-# It will also match multiline descriptions like:
-#% macro, P, Pv Prefix with
-# a very long macro
-# A description is terminated by a 'blank' line which may optionally contain
-# a hash and multiple spaces or tabs.
-macro_desc_re = re.compile(
-    r'^#[ \t]*%[ \t]*macro[ \t]*,[ \t]*' # This is the #% macro, prefix
-    r'([^, \t]+)[ \t]*,[ \t]*' # This captures the macro name and discards comma
-    r'([^\n]+' # This start the description capture and the first line
-    r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # This is any subsequent non-'blank' line
-    re.MULTILINE)
-
-# This re matches the $( msi syntax until the first ) or (
-macro_start = re.compile(r'\$\(([^\(\)]*)')
-
-# This re matches a ( until the next ) or (
-bracket_open = re.compile(r'(\([^\(\)]*)')
-
-# This re matches a ) until the next ) or (
-bracket_close = re.compile(r'(\)[^\(\)]*)')
 
 # This iterator will find any $(...) macro in line. The number of ( brackets and
 # ) brackets in the expression will match
@@ -152,11 +127,8 @@ def populate_class(cls, template_file):
     # store the docstring
     if doc:
         cls.__doc__ = doc     
-    if not cls.__doc__ and cls.WarnMacros:
-        print >> sys.stderr, \
-            '***Warning: No __doc__ macro or docstring for %s' % cls
     # create Arguments        
-    if not hasattr(cls, 'Arguments'):
+    if cls.Arguments is None:
         cls.Arguments = required_names + default_names + optional_names
     # create Defaults        
     if not hasattr(cls, 'Defaults'):                    
@@ -173,15 +145,17 @@ def populate_class(cls, template_file):
         cls.ArgInfo.optional_names = optional_names    
 
 
-class AutoSubstitution(Substitution):
+class AutoSubstitution(recordset.Substitution):
+    '''Subclass of Substitution that scans its template file to find the macros it
+    uses, and creates and ArgInfo object from them'''
     BaseClass = True
-    # Set this to False to supress warnings on undescribed macros
+    ## Set this to False to supress warnings on undescribed macros
     WarnMacros = True
-    # This is set to True to disable scanning of the template file in 
+    ## This is set to True to disable scanning of the template file in 
     # other subclasses of this
     Scanned = False
 
-    class AutoSubstitutionMeta(Substitution.SubstitutionMeta):
+    class AutoSubstitutionMeta(recordset.Substitution.SubstitutionMeta):
         def __init__(cls, name, bases, dict_):
             super(cls.AutoSubstitutionMeta, cls).__init__(name, bases, dict_)
             if cls.TemplateFile is not None and not cls.Scanned:
@@ -206,12 +180,38 @@ class AutoSubstitution(Substitution):
                     continue
                 # make sure we haven't already made a custom builder object
                 # for it
-                if db in Substitution.TemplateFiles:
+                if db in recordset.Substitution.TemplateFiles:
                     continue
                 # make an autoSubstitution for it
                 clsname = 'auto_' + db.split('.')[0].replace('-','_')
                 class temp(AutoSubstitution):
                     WarnMacros = False
-                    ModuleName = moduleVersion.ModuleName()
+                    ModuleName = moduleVersion.Name()
                     TemplateFile = db
                     TrueName = clsname
+
+## This re matches an line like #% autosave 1 or # % gda_tag, template, ...
+epics_parser_re = re.compile(r'^#[ \t]*%')
+
+## This re matches the $( msi syntax until the first ) or (
+macro_start = re.compile(r'\$\(([^\(\)]*)')
+
+## This re matches a ( until the next ) or (
+bracket_open = re.compile(r'(\([^\(\)]*)')
+
+## This re matches a ) until the next ) or (
+bracket_close = re.compile(r'(\)[^\(\)]*)')
+
+## This re matches a macro description line like #% macro, P, Pv Prefix.
+# It will also match multiline descriptions like:
+#% macro, P, Pv Prefix with
+# a very long macro
+# A description is terminated by a 'blank' line which may optionally contain
+# a hash and multiple spaces or tabs.
+macro_desc_re = re.compile(
+    r'^#[ \t]*%[ \t]*macro[ \t]*,[ \t]*' # This is the #% macro, prefix
+    r'([^, \t]+)[ \t]*,[ \t]*' # This captures the macro name and discards comma
+    r'([^\n]+' # This start the description capture and the first line
+    r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # This is any subsequent non-'blank' line
+    re.MULTILINE)
+                                        
