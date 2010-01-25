@@ -1,0 +1,7 @@
+SUPPORT=/dls_sw/prod/R3.14.8.2/support
+WORK=/dls_sw/work/R3.14.8.2/support
+
+# Place any example specific dependencies here
+PYDRV=          $(SUPPORT)/pyDrv/1-2
+STREAMDEVICE=   $(SUPPORT)/streamDevice/2-4dls2-1
+EUROTHERM2K=    $(WORK)/eurotherm2k

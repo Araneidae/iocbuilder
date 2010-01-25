@@ -1,0 +1,8 @@
+# use <module>.<func> instead of <module>::<func>
+OPTIMIZE_OUTPUT_JAVA   = YES
+# need this to get all function/variable docs
+SHOW_NAMESPACES        = YES
+# add the input dir
+INPUT                 += ../../iocbuilder
+# add some examples
+EXAMPLE_PATH           = ../examples

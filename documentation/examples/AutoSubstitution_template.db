@@ -1,0 +1,15 @@
+# % macro, P, Device prefix
+# % macro, Q, Device suffix
+# % macro, PORT, Asyn port name
+# The asyn port name should match what you have
+# written in your startup script
+# % macro, GAD, Global address number, normally 0
+# % macro, LAD, Local address number, normally 1
+
+record(ai, "$(P)$(Q):SP:RBV") {
+  field(DESC, "Setpoint Readback")
+  field(DTYP, "stream")
+  field(INP, "@eurotherm2k.proto read($(GAD),$(LAD),S1) $(PORT)")
+  field(PREC, "0")
+  field(EGU, "C")
+}

@@ -30,7 +30,7 @@ test: all
             --script-dir=$(TEST_SCRIPT_DIR) dist/*.egg
 
 make_docs:
-	make -C docs
+	make -C documentation
 
 clean_docs:
-	make -C docs clean
+	make -C documentation clean

@@ -1,0 +1,615 @@
+/**
+\mainpage iocbuilder Python Module
+
+\section Introduction
+
+The IOC builder is a Python library designed to help with the generation of 
+EPICS IOCs. The IOC builder definitions capture as much information as possible 
+about the various components that make up an EPICS IOC.
+
+The module works by placing \c builder.py files containing iocbuilder classes in
+EPICS support modules. Each class represents a component that can be configured,
+and should contain all the information needed to instantiate it.
+
+This may include:
+- Template instantiations
+- Record usage
+- dbd requirements
+- lib requirements
+- startup script requirements
+
+This manual will explore how to use iocbuilder classes in existing support
+modules to build an IOC, either from an xml or a py file, and then create
+your own iocbuilder objects.
+ 
+\section User Manual
+This manual is divided in the following sections:
+- \subpage using_iocbuilder
+- \subpage using_xmlbuilder
+- \subpage generating_records
+- \subpage builder_files
+- \subpage troubleshooting
+
+\section Developer Manual
+The following sections are suitable for developers of the iocbuilder module:
+- \subpage internal_API
+- \subpage todo
+*/
+//-----------------------------------------------------------
+/**\page using_iocbuilder Creating an IOC using iocbuilder
+This page will walk through creating a simple IOC using the iocbuilder
+
+\section pre Prerequisites
+- Run the \c dls-make-etc-dir.py script to create an \c etc directory.
+
+\section dir Directory structure
+- \c \<module\>/etc/makeIocs/\<iocname\>_RELEASE is an optional file that 
+specifies module dependencies that are not captured in 
+\c \<module\>/configure/RELEASE 
+- <tt>\<module\>/etc/makeIocs/\<iocname\>.py</tt> is the script that will be run
+by make. It will be passed \c iocname as an argument, and should create 
+\c \<module\>/iocs/\<iocname\> 
+
+\section ex Example
+Following the steps below will create a simple IOC with a single instance of a
+eurotherm2k controller. If you want to try this out for yourself you can copy
+\c example_ioc.py and \c example_ioc_RELEASE from 
+\c \<iocbuilder\>/documentation/examples/ to \c \<module\>/etc/makeIocs/
+Typing \c make in the \c \<module\>/etc/makeIocs/ directory will create an IOC 
+\c example_ioc in \c \<module\>/iocs/example_ioc 
+
+\subsection ex1 \<iocname\>_RELEASE
+The following text is from 
+\c \<iocbuilder\>/documentation/examples/example_ioc_RELEASE
+\include example_ioc_RELEASE
+This is just a standard RELEASE file that lists paths to other modules. The 
+iocbuilder will walk the tree of \c \<module\>/configure/RELEASE and 
+\c \<iocname\>_RELEASE if it exists, and import the relevant builder files from 
+these modules in depth first order (i.e. all dependencies of a module before the
+module itself).
+
+\subsection ex2 \<iocname\>.py
+The following text is from 
+\c \<iocbuilder\>/documentation/examples/example_ioc.py
+\include example_ioc.py
+We will now walk through this example line by line
+
+\dontinclude example_ioc.py
+\skipline require
+\until iocbuilder
+First we setup the path. 
+- If we are using a released version of the iocbuilder,
+then all we need to do is tell setuptools to pick the latest version with a
+call to \c require. We can also tell setuptools to use a particular version
+by typing: 
+\code
+require('iocbuilder==2.3')
+\endcode
+- If we are using the development version of iocbuilder, we need to point
+directly to it instead of the \c require call. This should only be used for 
+testing:
+\code
+import sys
+sys.path.append('/home/mga83/epics/iocbuilder')
+\endcode
+
+\b Note that we also need to \c require('dls_dependency_tree') if we want 
+iocbuilder to walk any \c RELEASE files for us.
+\n\n
+\skipline iocbuilder
+\until dependency_tree
+Now we do the imports. Note that the iocbuilder needs to be configured before
+much of its namespace is available, so we just import iocbuilder here.
+\n\n
+\skipline ParseEtcArgs
+This is where iocbuilder is configured. 
+- If we pass a dependency_tree module to ParseEtcArgs() then it will parse the 
+RELEASE tree for us. If we don't pass it one, then we will need to do
+ModuleVersion() calls manually, e.g.:
+\code
+ModuleVersion('ipac',           '2-8dls4-3')
+ModuleVersion('Hy8515',         '3-7')
+\endcode
+- The second argument is the architecture the ioc will be built with, it 
+defaults to \c vxWorks-ppc604_long. 
+
+See the ParseEtcArgs() documentation for more details of what the function does.
+If it doesn't do what you want, you can dispense with it and call 
+\ref iocbuilder.configure.Configure.__call__ "Configure" directly.
+
+\b Note that if we run the script with a -h flag we get details of what 
+arguments to pass:
+- \code
+[tmc43@pc0043 makeIocs]$$ ./example_ioc.py -h
+usage: example_ioc.py [options] <ioc_name>
+
+This program will configure iocbuilder to write an ioc structure. It should
+be run from the etc/makeIocs directory, and will create iocs/<ioc_name>
+
+options:
+  -h, --help     show this help message and exit
+  -d             Print lots of debug information
+  --sim=SIMARCH  Create an ioc with arch=SIMARCH in simulation mode
+\endcode
+
+\n
+\skipline modules
+As iocbuilder is configured, and more support modules are added, it populates
+its ::modules namespace. Doing this import line will let us refer to builder
+classes as <tt>\<module\>.\<classname\></tt>.
+\n\n
+\skipline options
+\until print
+As described in the ParseEtcArgs() documentation, the \c options object lets us
+access the commandline arguments, if you want to print debug information you
+should check the value of \c options.debug first.
+\n\n
+\skipline .
+\until )
+This instantiates a serial_sim instance that will be created when this script
+is run in simulation mode. This simulation is configured to run over serial or 
+IP depending on the type of asyn port (serial or IP) that it is linked to.
+\param name This is the name of the serial_sim object that will be created in 
+the startup script
+\param pyCls This is the serial_sim subclass that should be instantiated
+\param module This is the python module to import pyCls from
+\param IPPort By default the IP port will be chosen automatically, if you need
+to specify one, do it here
+\param rpc This is the port to run the rpc (back door) over
+
+\n
+\skipline .
+\until )
+This instantiates an asyn IP port.
+\param name Name or the asyn port
+\param port The port to connect to in the real IOC
+\param simulation The serial_sim object to connect to when run in simulation 
+mode
+
+\n
+\skipline .
+\until )
+This instantiates a eurotherm2k controller.
+\param P Device prefix
+\param Q Device suffix
+\param PORT Name of the asyn port to communicate over
+\param GAD Global address number set on the controller
+\param LAD Local address number set on the controller
+
+\n
+\skipline iocbuilder
+Finally write the ioc out. At this point all work with IOC builder is complete, 
+and the builder application should exit.
+
+\section Notes
+Eventually a page called builder_objects will be generated in the documentation
+for that module. This will contain information about all the arguments that 
+should be supplied to the relevant builder objects. For now it is recommended
+that you use the xmlbuilder module to create simple test IOCs as documented
+in: \ref using_xmlbuilder
+
+*/
+//-----------------------------------------------------------
+/**\page using_xmlbuilder Creating an IOC using xmlbuilder
+This page will walk through creating a simple IOC using the xmlbuilder gui front
+end to iocbuilder
+
+\section pre Prerequisites
+- Run the \c dls-make-etc-dir.py script to create an \c etc directory.
+
+\section dir Directory structure
+- \c \<module\>/etc/makeIocs/\<iocname\>_RELEASE is an optional file that 
+specifies module dependencies that are not captured in 
+\c \<module\>/configure/RELEASE 
+- <tt>\<module\>/etc/makeIocs/\<iocname\>.xml</tt> is an XML file that containts
+elements representing builder objects. The xmlbuilder module can create 
+iocbuilder objects from this file, and the \c xeb.py application is included to
+edit this file.
+
+\section ex Example
+Following the steps below will create a simple IOC with a single instance of a
+eurotherm2k controller. If you want to try this out for yourself you can copy
+\c example_ioc.xml and \c example_ioc_RELEASE from 
+\c \<iocbuilder\>/documentation/examples/ to \c \<module\>/etc/makeIocs/
+Typing \c make in the \c \<module\>/etc/makeIocs/ directory will create an IOC 
+\c example_ioc in \c \<module\>/iocs/example_ioc 
+
+\subsection ex1 \<iocname\>_RELEASE
+The following text is from 
+\c \<iocbuilder\>/documentation/examples/example_ioc_RELEASE
+\include example_ioc_RELEASE
+This is just a standard RELEASE file that lists paths to other modules. The 
+iocbuilder will walk the tree of \c \<module\>/configure/RELEASE and 
+\c \<iocname\>_RELEASE if it exists, and import the relevant builder files from 
+these modules in depth first order (i.e. all dependencies of a module before the
+module itself).
+
+\subsection ex2 \<iocname\>.xml
+The following text is from 
+\c \<iocbuilder\>/documentation/examples/example_ioc.xml
+\include example_ioc.xml
+- The \c \<components\> element represents the IOC and provides
+ - a root node to place objects under
+ - a place to specify the architecture for the real IOC
+- Each element under the \c \<components\> element represents a builder object
+and each of its attributes is a named argument
+
+\section build Building the IOC
+The make rule runs \c dls-xml-iocbuilder.py which reads the xml file. For each
+element it creates the corresponding builder element and then writes out the 
+IOC. It has a debug mode where it will write the python calls it makes to
+stdout, and a simulation mode to write a simulation output.
+
+\section xeb xeb.py
+You can hand edit the xml file if you want, but the most useful way to edit it
+is with the gui tool \c xeb.py
+
+If you run the following:
+\code
+[tmc43@pc0043 eurotherm2k]$$ xeb.py <module>/etc/makeIocs/example_ioc.xml
+\endcode
+You will be presented with the gui:
+\image html ss1.png "Gui snapshot"
+As you can see, the main window is split into 3 sections, the \ref 
+table_sec on the top left, the \ref undo_sec on
+the bottom left and the \ref object_sec on the right, with a 
+\ref menu_sec along the top.
+
+\subsection table_sec Table selector
+The table selector shows an entry for each builder class that has objects
+defined. If you click on one of them, the table is displayed in the 
+\ref object_sec. If you right click you will be presented with the 
+\ref component_menu
+
+\subsection undo_sec Undo stack
+This contains a list of the actions that have been performed on the visible
+table. You can click up and down to undo and redo actions
+
+\subsection object_sec Table editor
+In this pane you are presented with a spreadsheet view of the current table.
+If you mouse over a value you will be shown a tooltip describing that argument.
+If there are a choice of values for a field they will also be shown in the
+tooltip as well as being autocomplete options. If you right click you will be
+presented with the \ref edit_menu
+
+The cells are colourcoded as follows:
+- White background: Required argument
+- Yellow background: Optional argument
+- Shaded background: Cell selected
+- Black text: Normal value
+- Grey text: No value entered, default value shown
+- Red text and background: Invalid value
+
+\image html ss2.png "Editing an object"
+
+\subsection menu_sec Menu bar
+This contains the following menus:
+
+\subsection file_menu File menu
+<div style="position:relative; left:30px; top:0px; height:190px; width:187px">
+\image html ss3.png
+</div>
+- New: Create a new xml data structure
+- Open: Open an existing xml file
+- Reload: Reopen the current xml file
+- Save: Save as current xml file
+- Save As: Save as different xml file
+- Set Architecture: Set the architecture of the file
+
+\subsection edit_menu Edit menu
+<div style="position:relative; left:30px; top:0px; height:271px; width:231px">
+\image html ss4.png
+</div>
+- Insert Row: Insert a row above the currently selected row(s)
+- Insert Row Under: Insert a row below the currently selected row(s)
+- Remove Row: Delete the currently selected row(s)
+- Cut: Cut the contents of the table to the clipboard
+- Copy: Copy the contents of the table to the clipboard
+- Paste: If the clipboard contains 1 value and there is a multi-cell selection
+then paste the value to all cells, otherwise paste the contents from the top
+left cell selection
+- Clear: Clear the selected cell(s)
+- Fill Cells: Take the top left cell and fill down and across, incrementing
+trailing integer values. E.g. if cell(0,0) = "Text1", cells (0,0) -> (0,2) are
+selected and Fill cells clicked, cell(0,1) = "Text2" and cell(0,2) = "Text3"
+- Undo: Undo the last action on the selected table
+- Redo: Redo the last action on the selected table
+\subsection component_menu Components menu
+<div style="position:relative; left:30px; top:0px; height:157px; width:131px">
+\image html ss5.png
+</div>
+- Remove Table: Remove the currently selected table (its objects are not
+deleted until the file is saved)
+- Each remaining menu is the name of a support module, clicking on it will
+open a sub-menu which contains all the builder classes that the module provides.
+Clicking on one of these menu items will display it in the \ref object_sec
+- The records submenu contains all the record types that are available to
+instantiate. More details in \ref xmlbuilder_rec
+
+*/
+//-----------------------------------------------------------
+/**\page generating_records Generating records
+Individual records can easily be added to an IOC definition, either as
+standalone records, or bound to hardware resources.  For example, the
+following builder script generates 'ai' and 'waveform' records on an 8401 ADC
+card.
+
+\code
+import iocbuilder
+iocbuilder.ConfigureIOC()
+from iocbuilder import *
+
+ModuleVersion('ipac',       '2-8dls4-3')
+ModuleVersion('Hy8401ip',   '3-11')
+
+card4 = hardware.Hy8002(4)
+adc = card4.Hy8401(0)
+
+SetDomain('TS', 'XX')
+SetDevice('DEV', 1)
+
+recs = []
+for i in range(8):
+    ch = adc.channel(i)
+    recs.extend([
+        ch.ai('AI%d' % (i+1), EGU = 'V', PREC = 4),
+        ch.waveform('WF%d' % (i+1), NELM = 1024, FTVL = 'FLOAT')])
+fan = create_fanout('TRIGGER', SCAN = '1 second', *recs)
+records.bo('GO', FLNK = fan)
+
+WriteIoc('iocs', 'TS', 'XX', 1)
+\endcode
+
+We've already seen what the first lines do, so let's start with the following
+new definitions.
+
+
+\section naming Record naming
+\code
+SetDomain('TS', 'XX')
+SetDevice('DEV', 1)
+\endcode
+
+The default record naming convention (as configured by ConfigureIOC(), as it
+happens) strictly follows the Diamond naming convention, where every record
+name is of the form
+\code
+<domain>-<ta>-<component>-<id>:<name>
+\endcode
+Here we specify the first four components in the same order -- all records
+will then assume this "device" name -- thus in this case we will be
+generating records named <tt>TS-XX-DEV-01:\<name\></tt>, where \c \<name\> is 
+specified when we generate the record.
+
+
+\section hardware Hardware bound records
+\code
+    ch = adc.channel(i)
+    ch.ai('AI%d' % (i+1), EGU = 'V', PREC = 4)
+    ch.waveform('WF%d' % (i+1), NELM = 1024, FTVL = 'FLOAT')
+\endcode
+
+This part of the code above simply extracts one of the eight ADC channels and
+then generates an ai record named \c AI1 for the first channel (and so on up to
+\c AI8), and similarly waveform records named \c WF1 to \c WF8.
+
+The true record name is then generated from the device configured above to
+construct records with full names of the form <tt>TS-XX-DEV-01:AI1</tt> and so 
+on.
+
+Individual fields in each record can be specified during construction of the
+record (or fields can be assigned after construction).  All fields and values
+are validated against the dbd file where the record type is defined.  The
+\c DTYP and \c INP fields are automatically assigned, as these records are bound
+to hardware entities.
+
+
+\section fan Generating fanout records
+\code
+recs = []
+for i in range(8):
+    recs.extend([ ... ])
+fan = create_fanout('TRIGGER', SCAN = '1 second', *recs)
+\endcode
+
+All the records generated in the loop are gathered together into a single list
+-- and then create_fanout() is used to create a chain of fanout records.  This
+idiom allows the records to be processed together in a controlled way.
+
+
+\section unbound Generating unbound records
+\code
+records.bo('GO', FLNK = fan)
+\endcode
+
+The \c records object contains an attribute for each record type (automatically
+populated from dbd files), and can be used to create arbitrary records.  In
+this case we are generating a record named <tt>TS-XX-DEV-01:GO</tt> with its 
+forward link set to the previously created fanout -- thus processing \c GO will 
+trigger all the records in this example.
+
+\section xmlbuilder_rec Creating records from xmlbuilder
+\image html ss6.png "Editing records in xeb.py"
+At the moment there is limited record support in xmlbuilder. You can create
+named records of the supported types, but as dbds are not intelligently
+instantiated none of the \c DTYP information is validated correctly. This will
+be fixed in a future release. You can access record information from the
+record submenu of the \ref component_menu
+
+*/
+//-----------------------------------------------------------
+/**\page builder_files Creating builder files
+\section concept Concept
+A typical builder file is called \c builder.py and lives in \c \<module\>/etc.
+It contains one or more builder classes which contain information about how to
+use the module. In the sections below we will explore how to create builder
+classes for different components. There are 4 classes that you should become 
+familiar with:
+- \ref iocbuilder.libversion.ModuleBase "ModuleBase". The class that all builder
+objects inherit from. If you have an object that just makes instances of other
+objects then this is all you need to inherit from. There is an example in the
+\ref arginfo section
+- \ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution" and 
+\ref iocbuilder.recordset.Substitution "Substitution". These classes wrap
+template file usage via substitution files. There is an example in the
+\ref autosubstitution section
+- \ref iocbuilder.device.Device "Device". This class encapsulates startup script
+text, along with lib and dbd usage. There is an example in the \ref device 
+section
+
+There are also sections on \ref dependencies and \ref libs.
+
+\section autosubstitution Simple template wrappers
+The simplest builder file to write is a subclass of 
+\ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution". This class takes 
+a \ref iocbuilder.recordset.Substitution.TemplateFile "Template file", scans it 
+for macros and \ref macro_descriptions and creates a builder class whose 
+arguments match the macros (and defaults) of the template.
+
+Example: code from 
+<tt>\<iocbuilder\>/documentation/examples/AutoSubstitution_builder.py</tt>
+\include AutoSubstitution_builder.py
+
+- First import the classes you need from iocbuilder
+- The AutoProtocol class is covered in the section on \ref autoprotocol
+- Add a docstring to describe your new class
+- Set the \ref iocbuilder.recordset.Substitution.TemplateFile "Template file"
+
+\b Note \ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution" and 
+\ref iocbuilder.recordset.Substitution "Substitution" classes must appear first 
+in the list of subclasses for argument processing to work correctly. Also, if
+you need modules like \c calc or \c sscan for your template to work, you should 
+read the section on \ref dependencies
+
+\subsection macro_descriptions Macro descriptions
+Now that you have a builder object, you should describe the macros in your db
+file. For each macro you use you should add a description line:
+\code
+# % macro, <macro_name>, <description>
+\endcode
+- The space between \c # and \c % is optional
+- \c \<macro_name\> must contain no spaces
+- \c \<description\> will continue on multiple lines until a blank line or line
+with just a number of <tt>#</tt>'s is found
+
+Example: code from 
+<tt>\<iocbuilder\>/documentation/examples/AutoSubstitution_template.db</tt>
+
+\include AutoSubstitution_template.db
+
+\subsection autoprotocol Templates that use streamDevice
+Templates that use streamDevice should:
+- Subclass \c AutoProtocol
+- Specify the \c ProtocolFiles attribute. This should be a list of protocol file
+pathnames that this template needs from the current module.
+
+Specifying these will have the effect of specifying \c STREAM_PROTOCOL_PATH in
+the startup script of the generated IOC as well as checking for the existence
+of the protocol file
+
+\section dependencies Specifying dependencies
+You can specify external dependencies with the 
+\ref iocbuilder.libversion.ModuleBase.Dependencies "Dependencies" attribute.
+This should be a tuple or list of library dependencies. 
+
+E.g. for \c calc the library dependency class is called \c Calc
+\code
+from iocbuilder import ModuleBase
+from iocbuilder.modules.calc import Calc
+
+class test(ModuleBase):
+    Dependencies = (Calc,)
+    ...
+\endcode
+This will load the correct lib and dbd dependencies in order to allow the
+records defined in \c calc to be used
+
+See the \ref libs section for more details
+
+\subsection substitution The Substitution class
+If you would prefer iocbuilder not to scan your template file, you can use the
+Substitution class. In this case, you should specify the 
+\ref iocbuilder.recordset.Substitution.Arguments "Arguments" attribute to be a
+list of the macros that the Substitution requires. You should also specify an
+\ref arginfo object to describe the arguments to xmlbuilder.
+
+\section arginfo ArgInfo
+If you so not use the 
+\ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution" object, you should
+specify the arguments that the object should be supplied with. This makes it
+possible to create objects using xmlbuilder. This is done via an
+\ref iocbuilder.arginfo.ArgInfo "ArgInfo" object.
+Example: code from
+<tt>\<iocbuilder\>/documentation/examples/ArgInfo_builder.py</tt>
+\include ArgInfo_builder.py
+This example creates n instances of the eurotherm2k object shown in the 
+\ref autosubstitution section.
+
+\ref iocbuilder.arginfo.ArgInfo "makeArgInfo" takes the __init__ method as the
+first argument, then named arguments describing each argument that should be
+passed to __init__. Each of these arguments can be one of:
+- \ref iocbuilder.arginfo.Simple "Simple": A simple type
+- \ref iocbuilder.arginfo.Ident "Ident": An identifier, lets you specify that 
+this argument should be something of a particular type
+- \ref iocbuilder.arginfo.Choice "Choice": One of a list
+- \ref iocbuilder.arginfo.Choice "Enum": As choice, but pass the index of the
+list to the __init__ method
+
+\b Note You can also add ArgInfo objects together, and filter them using the 
+\ref iocbuilder.arginfo.ArgInfo.filtered() "filtered()" method. This allows more
+complicated argument structures to be built up.
+
+\section device The Device class
+This class wraps libs, dbds, and startup script functionality.
+Example: code from
+<tt>\<iocbuilder\>/documentation/examples/Device_builder.py</tt>
+\include Device_builder.py
+The useful sections of the documentation are:
+- \ref iocbuilder.device.Device.LibFileList "LibFileList": the libs that this
+class uses
+- \ref iocbuilder.device.Device.DbdFileList "DbdFileList": the dbds that this
+class uses
+- \ref iocbuilder.device.Device.InitialiseOnce() "InitialiseOnce()": this method
+is called exactly once if any instances of the class are created
+- \ref iocbuilder.device.Device.Initialise() "Initialise()": this method is 
+called once per instance to generate normal startup script commands.
+- \ref iocbuilder.device.Device.PostIocInitialise() "PostIocInitialise()": this 
+method is called to generate startup scripts that need to be generated after 
+\c iocInit has been called
+
+\section libs Wrapping library and dbd dependencies for external use
+It is a convention that any module that provides dbds and libraries for external
+use (like \c calc, \c genSub, \c sscan, etc.) should provide a library
+dependency class that can be used as a \ref dependencies "dependency" by other 
+modules. This should be the module name capitalised (\c Calc, \c GenSub, etc.).
+A library dependency looks something like this:
+\code
+from iocbuilder import Device
+
+__all__ = ['Calc']
+
+class Calc(Device):
+    LibFileList = ['calc']
+    DbdFileList = ['calcSupport']
+    AutoInstantiate = True
+\endcode
+It is defined as described in \ref device section, but with 2 important details:
+- No \c __init__ method is defined
+- The \ref iocbuilder.libversion.ModuleBase.AutoInstantiate "AutoInstantiate" 
+attribute set to \c True
+
+This allows iocbuilder to create an instance of this whenever someone refers to
+it as a dependency
+
+*/
+//-----------------------------------------------------------
+/**\page troubleshooting Troubleshooting
+If you get an odd error, first make sure that you have called 
+\c self.__super.__init__() in your builder class.
+*/
+//-----------------------------------------------------------
+/**\page internal_API Internal API
+\todo This is for developers interested in modifying the internals of 
+iocbuilder. Like all internal documentation, this is always written last...
+*/
+//-----------------------------------------------------------

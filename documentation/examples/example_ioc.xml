@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<components arch="linux-x86">
+	<pyDrv.serial_sim_instance IPPort="8100" module="eurotherm2k_sim" name="eurothermSim" pyCls="eurotherm2k" rpc="9001"/>
+	<asyn.AsynIP name="eurothermAsyn" port="172.23.111.180:7001" simulation="eurothermSim"/>
+	<eurotherm2k.eurotherm2k GAD="0" LAD="1" P="EUROTHERM2K" PORT="eurothermAsyn" Q=""/>
+</components>
