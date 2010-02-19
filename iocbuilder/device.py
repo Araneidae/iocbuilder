@@ -185,7 +185,7 @@ class Device(ModuleBase):
     # created.  We add ourselves to the library and load our resources.
     @classmethod
     def UseModule(cls):
-        cls.__super.UseModule()
+        super(Device, cls).UseModule()
 
         # Add to list of libraries, check that all our resources exist, and
         # finally load the dbd files.

@@ -393,7 +393,7 @@ class ModuleBase(object):
         if not cls.__dict__['_Instantiated']:
             cls._Instantiated = True
             cls.UseModule()
-        self = cls.__super.__new__(cls, *args, **kargs)
+        self = super(ModuleBase, cls).__new__(cls, *args, **kargs)
         cls._ModuleBaseInstances.append(self)
         return self
 

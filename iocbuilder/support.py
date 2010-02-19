@@ -217,16 +217,6 @@ class autosuper_meta(type):
             'Can\'t set super_name on class %s, name conflict' % name
         setattr(cls, super_name, super(cls))
 
-        # To support __super for classes, if we want the extra magic of
-        # attribute calling then we need to attach the __super attribute to
-        # the parent class of cls.  Unfortunately, this results in further
-        # name clashes.
-        parent = cls.__class__
-        assert not hasattr(parent, super_name), \
-            'autosuper_meta can\'t handle another class named %s' % name
-        setattr(parent, super_name, 
-            property(lambda subcls: super(cls, subcls)))
-
 
 class autosuper_object(object):
     '''Class that can be subclassed to inherit autosuper behaviour.'''
