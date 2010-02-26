@@ -1,0 +1,322 @@
+#!/bin/sh
+
+# Given a directory of built IOCs and an optional sub-list of IOCs this
+# script will merge the IOCs into trunk.
+
+
+# The IOCs to be updated are found here under subversion.
+IOC_TRUNK="$SVN_ROOT/diamond/trunk/ioc"
+
+
+# Reports error and immediately exits.
+Error()
+{
+    echo >&2 "$@"
+    exit 1
+}
+
+
+# On exit hook: cleans up temporary resources, namely the TEMP_ROOT directory.
+function OnExit()
+{
+    if ((KEEP_DIR)); then
+        echo "Temporary files in $TEMP_ROOT"
+    else
+        rm -rf "$TEMP_ROOT"
+    fi
+}
+
+
+# Performs a sanity check on the given directory to ensure that it really is
+# a clean IOC directory.
+#
+#   ValidateIoc <ioc-dir>
+#
+ValidateIoc()
+{
+    # Check for clean unbuilt IOC directory: search for db, dbd, bin, lib in
+    # root and check for any O. directories anywhere.
+    local dirty=0
+    for d in db dbd bin lib; do
+        [ -e "$1"/$d ]  &&
+            dirty=1
+    done
+    if ((dirty))  ||  [ -n "$(find "$1" -name 'O.*' -print -quit)" ]; then
+        Error "Directory $d found in IOC $1: ensure clean IOC directory!"
+    fi
+
+    # Make sure we're really in an IOC directory, check for some key
+    # signature files.
+    for d in Makefile configure iocBoot configure/RELEASE; do
+        [ -e "$1"/$d ] ||
+            Error "File $d missing: are you sure $1 is an IOC?"
+    done
+    
+    # Simply refuse to process IOCs which have already been put under
+    # subversion: clearly a sign of confusion.
+    [ -n "$(find "$1" -name .svn -print -quit)" ]  &&
+        Error "IOC $1 seems to have svn files.  Not processing."
+}
+
+
+# Compares two directories to see if anything has changed.
+#
+# The diff pattern ensures that the boiler-plate messages at the start of
+# every generated file don't trigger differences.  These lines are of the
+# form 
+#
+#   This file was automatically generated on %(now)s from
+#   source: %(source)s
+#
+# preceded by either # or /* or * comment characters.
+#
+#   CheckChanged <svn-dir> <new-dir>
+#
+CheckChanged()
+{
+    DIFF_PATTERN='^\(#\|/\*\) This file was \|^\(#\| \*\) source: '
+    (($(diff -r -I"$DIFF_PATTERN" --exclude='*.svn*' "$1" "$2" | wc -l) > 0))
+}
+
+
+# Merge changes into svn
+#
+# This function performs the surprisingly difficult job of replacing an
+# existing SVN repository with files from another directory.
+#
+#   MergeSVN <working-svn-dir> <replacement-dir>
+#
+function MergeSVN()
+{
+    diff -r --brief --exclude='*.svn*' "$1" "$2" |
+    while read -r; do
+        # For each file diff will report either that it only exists in one of
+        # the two directories, or else that two corresponding files in the
+        # two directories differ.  The responses are of the form:
+        #
+        #   Only in $1/<subdirectory>: <filename>
+        #   Only in $2/<subdirectory>: <filename>
+        #   Files <svn-file> and <new-file> differ
+        #
+        # Careful use of sed is required to prise out desired filenames!
+        case "$REPLY" in
+        "Only in $1"*)
+            # If the file is only in the SVN directory then we can simply
+            # delete it from the subversion directory.
+            svn rm $QUIET "$(sed <<<"$REPLY" 's/^Only in //; s.: ./.')"  ||
+                return
+            ;;
+        "Only in $2"*)
+            # If the file is only in the new directory then we can copy it
+            # into the svn directory and inform svn.  Fortunately, if we use
+            # `cp -r`, we can treat files and directories identically.
+            NEW_FILE="$(sed <<<"$REPLY" "s:^Only in $2::; s.: ./.")"  &&
+            cp -r "$2/$NEW_FILE" "$1/$NEW_FILE"  &&
+            svn add $QUIET "$1/$NEW_FILE"  ||
+                return
+            ;;
+        "Files "*)
+            # This is the simplest case: just copy the file over.  It's a
+            # little harder to prise out the filenames, though.
+            # (Note that if any part of the filename contains the string 
+            # ' and ' then all bets are off: this just won't work.)
+            sed -r <<<"$REPLY" 's:^Files (.*) and (.*) differ$:\1\n\2:' |
+            (
+                IFS=$'\n'
+                read -r TARGET  &&
+                read -r SOURCE  &&
+                cp "$SOURCE" "$TARGET"
+            )  ||
+                return
+            ;;
+        *)  Error "Oops: don't understand response from diff:"$'\n' "$REPLY"
+            ;;
+        esac
+    done
+}
+
+
+# This is the function called in the loop below which performs all the real
+# work of merging an IOC from the given directory into the checked out
+# subversion tree.
+#   Called with the path to the IOC to merge and the IOC name split into its
+# two components, location and name:
+#
+#   MergeOneIoc <ioc_path> <location> <ioc_name> 
+#
+MergeOneIoc()
+{
+    ioc_path="$1"
+    location="$2"
+    ioc_name="$3"
+    $ECHO Processing IOC "$ioc_name"
+
+    # Validate well formed IOC name: if it has a location field then it must
+    # match the given location.
+    [ "$location" = "${ioc_name%%-*}" -o "$ioc_name" = "${ioc_name%%-*}" ]  ||
+        Error "IOC $ioc_name doesn't match location $location"
+
+    SVN_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
+    ioc_dir="$IOCS_DIR/$ioc_path"
+
+    # Ensure the IOC we're about to merge is a proper ioc!
+    ValidateIoc "$ioc_dir"
+    
+    # Create the location skeleton
+    svn update $QUIET -N "$TEMP_ROOT/$location"  &&
+    
+    # Check out the current IOC state, or create from new if necessary.
+    $ECHO "Checking out IOC $ioc_name"  &&
+    svn update -q "$SVN_IOC_DIR"  &&
+    if ! [ -d "$SVN_IOC_DIR" ]; then
+        if ((AUTO_ADD)); then
+            svn mkdir $QUIET "$SVN_IOC_DIR"
+        else
+            Error "IOC $ioc_name not in subversion"
+        fi
+    fi  ||
+        Error "Error checking out $ioc_name"
+
+    # Merge the newly generated IOC into the SVN tree.    
+    if ((FORCE_UPDATE))  ||
+            CheckChanged  "$SVN_IOC_DIR" "$ioc_dir"; then
+        $ECHO "Merging IOC $ioc_name"
+        MergeSVN "$SVN_IOC_DIR" "$ioc_dir"  ||
+            Error "Something failed merging ioc $ioc_name"
+        MERGED_IOCS=("${MERGED_IOCS[@]}" "$ioc_name")
+    else
+        $ECHO "IOC $ioc_name unchanged"
+    fi
+}
+
+
+KEEP_DIR=0
+COMMIT_SVN=0
+COMMIT_MESSAGE=
+AUTO_ADD=0
+FORCE_UPDATE=0
+ECHO=:
+QUIET=-q
+while getopts 'cm:akfvh' option; do
+    case $option in
+    c)  COMMIT_SVN=1 ;;
+    m)  COMMIT_MESSAGE="$OPTARG"$'\n' ;;
+    k)  KEEP_DIR=1 ;;
+    a)  AUTO_ADD=1 ;;
+    f)  FORCE_UPDATE=1 ;;
+    v)  ECHO=echo
+        [ -z "$QUIET" ] && set -x
+        QUIET= ;;
+    h)  cat <<EOF
+Usage: $(basename "$0") [options] <ioc-dir> [<iocs>]
+Merges updated IOC directories in <iocs> into subversion trunk.  If run
+without any options performs the merge into a temporary directory which is
+discarded, but reports which IOCs were merged.  Normally run with -c and -m
+to automatically commit any merges.
+
+The following options are supported:
+    -c      Commit changes to subversion
+    -m:     Commit message to use for SVN commit
+    -a      Add IOCs which don't already exist.  Note that the IOC location
+            must already exist.
+    -k      Keep the updated SVN directory tree, otherwise it is deleted.
+    -f      Don't check for changes, force update anyway
+    -v      Verbose: show details, -vv is super verbose (debug only)
+    -h      Shows this help text.
+EOF
+        exit 0 ;;
+    *)  Error 'Invalid option: try -h for help'
+    esac
+done
+shift $((OPTIND-1))
+
+(($#))  ||
+    Error 'Not enough arguments: try -h for help'
+
+IOCS_DIR="$(cd "$1"  &&  pwd)"  ||
+    Error "Invalid IOC directory $1"
+shift
+
+if (($#)); then
+    # If a list of IOCs is given use that list unconditionally.
+    IOC_LIST=("$@")
+else
+    # Prepare the initial list of IOCs from the directories in the given ioc
+    # directory.  Exclude hidden directories and anything ending _sim
+    IOC_LIST=($(
+        find "$IOCS_DIR" -mindepth 1 -type d \
+            \( -name .\* -o -name \*_sim -o -printf '%f\n' \) -prune))
+fi
+((${#IOC_LIST[@]}))  ||
+    Error "No IOCs to commit found in $IOCS_DIR"
+
+
+# Do everything in a directory we're going to discard
+TEMP_ROOT="$(mktemp -d /tmp/merge-iocs.XXXXXX)"  &&
+trap OnExit EXIT  &&
+# Pick up the skeleton of the base directory we're going to update
+svn checkout -qN "$SVN_ROOT/diamond/trunk/ioc" "$TEMP_ROOT"  ||
+    Error 'Unable to prepare temporary files'
+
+
+# This is used to accumulate the list of merged IOCs
+MERGED_IOCS=()
+
+for ioc in "${IOC_LIST[@]}"; do
+    # At this point the ioc can be in one of three formats:
+    #   1. A full IOC name
+    #   2. A location 
+    #   3. A two part name location/ioc
+    # All three forms must name a directory in $IOCS_DIR, but we have to
+    # handle these cases differently to cope with the following use cases:
+    #   1.  IOC names are given when the iocs directory is flat, typically
+    #       with all IOCs in the same location.
+    #   2.  Locations are used when the iocs directory is nested, in which
+    #       case we want to generate all iocs in that location.
+    #   3.  As a sub-case of 2. it is possible for individual nested IOCs to
+    #       be named on the command line.
+    location="${ioc%%/*}"       # Checking for ioc = location/ioc_name
+    ioc_name="${ioc##*/}"
+    if [ "$ioc" = "$location/$ioc_name" ]; then
+        # IOC already given with full path: case (3)
+        MergeOneIoc "$ioc" "$location" "$ioc_name"
+    else
+        location="${ioc%%-*}"   # Checking for location in first part of IOC
+        if [ "$location" = "$ioc" ]; then
+            # Hum.  No separate location in IOC name, assume it's a location
+            # directory instead.  Process all the IOCs in this directory:
+            # case (2)
+            [ -d "$IOCS_DIR/$location" ]  ||
+                Error "Location $location isn't a directory"
+            IOCS=($(
+                find "$IOCS_DIR/$location" -mindepth 1 -type d \
+                    -printf '%f\n' -prune))
+            ((${#IOCS[*]}))  ||
+                Error "No IOCs found in location $location"
+            for ioc in "${IOCS[@]}"; do
+                MergeOneIoc "$location/$ioc" "$location" "$ioc"
+            done
+        else
+            # Looks like a complete IOC name in itself: case (1)
+            MergeOneIoc "$ioc" "$location" "$ioc"
+        fi
+    fi
+done
+
+
+# If anything changed then either report it or commit it, depending on what
+# the user asked for.
+if ((${#MERGED_IOCS[@]})); then
+    if ((COMMIT_SVN)); then
+        COMMIT_MESSAGE="${COMMIT_MESSAGE}\
+Automatically merged IOCs from $IOCS_DIR:
+    ${MERGED_IOCS[*]}
+"
+        svn commit -m"$COMMIT_MESSAGE" "$SVN_ROOT/ioc"
+    else
+        echo The following IOCs were merged:
+        echo "    ${MERGED_IOCS[*]}"
+    fi
+else
+    echo No IOCs changed
+fi

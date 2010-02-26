@@ -27,7 +27,7 @@ function MergeSVN()
         "Only in $1"*)
             # If the file is only in the SVN directory then we can simply
             # delete it from the subversion directory.
-            svn rm "$(sed <<<"$REPLY" 's/^Only in //; s.: ./.')"  ||
+            svn rm $QUIET "$(sed <<<"$REPLY" 's/^Only in //; s.: ./.')"  ||
                 return
             ;;
         "Only in $2"*)
@@ -36,7 +36,7 @@ function MergeSVN()
             # `cp -r`, we can treat files and directories identically.
             NEW_FILE="$(sed <<<"$REPLY" "s:^Only in $2::; s.: ./.")"  &&
             cp -r "$2/$NEW_FILE" "$1/$NEW_FILE"  &&
-            svn add "$1/$NEW_FILE"  ||
+            svn add $QUIET "$1/$NEW_FILE"  ||
                 return
             ;;
         "Files "*)
@@ -60,11 +60,16 @@ function MergeSVN()
 }
 
 
+QUIET=
+if [ "$1" = -q ]; then
+    QUIET=-q
+    shift
+fi
 
 case $# in
     2)  MergeSVN "$1" "$2" ;;
     *)  cat <<EOF
-Usage: $0 <working-svn-dir> <replacement-dir>
+Usage: $0 [-q] <working-svn-dir> <replacement-dir>
 
 Updates <working-svn-dir> with the complete <replacement-dir>, generating
 svn rm or add commands as appropriate.
