@@ -149,7 +149,7 @@ MergeOneIoc()
     ioc_path="$1"
     location="$2"
     ioc_name="$3"
-    $ECHO Processing IOC "$ioc_name"
+    $ECHO Processing IOC "$location/$ioc_name"
 
     # Validate well formed IOC name: if it has a location field then it must
     # match the given location.
@@ -166,26 +166,26 @@ MergeOneIoc()
     svn update $QUIET -N "$TEMP_ROOT/$location"  &&
     
     # Check out the current IOC state, or create from new if necessary.
-    $ECHO "Checking out IOC $ioc_name"  &&
+    $ECHO "Checking out IOC $location/$ioc_name"  &&
     svn update -q "$SVN_IOC_DIR"  &&
     if ! [ -d "$SVN_IOC_DIR" ]; then
         if ((AUTO_ADD)); then
             svn mkdir $QUIET "$SVN_IOC_DIR"
         else
-            Error "IOC $ioc_name not in subversion"
+            Error "IOC $location/$ioc_name not in subversion"
         fi
     fi  ||
-        Error "Error checking out $ioc_name"
+        Error "Error checking out $location/$ioc_name"
 
     # Merge the newly generated IOC into the SVN tree.    
     if ((FORCE_UPDATE))  ||
             CheckChanged  "$SVN_IOC_DIR" "$ioc_dir"; then
-        $ECHO "Merging IOC $ioc_name"
+        $ECHO "Merging IOC $location/$ioc_name"
         MergeSVN "$SVN_IOC_DIR" "$ioc_dir"  ||
             Error "Something failed merging ioc $ioc_name"
-        MERGED_IOCS=("${MERGED_IOCS[@]}" "$ioc_name")
+        MERGED_IOCS=("${MERGED_IOCS[@]}" "$location/$ioc_name")
     else
-        $ECHO "IOC $ioc_name unchanged"
+        $ECHO "IOC $location/$ioc_name unchanged"
     fi
 }
 
@@ -209,6 +209,7 @@ while getopts 'cm:akfvh' option; do
         QUIET= ;;
     h)  cat <<EOF
 Usage: $(basename "$0") [options] <ioc-dir> [<iocs>]
+
 Merges updated IOC directories in <iocs> into subversion trunk.  If run
 without any options performs the merge into a temporary directory which is
 discarded, but reports which IOCs were merged.  Normally run with -c and -m
@@ -245,7 +246,8 @@ else
     # directory.  Exclude hidden directories and anything ending _sim
     IOC_LIST=($(
         find "$IOCS_DIR" -mindepth 1 -type d \
-            \( -name .\* -o -name \*_sim -o -printf '%f\n' \) -prune))
+            \( -name .\* -o -name \*_sim -o -printf '%f\n' \) -prune |
+        sort))
 fi
 ((${#IOC_LIST[@]}))  ||
     Error "No IOCs to commit found in $IOCS_DIR"
@@ -290,7 +292,8 @@ for ioc in "${IOC_LIST[@]}"; do
                 Error "Location $location isn't a directory"
             IOCS=($(
                 find "$IOCS_DIR/$location" -mindepth 1 -type d \
-                    -printf '%f\n' -prune))
+                    -printf '%f\n' -prune |
+                sort))
             ((${#IOCS[*]}))  ||
                 Error "No IOCs found in location $location"
             for ioc in "${IOCS[@]}"; do
@@ -312,7 +315,7 @@ if ((${#MERGED_IOCS[@]})); then
 Automatically merged IOCs from $IOCS_DIR:
     ${MERGED_IOCS[*]}
 "
-        svn commit -m"$COMMIT_MESSAGE" "$SVN_ROOT/ioc"
+        svn commit -m"$COMMIT_MESSAGE" "$TEMP_ROOT"
     else
         echo The following IOCs were merged:
         echo "    ${MERGED_IOCS[*]}"
