@@ -27,14 +27,17 @@ class Record(object):
     '''Base class for all record types.'''
 
     @classmethod
-    def CreateSubclass(cls, recordType, validate):
+    def CreateSubclass(cls, device, recordType, validate):
         '''Creates a subclass of the record with the given record type and
-        validator bound to the subclass.'''
+        validator bound to the subclass.  The device used to load the record
+        is remembered so that it can subsequently be instantiated if
+        necessary.'''
         # Each record we publish is a class so that individual record
         # classes can be subclassed when convenient.
         class BuildRecord(Record):
             _validate = validate
             _type = recordType
+            _device = device
         BuildRecord.__name__ = recordType
 
         # Perform any class extension required for this particular record type.
@@ -80,6 +83,9 @@ class Record(object):
         this will be, a field validation object (which will be used to
         check field names and field value assignments), the name of the
         record being created, and initialisations for any other fields.'''
+
+        # Make sure the Device class providing this record is instantiated
+        self._device._AutoInstantiate()
         
         # These assignment have to be directly into the dictionary to
         # bypass the tricksy use of __setattr__.

@@ -84,6 +84,12 @@ class Device(ModuleBase):
 
     '''
 
+    def __init_meta__(cls, subclass):
+        # Load the DBD files as soon as the class is declared.  This allows
+        # the record definitions to be available even before the class is
+        # instantiated.
+        cls._LoadDbdFiles()
+
     BaseClass = True
 
     FIRST = _FIRST()
@@ -193,7 +199,6 @@ class Device(ModuleBase):
         # finally load the dbd files.
         Hardware.AddLibrary(cls)
         cls.__CheckResources()
-        cls.__LoadDbdFiles()
 
 
     # Checks all the resources associated with this device
@@ -212,9 +217,10 @@ class Device(ModuleBase):
     # Informs the DBD layer of the presence of this library and any new
     # record definitions that may now be available.
     @classmethod
-    def __LoadDbdFiles(cls):
+    def _LoadDbdFiles(cls):
         for dbd in cls.DbdFileList:
-            LoadDbdFile(os.path.join(cls.LibPath(), 'dbd'), '%s.dbd' % dbd)
+            LoadDbdFile(cls,
+                os.path.join(cls.LibPath(), 'dbd'), '%s.dbd' % dbd)
 
 
     # Each device can allocate any interrupt vectors it needs by asking the

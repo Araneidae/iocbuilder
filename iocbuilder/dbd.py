@@ -25,12 +25,13 @@ class RecordTypes(Singleton):
     def GetRecords(self):
         return sorted(self.__RecordTypes)
 
-    def _PublishRecordType(self, recordType, validate):
+    def _PublishRecordType(self, device, recordType, validate):
         # Publish this record type and remember it
         # \todo If we remember which dbd the record came from we can be 
         # intelligent about loading it again
         self.__RecordTypes.add(recordType)
-        setattr(self, recordType, Record.CreateSubclass(recordType, validate))
+        setattr(self, recordType,
+            Record.CreateSubclass(device, recordType, validate))
 
     def __contains__(self, recordType):
         '''Checks whether the given recordType names a known valid record
@@ -143,9 +144,10 @@ class ValidateDbField:
 # the DBD entries are accumulated into a single large database.
 _db = ctypes.c_void_p()
 
-def LoadDbdFile(dbdDir, dbdfile):
+def LoadDbdFile(device, dbdDir, dbdfile):
     # Read the specified dbd file into the current database.  This allows
-    # us to see any new definitions.
+    # us to see any new definitions.  The device used to load the record is
+    # also recorded for later use.
     curdir = os.getcwd()
     os.chdir(dbdDir)
     
@@ -165,6 +167,6 @@ def LoadDbdFile(dbdDir, dbdfile):
         recordType = mydbstatic.dbGetRecordTypeName(entry)
         if not hasattr(RecordTypes, recordType):
             validate = ValidateDbField(entry)
-            RecordTypes._PublishRecordType(recordType, validate)
+            RecordTypes._PublishRecordType(device, recordType, validate)
         status = mydbstatic.dbNextRecordType(entry)
     mydbstatic.dbFreeEntry(entry)
