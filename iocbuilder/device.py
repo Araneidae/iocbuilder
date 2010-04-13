@@ -105,6 +105,8 @@ class Device(ModuleBase):
     # List of libraries to be loaded as part of the initialisation or
     # preconditions of this device.  This should be overridden by subclasses.
     LibFileList = []
+    # List of sys libraries
+    SysLibFileList = []
     # List of DBD files to be loaded for this device.  This should be
     # overridden by subclasses.
     DbdFileList = []

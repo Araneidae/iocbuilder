@@ -588,6 +588,9 @@ int main(int argc,char *argv[])
         # next library loaded.
         for lib in reversed(Hardware.GetLibList()):
             makefile.AddLine('%s_LIBS += %s' % (ioc, lib))
+        # Add the system libraries
+        for lib in reversed(Hardware.GetSysLibList()):
+            makefile.AddLine('%s_SYS_LIBS += %s' % (ioc, lib))
         makefile.AddLine('%s_LIBS += $(EPICS_BASE_IOC_LIBS)' % ioc)
 
         # Finally add the target specific files.

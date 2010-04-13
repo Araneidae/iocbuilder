@@ -91,7 +91,13 @@ class Hardware(Singleton):
             for library in self.__LibraryList
             for lib in library.LibFileList]
 
-            
+    def GetSysLibList(self):
+        '''Returns a list of all system library files.'''
+        return [lib
+            for library in self.__LibraryList
+            for lib in library.SysLibFileList]
+
+
     # Any devices which need post iocInit() initialisation can have their
     # code generation here
     def PrintPostIocInit(self):
