@@ -155,17 +155,13 @@ class AutoSubstitution(recordset.Substitution):
     # other subclasses of this
     Scanned = False
 
-    class AutoSubstitutionMeta(recordset.Substitution.SubstitutionMeta):
-        def __init__(cls, name, bases, dict_):
-            super(cls.AutoSubstitutionMeta, cls).__init__(name, bases, dict_)
-            if cls.TemplateFile is not None and not cls.Scanned:
-                # populate Arguments, Descriptions etc.
-                populate_class(cls, cls.ModuleFile(
-                    os.path.join('db',cls.TemplateFile)))
-                cls.Scanned = True
-                            
+    def __init_meta__(cls, first_call):
+        if cls.TemplateFile is not None and not cls.Scanned:
+            # populate Arguments, Descriptions etc.
+            populate_class(cls, cls.ModuleFile(
+                os.path.join('db', cls.TemplateFile)))
+            cls.Scanned = True
 
-    __metaclass__ = AutoSubstitutionMeta
 
     @classmethod
     def fromModuleVersion(cls, moduleVersion):

@@ -93,13 +93,10 @@ class Substitution(libversion.ModuleBase):
             looked for in the db subdirectory of the library.
     '''
 
-    class SubstitutionMeta(libversion.ModuleBase.ModuleBaseMeta):
-        def __init__(cls, name, bases, dict_):
-            super(cls.SubstitutionMeta, cls).__init__(name, bases, dict_)
-            if cls.TemplateFile:
-                cls.TemplateFiles.append(cls.TemplateFile)
-
-    __metaclass__ = SubstitutionMeta
+    def __init_meta__(cls, subclass):
+        if cls.TemplateFile:
+            cls.TemplateFiles.append(cls.TemplateFile)
+        
 
     BaseClass = True
     TemplateFile = None

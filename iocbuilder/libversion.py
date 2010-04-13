@@ -5,7 +5,7 @@ import sys
 import string
 import re
 
-from support import autosuper_meta, SameDirFile, CreateModule
+from support import autosuper_object, SameDirFile, CreateModule
 
 import hardware
 
@@ -258,7 +258,7 @@ class ModuleVersion:
 
     
 
-class ModuleBase(object):
+class ModuleBase(autosuper_object):
     '''All entities which need to depend on module versions should subclass
     this class to obtain access to their configuration information.
 
@@ -275,75 +275,68 @@ class ModuleBase(object):
         InheritModuleName = True
     '''
 
-    # Meta class used for module instances: ensures that the ModuleName
-    # symbol exists, defaulting to the class name.
-    # 
-    # Optionally the ModuleName can be inherited from the base class if the
-    # symbol InheritModuleName is set to True.
-    class ModuleBaseMeta(autosuper_meta):
-        def __init__(cls, name, bases, dict):
-            # This could more simply be written as autosuper_meta.__..., but
-            # then subclassing might go astray.  Module instances are already
-            # heavily subclassed, so we ought to play by the rules.
-            super(cls.ModuleBaseMeta, cls).__init__(name, bases, dict)
-            name = cls.__name__     # In case it's changed
+    # Class initialisation.
+    
+    def __init_meta__(cls, subclass):
+        dict = cls.__dict__
 
-            # Bind to the module context.
-            cls.__BindModule(name, dict)
-            # Aggregate dependencies from subclasses.
-            cls.__AggregateDependencies(bases, dict.get('Dependencies'))
-            # Remember this new class
-            cls.ModuleBaseClasses.append(cls)
-            # Finally mark this instance as not yet instantiated.
-            cls._Instantiated = False
-            
+        # Bind to the module context.
+        cls.__BindModule(cls.__name__, dict)
+        # Aggregate dependencies from subclasses.
+        cls.__AggregateDependencies(cls.__bases__, dict.get('Dependencies'))
+        # Remember this new class
+        cls.ModuleBaseClasses.append(cls)
+        # Finally mark this instance as not yet instantiated.
+        cls._Instantiated = False
 
-        def __BindModule(cls, name, dict):
-            if dict.get('BaseClass'):
-                # This is a base class, not designed for export from a
-                # module.  We suppress the ModuleName attribute.
-                assert not hasattr(cls, 'ModuleName'), \
-                    'Base classes cannot be tied to modules'
-            else:
-                cls.BaseClass = False
-                # A normal implementation class.  This needs to be tied to a
-                # particular module.
-                if ModuleVersion._LoadingModule is None:
-                    # Module is being defined as part of the build script, not
-                    # in the module.  In this case if the class doesn't
-                    # already have a module name specified we'll automatically
-                    # name it after itself.
-                    if not hasattr(cls, 'ModuleName'):
-                        cls.ModuleName = name
-                else:
-                    # If we're called while loading a module then force the
-                    # module name to agree with the loading module: in other
-                    # words, an EPICS module isn't allowed to create classes
-                    # which belong to other modules.
-                    name = ModuleVersion._LoadingModule.Name()
-                    if 'ModuleName' in dict:
-                        assert cls.ModuleName == name, \
-                            'ModuleName must be %s' % name
-                        print 'Redundant ModuleName for', cls.__name__
+    @classmethod
+    def __BindModule(cls, name, dict):
+        if dict.get('BaseClass'):
+            # This is a base class, not designed for export from a
+            # module.  We suppress the ModuleName attribute.
+            assert not hasattr(cls, 'ModuleName'), \
+                'Base classes cannot be tied to modules'
+        else:
+            cls.BaseClass = False
+            # A normal implementation class.  This needs to be tied to a
+            # particular module.
+            if ModuleVersion._LoadingModule is None:
+                # Module is being defined as part of the build script, not in
+                # the module.  In this case if the class doesn't already have
+                # a module name specified we'll automatically name it after
+                # itself.
+                if not hasattr(cls, 'ModuleName'):
                     cls.ModuleName = name
-                    # During module loading, also add class to list of
-                    # classes to auto instantiate.
-                    if cls.AutoInstantiate:
-                        ModuleVersion._AutoInstances.append(cls)
-                cls.ModuleVersion = _ModuleVersionTable[cls.ModuleName]
-                cls.ModuleVersion.ClassesList.append(cls)
+            else:
+                # If we're called while loading a module then force the module
+                # name to agree with the loading module: in other words, an
+                # EPICS module isn't allowed to create classes which belong to
+                # other modules.
+                name = ModuleVersion._LoadingModule.Name()
+                if 'ModuleName' in dict:
+                    assert cls.ModuleName == name, \
+                        'ModuleName must be %s' % name
+                    print 'Redundant ModuleName for', cls.__name__
+                    assert False
+                cls.ModuleName = name
+                # During module loading, also add class to list of classes to
+                # auto instantiate.
+                if cls.AutoInstantiate:
+                    ModuleVersion._AutoInstances.append(cls)
+            cls.ModuleVersion = _ModuleVersionTable[cls.ModuleName]
+            cls.ModuleVersion.ClassesList.append(cls)
 
-        def __AggregateDependencies(cls, bases, Dependencies):
-            if Dependencies:
-                for base in bases:
-                    dependency = base.__dict__.get('Dependencies')
-                    if dependency:
-                        # Note that it's important that the base class
-                        # dependencies are instantiated first.
-                        Dependencies = dependency + Dependencies
-                cls.Dependencies = Dependencies
+    @classmethod
+    def __AggregateDependencies(cls, bases, Dependencies):
+        if Dependencies:
+            for base in bases:
+                dependency = base.__dict__.get('Dependencies')
+                if dependency:
+                    # Note that it's important that the base class
+                    # dependencies are instantiated first.
+                    Dependencies = dependency + Dependencies
+            cls.Dependencies = Dependencies
 
-    __metaclass__ = ModuleBaseMeta
 
     ## The BaseClass attribute should be set to True in classes which are
     # intended to be base classes for other classes, and which are not
