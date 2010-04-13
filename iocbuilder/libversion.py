@@ -363,7 +363,7 @@ class ModuleBase(autosuper_object):
     def _AutoInstantiate(cls):
         '''This can be called to ensure that an instance of the invoked class
         exists.'''
-        # Note that, as the metaclass constructor ensures each class has its
+        # Note that, as the class initialisation ensures each class has its
         # own instance of this flag, we're always checking our own status,
         # not that of a base class!
         if not cls._Instantiated:
@@ -382,9 +382,24 @@ class ModuleBase(autosuper_object):
         cls._ReferencedClasses.append(cls)
         cls._ReferencedModules.add(cls.ModuleVersion)
 
-    def __new__(cls, *args, **kargs):
-        if not cls.__dict__['_Instantiated']:
+
+    # This method is used to mark this class and all of its base classes as
+    # instantiated: this is required to ensure that we don't accidentially
+    # auto-instantiate base classes when we don't want to.  Note that
+    # UseModule() is not invoked for the base classes.
+    @classmethod
+    def __mark_instantiated(cls):
+        if cls.__dict__['_Instantiated']:
+            return False
+        else:
             cls._Instantiated = True
+            for base in cls.__bases__:
+                if '_Instantiated' in base.__dict__:
+                    base.__mark_instantiated()
+            return True
+
+    def __new__(cls, *args, **kargs):
+        if cls.__mark_instantiated():
             cls.UseModule()
         self = super(ModuleBase, cls).__new__(cls, *args, **kargs)
         cls._ModuleBaseInstances.append(self)
