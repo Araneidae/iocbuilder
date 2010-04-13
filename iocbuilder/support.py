@@ -200,7 +200,20 @@ class autosuper_meta(type):
 
     Note that this trick does not work properly if a) the same class name
     appears more than once in the class hierarchy, and b) if the class name
-    is changed after it has been constructed.'''
+    is changed after it has been constructed.  The class can be renamed
+    during construction by setting the TrueName attribute.
+
+
+    This meta class also supports the __init_meta__ method: if this method
+    is present in the dictionary of the class it will be called after
+    completing initialisation of the class.
+
+    For any class with autosuper_meta as metaclass if a method
+        __init_meta__(cls, subclass)
+    is defined then it will be called when the class is declared (with
+    subclass set to False) and will be called every time the class is
+    subclassed with subclass set to True.
+    '''
 
     __super = property(lambda subcls: super(autosuper_meta, subcls))
 
@@ -216,6 +229,22 @@ class autosuper_meta(type):
         assert not hasattr(cls, super_name), \
             'Can\'t set super_name on class %s, name conflict' % name
         setattr(cls, super_name, super(cls))
+
+        # Support __init_meta__
+        cls.__call_init_meta(set([object]), cls, False)
+
+    def __call_init_meta(cls, visited, base, subclass):
+        # This is rather painful.  Ideally each __init_meta__ call would
+        # invoke the appropriate superclass ... unfortunately it can't call
+        # super() because the class name isn't available yet!
+        #    So instead we walk the entire class tree, calling __init_meta__
+        # on all base classes ourself.
+        for b in base.__bases__:
+            if b not in visited:
+                visited.add(b)
+                cls.__call_init_meta(visited, b, True)
+        if '__init_meta__' in base.__dict__:
+            base.__dict__['__init_meta__'](cls, subclass)
 
 
 class autosuper_object(object):
