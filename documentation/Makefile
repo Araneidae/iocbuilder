@@ -1,13 +1,16 @@
 # this is the doxygen output dir
 DOCDIR := doxygen
 
+# this is the doxygen executable
+DOXYGEN := /dls_sw/work/tools/RHEL5/bin/doxygen
+
 # add the documentation files to the install target
 all install: $(DOCDIR)
 
 # rule for documentation
-$(DOCDIR): config.src manual.src
+$(DOCDIR): config.cfg manual.src
 	mkdir -p $(DOCDIR)
-	cd $(DOCDIR); /dls_sw/work/common/python/documentation/src/documentation.py config.src manual.src
+	$(DOXYGEN) config.cfg
 
 # Remove entire documentation/doxygen dir on clean
 clean:
