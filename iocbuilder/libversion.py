@@ -92,7 +92,7 @@ class ModuleVersion:
             subdirectory of the support module directory.
         home
             Directory where the support module is located.  If not specified
-            then /dls_sw/prod/$DLS_EPICS_VERSION/support is used.
+            then /dls_sw/prod/$DLS_EPICS_RELEASE/support is used.
         use_name
             If set (by default) the support module is located as a
             subdirectory of home; if false, home (possibly plus version) is

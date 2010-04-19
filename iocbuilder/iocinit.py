@@ -32,6 +32,7 @@ from liblist import Hardware
 from libversion import ModuleVersion
 from configure import TargetOS, Get_TargetOS, Call_TargetOS, Architecture
 import paths
+import mydbstatic
 
 
 
@@ -87,6 +88,7 @@ class iocInit(Singleton):
         # We can't import the IOC until we've finished importing (at least,
         # not if we want EPICS_BASE to behave like other modules), so we have
         # to put off creating it until configure tells us to initialise.
+        mydbstatic.ImportFunctions()
         ModuleVersion('EPICS_BASE', home = paths.EPICS_BASE, use_name = False)
         from modules.EPICS_BASE import epicsBase
         epicsBase(self)

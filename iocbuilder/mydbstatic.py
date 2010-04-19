@@ -3,7 +3,6 @@ from ctypes import *
 
 import paths
 
-__all__ = []
 
 _FunctionList = (
     ('dbFreeBase',          None, (c_void_p,)),
@@ -28,16 +27,15 @@ _FunctionList = (
 
 
 
-def _DeclareFunction(name, restype, argtypes):
-    function = getattr(_mydbstatic, name)
-    function.restype = restype
-    function.argtypes = argtypes
-    globals()[name] = function
-    __all__.append(name)
+def ImportFunctions():
+    '''This function is called late to complete the process of importing all
+    the exports from this module.  This is done late so that paths.EPICS_BASE
+    can be configured late.'''
+    libdb = CDLL(os.path.join(
+        paths.EPICS_BASE, 'lib', paths.EPICS_HOST_ARCH, 'libdbStaticHost.so'))
 
-
-_mydbstatic = CDLL(os.path.join(
-    paths.EPICS_BASE, 'lib', paths.EPICS_HOST_ARCH, 'libdbStaticHost.so'))
-
-for functions in _FunctionList:
-    _DeclareFunction(*functions)
+    for name, restype, argtypes in _FunctionList:
+        function = getattr(libdb, name)
+        function.restype = restype
+        function.argtypes = argtypes
+        globals()[name] = function

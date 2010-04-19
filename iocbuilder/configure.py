@@ -41,13 +41,15 @@ class Configure(Singleton):
     __called = False
 
     def __call__(self,
-            module_path  = None,
-            record_names = None,
-            ioc_writer   = None,
-            dynamic_load = False,
-            architecture = 'none',
-            register_dbd = False,
-            simulation = False):
+            module_path  = None,    # Configures where ModuleVersion looks
+            record_names = None,    # Configure how records are named
+            ioc_writer   = None,    # Configure how IOCs are written
+            dynamic_load = False,   # Configure how IOCs are built
+            architecture = 'none',  # Configure target architecture
+            register_dbd = False,   # Call register function in st.cmd?
+            simulation = False,     # Enable simulation mode
+            epics_base = None,      # Path to EPICS base, overrides env
+        ):
 
         assert not self.__called, 'Cannot call Configure more than once!'
         self.__called = True
@@ -59,9 +61,14 @@ class Configure(Singleton):
         import iocwriter
 
         self.architecture = architecture
-        if simulation:
-            libversion.simulation_mode = True
-        
+        libversion.simulation_mode = simulation
+
+        if epics_base:
+            # If epics_base is explicitly specified, override it now
+            paths.SetEpicsBase(epics_base)
+        assert hasattr(paths, 'EPICS_BASE'), \
+            'Must specify EPICS_BASE in environment or in Configure call'
+
         # Configure where ModuleVersion looks for modules.
         if module_path is None:
             module_path = paths.module_path
@@ -111,15 +118,14 @@ def LoadVersionFile(filename, **context):
 def ConfigureIOC(
         architecture = 'vxWorks-ppc604_long',
         record_names = recordnames.DiamondRecordNames,
-        module_path = None):
+        **kargs):
     import iocwriter
     Configure(
-        module_path  = module_path,
         record_names = record_names(),
         ioc_writer   = iocwriter.DiamondIocWriter,
-        dynamic_load = False,
         architecture = architecture,
-        register_dbd = True)
+        register_dbd = True,
+        **kargs)
 
 
 def ConfigureTemplate(record_names = None):
@@ -231,7 +237,8 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
         dynamic_load = False, 
         architecture = architecture, 
         register_dbd = True, 
-        simulation   = options.simarch)    
+        simulation   = options.simarch)
+    
     # Parse a RELEASE file to do the ModuleVersion calls
     if dependency_tree is not None:
         ParseRelease(dependency_tree,
