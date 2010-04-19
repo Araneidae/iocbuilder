@@ -6,6 +6,7 @@
 
 # The IOCs to be updated are found here under subversion.
 IOC_TRUNK="$SVN_ROOT/diamond/trunk/ioc"
+HERE="$(dirname "$0")"
 
 
 # Reports error and immediately exits.
@@ -61,21 +62,11 @@ ValidateIoc()
 
 # Compares two directories to see if anything has changed.
 #
-# The diff pattern ensures that the boiler-plate messages at the start of
-# every generated file don't trigger differences.  These lines are of the
-# form 
-#
-#   This file was automatically generated on %(now)s from
-#   source: %(source)s
-#
-# preceded by either # or /* or * comment characters.
-#
 #   CheckChanged <svn-dir> <new-dir>
 #
 CheckChanged()
 {
-    DIFF_PATTERN='^\(#\|/\*\) This file was \|^\(#\| \*\) source: '
-    (($(diff -r -I"$DIFF_PATTERN" --exclude='*.svn*' "$1" "$2" | wc -l) > 0))
+    (($("$HERE/merge-iocs-diff" -r --exclude='*.svn*' "$1" "$2" | wc -l) > 0))
 }
 
 
@@ -190,6 +181,7 @@ MergeOneIoc()
 }
 
 
+SHOW_DIFFS=0
 KEEP_DIR=0
 COMMIT_SVN=0
 COMMIT_MESSAGE=
@@ -197,8 +189,9 @@ AUTO_ADD=0
 FORCE_UPDATE=0
 ECHO=:
 QUIET=-q
-while getopts 'cm:akfvh' option; do
+while getopts 'dcm:akfvh' option; do
     case $option in
+    d)  SHOW_DIFFS=1 ;;
     c)  COMMIT_SVN=1 ;;
     m)  COMMIT_MESSAGE="$OPTARG"$'\n' ;;
     k)  KEEP_DIR=1 ;;
@@ -213,9 +206,10 @@ Usage: $(basename "$0") [options] <ioc-dir> [<iocs>]
 Merges updated IOC directories in <iocs> into subversion trunk.  If run
 without any options performs the merge into a temporary directory which is
 discarded, but reports which IOCs were merged.  Normally run with -c and -m
-to automatically commit any merges.
+to automatically commit any merges, but an initial run with -d is recommended.
 
 The following options are supported:
+    -d      Show diffs to IOCs which will be committed, use for review.
     -c      Commit changes to subversion
     -m:     Commit message to use for SVN commit
     -a      Add IOCs which don't already exist.  Note that the IOC location
@@ -310,6 +304,10 @@ done
 # If anything changed then either report it or commit it, depending on what
 # the user asked for.
 if ((${#MERGED_IOCS[@]})); then
+    if ((SHOW_DIFFS)); then
+        svn diff --diff-cmd="$HERE/merge-iocs-diff" "$TEMP_ROOT"
+    fi
+
     if ((COMMIT_SVN)); then
         COMMIT_MESSAGE="${COMMIT_MESSAGE}\
 Automatically merged IOCs from $IOCS_DIR:

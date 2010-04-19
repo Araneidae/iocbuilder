@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Helper for determining what has changed.  Runs diff command with excluded
+# pattern.
+#
+# The diff pattern ensures that the boiler-plate messages at the start of
+# every generated file don't trigger differences.  These lines are of the
+# form 
+#
+#   This file was automatically generated on %(now)s from
+#   source: %(source)s
+#
+# preceded by either # or /* or * comment characters.
+
+DIFF_PATTERN='^\(#\|/\*\) This file was automatically \|^\(#\| \*\) source: '
+exec diff -I"$DIFF_PATTERN" "$@"
+
