@@ -412,6 +412,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.check_release = check_release
         self.substitute_boot = substitute_boot
 
+        self.cross_build = configure.Architecture() != paths.EPICS_HOST_ARCH
+
         # Create the working skeleton
         self.CreateIocNames(ioc_name)
         self.StartMakefiles()
@@ -517,8 +519,12 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
     def CreateSourceFiles(self):
         makefile = self.makefile_src
         ioc = self.ioc_name
-        
-        makefile.AddLine('PROD_IOC_%s = %s' % (configure.TargetOS(), ioc))
+
+        if self.cross_build:
+            prod_ioc = 'PROD_IOC_%s' % configure.TargetOS()
+        else:
+            prod_ioc = 'PROD_IOC'
+        makefile.AddLine('%s = %s' % (prod_ioc, ioc))
         makefile.AddLine('DBD += %s.dbd' % ioc)
         
         for dbd_part in Hardware.GetDbdList():
@@ -558,17 +564,22 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             self.PrintIoc, '../..', maxLineLength = self.IOCmaxLineLength)
 
         self.makefile_boot.AddLine('ARCH = %s' % configure.Architecture())
-        configure.Call_TargetOS(self, 'CreateBootFiles')
-        scripts = 'SCRIPTS_%s' % configure.TargetOS()
+        if self.cross_build:
+            scripts = 'SCRIPTS_%s' % configure.TargetOS()
+        else:
+            scripts = 'SCRIPTS'
+        configure.Call_TargetOS(self, 'CreateBootFiles', scripts)
         self.makefile_boot.AddLine(
             '%s += st%s.boot' % (scripts, self.ioc_name))
-        if not self.substitute_boot:
+        if self.substitute_boot:
+            self.makefile_boot.AddLine('PATH := $(PATH):%s' % paths.msiPath)
+        else:
             self.makefile_boot.AddRule(
                 'envPaths cdCommands:\n'
                 '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(ARCH) $@')
             self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
             
-    def CreateBootFiles_linux(self):
+    def CreateBootFiles_linux(self, scripts):
         ioc = self.ioc_name
         self.WriteFile((self.iocBootDir, 'st%s.sh' % ioc),
             self.LINUX_CMD % dict(ioc = ioc),
@@ -578,9 +589,9 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.makefile_boot.AddLine(
             '%s += ../st%s.sh' % (scripts, self.ioc_name))
         
-    def CreateBootFiles_vxWorks(self):
+    def CreateBootFiles_vxWorks(self, scripts):
         if not self.substitute_boot:    
-            self.makefile_boot.AddLine('SCRIPTS += cdCommands')
+            self.makefile_boot.AddLine('%s += cdCommands' % scripts)
 
         
     def CreateConfigureFiles(self):
@@ -596,20 +607,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
                     os.path.join(template_dir, file), 
                     os.path.join(self.iocRoot, 'configure'))
 
-        # If CONFIG_SITE exists add our configuration to that, otherwise add
-        # it to CONFIG: this system changed in 3.14.11.  Either way, the
-        # configuration text is appended to the end of the file.
-        if 'CONFIG_SITE' in template_files:
-            config_file = 'CONFIG_SITE'
-            config_text = self.CONFIG_SITE_TEXT
-        else:
-            config_file = 'CONFIG'
-            config_text = self.CONFIG_TEXT
-        self.WriteFile(('configure', config_file),
-            config_text % dict(
-                ARCH = configure.Architecture(),
-                CHECK_RELEASE = self.check_release and 'YES' or 'NO'),
-            mode = 'a')
+        self.WriteConfigFile('CONFIG_SITE' in template_files)
 
         # Write out configure/RELEASE
         releases = []
@@ -621,6 +619,27 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             releases.append(
                 '%s = %s' % (module.MacroName(), module.LibPath()))
         self.WriteFile('configure/RELEASE', '\n'.join(releases))
+        
+
+    def WriteConfigFile(self, config_site):
+        # If CONFIG_SITE exists add our configuration to that, otherwise add
+        # it to CONFIG: this system changed in 3.14.11.  Either way, the
+        # configuration text is appended to the end of the file.
+        if config_site:
+            config_file = 'CONFIG_SITE'
+            config_text = self.CONFIG_SITE_TEXT
+        else:
+            config_file = 'CONFIG'
+            config_text = self.CONFIG_TEXT
+        if self.cross_build:
+            ARCH = configure.Architecture()
+        else:
+            ARCH = ''
+        self.WriteFile(('configure', config_file),
+            config_text % dict(
+                ARCH = ARCH, 
+                CHECK_RELEASE = self.check_release and 'YES' or 'NO'),
+            mode = 'a')
 
 
     def CreateDataFiles(self):
