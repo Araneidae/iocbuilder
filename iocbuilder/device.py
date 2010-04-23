@@ -47,36 +47,36 @@ class _FIRST:
 ## This class should be subclassed to implement devices.  Each instance of
 # this class will automatically announce itself as a device to be
 # initialised during IOC startup.
-# 
+#
 # Each subclass may define the following: each of these methods or
 # attributes has appropriate default behaviour, so can be left undefined if
 # not needed.
-# 
+#
 # \param Dependencies
 #         A list of modules on which this device depends; may be left
-#         undefined if there are no dependencies.  
-# 
+#         undefined if there are no dependencies.
+#
 # \param LibFileList
 #         The list of library files that need to be loaded for the proper
 #         operation of this device.
-# 
+#
 # \param BinFileList
 #         Any library binary files that need to be statically loaded.  These
 #         will be loaded after all the files listed in LibFileList.
-# 
+#
 # \param DbdFileList
 #         The list of DBD files to be loaded for the operation of this
 #         device.
-# 
+#
 # \param InitialiseOnce()
 #         If defined, this method is called once on the first instance of
 #         this device to perform any device specific pre-initialisation
 #         required.
-# 
+#
 # \param Initialise()
 #         This method initialises all the hardware associated with each
 #         instance of this device
-# 
+#
 # \param PostIocInitialise()
 #         This method performs any initialisation that is required after
 #         iocInit has been called.
@@ -96,7 +96,7 @@ class Device(ModuleBase):
         # of libraries to be loaded and the instance to the list of devices to
         # be initialised.
         self.__super.__init__()
-        
+
         # Add this instance to the list of devices to be configured
         Hardware.AddHardware(self)
 
@@ -128,15 +128,15 @@ class Device(ModuleBase):
     # Initialisation phase: controls when initialisation will occur.
     InitialisationPhase = 0
 
-    
+
     # This routine generates all the library instance loading code and is
     # called from Hardware during creation of the st.cmd file.  In dynamic
     # mode the library and dbd files are loaded, but in static mode all we do
-    # is load the binary files.  
+    # is load the binary files.
     @classmethod
     def LoadLibraries(cls):
         cls.__Once = False
-        
+
         if cls.BinFileList or Configure.dynamic_load and (
                 cls.LibFileList or cls.DbdFileList):
             print
@@ -158,7 +158,7 @@ class Device(ModuleBase):
                 print 'dbLoadDatabase "%s.dbd"' % dbd
                 if Configure.register_dbd:
                     print '%s_registerRecordDeviceDriver pdbbase' % dbd
-        
+
 
     # Calls the initialisation method if present.
     def CallInitialise(self):
@@ -188,7 +188,7 @@ class Device(ModuleBase):
             self.__CommandsPostInit.append(command)
         else:
             self.__Commands.append(command)
-                
+
 
     # This routine is called immediately before the first instance of cls is
     # created.  We add ourselves to the library and load our resources.
@@ -214,7 +214,7 @@ class Device(ModuleBase):
                 assert os.access(filePath, os.R_OK), \
                     'Can\'t find %s file "%s"' % (entity, filePath)
 
-                
+
     # Informs the DBD layer of the presence of this library and any new
     # record definitions that may now be available.
     @classmethod
@@ -253,7 +253,7 @@ class RecordFactory:
     # Calling a record factory instance builds a record with the given name
     # and fields bound to the originating hardware.
     def __call__(self, name, *address_extra, **fields):
-        
+
         # If the address is callable then we compute the address using the
         # address hook, simultaneously fixing up any fields that only belong
         # to the address computation.  Otherwise we hope it's a static string

@@ -24,7 +24,7 @@ def ExportModules(globals, *modulenames):
             names.extend(module.__all__)
     return names
 
-    
+
 # This automatically exports all sub-modules.
 def ExportAllModules(globals):
     allfiles = [filename[:-3]
@@ -54,7 +54,7 @@ def SameDirFile(first_file, *filename):
 def take(iter, n):
     for i in range(n):
         yield iter.next()
-    
+
 
 # This support routine chops the given list into segments no longer than size.
 def choplist(list, size):
@@ -117,7 +117,7 @@ class OrderedDict(dict):
         if key in self._keys:
             self._keys.remove(key)
         return dict.pop(self, key)
-        
+
     def setdefault(self, key, value):
         if key in self:
             return self[key]
@@ -133,7 +133,7 @@ class OrderedDict(dict):
 #
 # The role of this Singleton class is a little unclear.  It can readily be
 # argued that a Singleton class is functionally identical to a module.  Very
-# true, but there are differences in syntax and perhaps in organisation.  
+# true, but there are differences in syntax and perhaps in organisation.
 class Singleton(object):
 
     # The SingletonMeta class is a type class for building singletons: it
@@ -166,41 +166,41 @@ class Singleton(object):
         # right behaviour, either the subclass is called or our dummy instance
         # is returned.
         #     Note that self is passed twice, because __new__ becomes
-        # transformed from a static method into a class method. 
+        # transformed from a static method into a class method.
         return cls.__call__(*argv, **argk)
 
 
 # Meta-class to implement __super attribute in all subclasses.  To use this
 # define the metaclass of the appropriate base class to be autosuper thus:
-# 
+#
 #     class A:
 #         __metaclass__ = autosuper_meta
-# 
+#
 # Then in any sub-class of A the __super attribute can be used instead of
 # writing super(cls,name) thus:
-# 
+#
 #     class B(A):
 #         def __init__(self):
 #             self.__super.__init__()
 #             # instead of
 #             # super(B, self).__init__()
-# 
+#
 # The point being, of course, that simply writing
 #             A.__init__(self)
 # will not properly interact with calling order in the presence of multiple
 # inheritance: it may be necessary to call a sibling of B instead of A at
 # this point!
-# 
+#
 # Note that this trick does not work properly if a) the same class name
 # appears more than once in the class hierarchy, and b) if the class name is
 # changed after it has been constructed.  The class can be renamed during
 # construction by setting the TrueName attribute.
-# 
-# 
+#
+#
 # This meta class also supports the __init_meta__ method: if this method is
 # present in the dictionary of the class it will be called after completing
 # initialisation of the class.
-# 
+#
 # For any class with autosuper_meta as metaclass if a method
 #     __init_meta__(cls, subclass)
 # is defined then it will be called when the class is declared (with subclass
@@ -220,7 +220,7 @@ class autosuper_meta(type):
             cls.__name__ = name
 
         cls.__super.__init__(name, bases, dict)
-        
+
         super_name = '_%s__super' % name.lstrip('_')
         assert not hasattr(cls, super_name), \
             'Can\'t set super_name on class %s, name conflict' % name
@@ -246,7 +246,7 @@ class autosuper_meta(type):
 # Class that can be subclassed to inherit autosuper behaviour.
 class autosuper_object(object):
     __metaclass__ = autosuper_meta
-        
+
 
 # This returns a meta-class which will call the given register function each
 # time a sub-class instance is created.  If ignoreParent is True then the

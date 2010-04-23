@@ -52,7 +52,7 @@ class Hardware(Singleton):
     # All hardware initialisation code is written out in the form of a
     # vxWorks startup script.  First all of the libraries required by each
     # hardware resource are loaded, and then each hardware device is
-    # initialised as appropriate. 
+    # initialised as appropriate.
     def PrintBody(self):
         # Now load all the dependent libraries
         print
@@ -65,7 +65,7 @@ class Hardware(Singleton):
         # Now write the individual device initialisations.
         # Initialisation is normally done in order of creation, but an
         # initialisation phase can be configured for delayed initialisation.
-        print 
+        print
         print '# Device initialisation'
         print '# ---------------------'
         phases = {}

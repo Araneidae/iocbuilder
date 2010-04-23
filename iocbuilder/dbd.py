@@ -27,7 +27,7 @@ class RecordTypes(Singleton):
 
     def _PublishRecordType(self, device, recordType, validate):
         # Publish this record type and remember it
-        # \todo If we remember which dbd the record came from we can be 
+        # \todo If we remember which dbd the record came from we can be
         # intelligent about loading it again
         self.__RecordTypes.add(recordType)
         setattr(self, recordType,
@@ -66,11 +66,11 @@ class ValidateDbField:
     # are fully populated, in other words we don't want to fire this until
     # all the dbd files have been loaded.
     def __ProcessDbd(self):
-        # ordered dict of field_name -> arginfo                
+        # ordered dict of field_name -> arginfo
         self._FieldInfo = OrderedDict()
         valid_names = []
         status = mydbstatic.dbFirstField(self.dbEntry, 0)
-        while status == 0:   
+        while status == 0:
             name = mydbstatic.dbGetFieldName(self.dbEntry)
             desc = mydbstatic.dbGetPrompt(self.dbEntry)
             typ = mydbstatic.dbGetFieldType(self.dbEntry)
@@ -84,7 +84,7 @@ class ValidateDbField:
             elif typ in [DCT_MENU, DCT_MENUFORM]:
                 n_choices = mydbstatic.dbGetNMenuChoices(self.dbEntry)
                 if n_choices > 0:
-                    menu_void = mydbstatic.dbGetMenuChoices(self.dbEntry) 
+                    menu_void = mydbstatic.dbGetMenuChoices(self.dbEntry)
                     menu_p = ctypes.cast(menu_void,
                         ctypes.POINTER(ctypes.c_char_p * n_choices))
                     ArgInfo = arginfo.Choice(desc, list(menu_p[0]))
@@ -100,12 +100,12 @@ class ValidateDbField:
             status = mydbstatic.dbNextField(self.dbEntry, 0)
 
         self._ValidNamesSet = set(valid_names)
-        
+
     def FieldInfo(self):
         if self._FieldInfo is None:
             self.__ProcessDbd()
         return self._FieldInfo
-                
+
     def ValidNamesSet(self):
         if self._ValidNamesSet is None:
             self.__ProcessDbd()
@@ -149,15 +149,15 @@ def LoadDbdFile(device, dbdDir, dbdfile):
     # also recorded for later use.
     curdir = os.getcwd()
     os.chdir(dbdDir)
-    
+
     status = mydbstatic.dbReadDatabase(
         ctypes.byref(_db), dbdfile, '.:%s/dbd' % paths.EPICS_BASE, None)
     assert status == 0, 'Error reading database %s/%s (status %d)' % \
         (dbdDir, dbdfile, status)
-    
+
     os.chdir(curdir)
 
-    
+
     # Enumerate all the record types and build a record generator class
     # for each one that we've not seen before.
     entry = mydbstatic.dbAllocEntry(_db)

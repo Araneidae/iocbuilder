@@ -21,7 +21,7 @@ def _unbind(function):
 
 #---------------------------------------------------------------------------
 #
-#   Record class    
+#   Record class
 
 ## Base class for all record types.
 class Record(object):
@@ -42,7 +42,7 @@ class Record(object):
         # Perform any class extension required for this particular record type.
         import bits
         return bits.ExtendClass(BuildRecord)
-        
+
 
     ## Converts a short form record name into the full record name as it will
     # appear in the generated database.
@@ -73,8 +73,8 @@ class Record(object):
             self.__dict__['_Record' + name] = value
         else:
             self.__dict__[name] = value
-        
-    
+
+
     # Record constructor.  Needs to be told the type of record that this will
     # be, a field validation object (which will be used to check field names
     # and field value assignments), the name of the record being created, and
@@ -84,7 +84,7 @@ class Record(object):
 
         # Make sure the Device class providing this record is instantiated
         self._device._AutoInstantiate()
-        
+
         # These assignment have to be directly into the dictionary to
         # bypass the tricksy use of __setattr__.
         self.__setattr('__fields', {})
@@ -92,7 +92,7 @@ class Record(object):
 
         # Support the special 'address' field as an alias for either INP or
         # OUT, depending on which of those exists.  We only set up this field
-        # if exactly one of INP or OUT is present as a valid field. 
+        # if exactly one of INP or OUT is present as a valid field.
         address = [field
             for field in ['INP', 'OUT']
             if self.ValidFieldName(field)]
@@ -100,7 +100,7 @@ class Record(object):
             self.__setattr('address', address[0])
         else:
             self.__setattr('address', 'address')
-        
+
         # Make sure all the fields are properly processed and validated.
         for name, value in fields.items():
             setattr(self, name, value)
@@ -144,7 +144,7 @@ class Record(object):
     # Calling the record generates a self link with a list of specifiers.
     def __call__(self, *specifiers):
         return _Link(self, None, *specifiers)
-        
+
 
     # Assigning to a record attribute updates a field.
     def __setattr__(self, fieldname, value):

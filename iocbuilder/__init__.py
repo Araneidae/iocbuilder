@@ -3,7 +3,7 @@
 This library provides a framework for automatically generating EPICS
 databases, startup scripts and even complete applications.
 
-The following code illustrates a simple use of the library to generate 
+The following code illustrates a simple use of the library to generate
 eight records, named AI0 to AI7, one for each of the channels of an 8401
 in IP socket A of a carrier card in VME slot 4:
 

@@ -16,7 +16,7 @@ class RecordNamesBase:
 class BasicRecordNames(RecordNamesBase):
 
     __VersionInfo = { '3.13' : 29, '3.14' : 61 }
-    
+
     def __init__(self, version='3.14'):
         '''The version parameter specifies the EPICS version: this determines
         the maximum name length.'''
@@ -32,10 +32,10 @@ class BasicRecordNames(RecordNamesBase):
 ## Simple support for building templates.
 class TemplateRecordNames(RecordNamesBase):
     __all__ = ['TemplateName']
- 
+
     def __init__(self, device='DEVICE'):
         self.__Name = device
-        
+
     def RecordName(self, name):
         '''Internal method.'''
         return '$(%s):%s' % (self.__Name, name)
@@ -43,7 +43,7 @@ class TemplateRecordNames(RecordNamesBase):
     def TemplateName(self, name):
         '''Sets the template name (default value is 'DEVICE').'''
         self.__Name = name
-    
+
 
 ## Support for record names following the Diamond naming convention.
 # Record names are of the form
@@ -51,7 +51,7 @@ class TemplateRecordNames(RecordNamesBase):
 # where DDDDD names a domain within the machine, TT names a technical
 # area, CCCCC names a device (or component), NN is a two digit sequence
 # number, and RRRRRRRRRR is the final part of the record name.
-# 
+#
 # When this naming convention is enabled the domain, technical area,
 # device and sequence number (id) are specified before records are
 # created using the methods SetDomain, SetTechnicalArea and SetDevice.

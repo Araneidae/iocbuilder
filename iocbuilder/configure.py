@@ -15,7 +15,7 @@ __all__ = [
 def Architecture():
     return Configure.architecture
 
-    
+
 # Returns the target OS for the configured architecture, currently either
 # linux or vxWorks.
 def TargetOS():
@@ -23,8 +23,8 @@ def TargetOS():
 
 def Get_TargetOS(self, name, *default):
     return getattr(self, '%s_%s' % (name, TargetOS()), *default)
-    
-    
+
+
 # Helper function for calling a target OS specific function.  Looks up
 #     self.<name>_<TargetOS()>
 # and calls it with the given arguments if found, otherwise returns None.
@@ -42,7 +42,7 @@ class Configure(Singleton):
     # Ensure we don't have to cope with multiple reconfigurations.
     __called = False
 
-    
+
     ## This is the lowest level IOC builder initialisation function.
     #
     # Typically this function should not be called directly, instead one of
@@ -113,7 +113,7 @@ class Configure(Singleton):
         if module_path is None:
             module_path = paths.module_path
         libversion.SetModulePath(module_path)
-        
+
         # Unfortunately we can't initialise iocinit until the iocbuilder
         # module is complete, in particular this can't be called from within
         # __init__.py.  So now instead.
@@ -132,7 +132,7 @@ class Configure(Singleton):
         if ioc_writer is None:
             ioc_writer = iocwriter.SimpleIocWriter()
         self.__PublishNames(ioc_writer)
-        
+
 
     # Add the names listed in the given configuration object to the set of
     # global names published by the epics library.
@@ -175,7 +175,7 @@ def LoadVersionFile(filename, **context):
 #   Architecture of target system, defaults to \c 'vxWorks-ppc604_long'
 # \param record_names
 #   Class used to define record naming convention, defaults to standard
-#   Diamond naming convention 
+#   Diamond naming convention
 # \param **kargs
 #   See \ref Configure.__call__() "Configure()" for other arguments that can
 #   be passed.
@@ -211,13 +211,13 @@ def ConfigureTemplate(record_names = None):
     if record_names is None:
         record_names = recordnames.TemplateRecordNames()
     Configure(record_names = record_names)
-    
+
 
 def ParseRelease(dependency_tree, release, sup_release=None, debug=False):
     '''Read release, and create a dependency tree from it. If sup_release is a
     valid release file, then add it as a new dependency to the tree. Flatten
-    the tree, and do the corresponding ModuleVersion call for each leaf in it. 
-    Return a list of ModuleVersion objects. If debug then print the 
+    the tree, and do the corresponding ModuleVersion call for each leaf in it.
+    Return a list of ModuleVersion objects. If debug then print the
     ModuleVersion call made'''
     ## The list of ModuleVersions to return
     vs = []
@@ -228,13 +228,13 @@ def ParseRelease(dependency_tree, release, sup_release=None, debug=False):
         tree = dependency_tree(None, warnings=False)
     # if we have a sup_release then add it to the tree
     if os.path.isfile(sup_release):
-        leaf = dependency_tree(tree, sup_release, includes=False, 
+        leaf = dependency_tree(tree, sup_release, includes=False,
             warnings=False)
         tree.leaves.append(leaf)
     # print the tree if requested
     if debug:
         print '# Generated RELEASE tree'
-        tree.print_tree()       
+        tree.print_tree()
     # now flatten the leaves of the tree, and remove duplicates
     leaves = []
     for leaf in tree.flatten(include_self=False):
@@ -244,15 +244,15 @@ def ParseRelease(dependency_tree, release, sup_release=None, debug=False):
                 'multiple versions, using "%s"' % duplicates[0].version
         else:
             leaves.append(leaf)
-    # now do our ModuleVersion calls       
-    from libversion import ModuleVersion    
+    # now do our ModuleVersion calls
+    from libversion import ModuleVersion
     for name, version, path in [(l.name, l.version, l.path) for l in leaves]:
         # for work and local modules, just tell iocbuilder the path
         if version in ['work', 'local']:
             home = os.path.abspath(path)
             use_name = False
             version = None
-        # invalid modules don't have a configure/RELEASE, so won't have a 
+        # invalid modules don't have a configure/RELEASE, so won't have a
         # builder object
         elif version == 'invalid':
             continue
@@ -267,11 +267,11 @@ def ParseRelease(dependency_tree, release, sup_release=None, debug=False):
         if debug:
             print 'ModuleVersion(%s, %s, use_name=%s, home=%s)' % (
                 repr(name), repr(version), repr(use_name),
-                repr(home))    
-        # add the ModuleVersion object to the list    
-        vs.append(ModuleVersion(name, version, use_name=use_name, 
+                repr(home))
+        # add the ModuleVersion object to the list
+        vs.append(ModuleVersion(name, version, use_name=use_name,
                 home=home))
-    return vs                        
+    return vs
 
 
 
@@ -290,38 +290,38 @@ def ParseEtcArgs(dependency_tree=None, architecture = 'vxWorks-ppc604_long'):
     # first parse the normal options
     from optparse import OptionParser
     parser = OptionParser('''usage: %prog [options] <ioc_name>
-    
+
 This program will configure iocbuilder to write an ioc structure. It should
 be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
-    parser.add_option('-d', action='store_true', dest='debug', 
+    parser.add_option('-d', action='store_true', dest='debug',
         help='Print lots of debug information')
-    parser.add_option('--sim', dest='simarch', 
+    parser.add_option('--sim', dest='simarch',
         help='Create an ioc with arch=SIMARCH in simulation mode')
     (options, args) = parser.parse_args()
     if len(args) != 1:
         parser.error(
-            '*** Error: Incorrect number of arguments ' 
+            '*** Error: Incorrect number of arguments '
             '- you must the IOC name as input')
-    # store the ioc name and path            
-    options.iocname = args[0]    
+    # store the ioc name and path
+    options.iocname = args[0]
     options.iocpath = os.path.abspath(
-        os.path.join('..', '..', 'iocs', options.iocname))                
-    if options.simarch:          
-        options.iocpath += '_sim'    
-        architecture = options.simarch   
+        os.path.join('..', '..', 'iocs', options.iocname))
+    if options.simarch:
+        options.iocpath += '_sim'
+        architecture = options.simarch
     # do the relevant configure call
-    import iocwriter        
+    import iocwriter
     Configure(
         record_names = recordnames.BasicRecordNames(),
-        ioc_writer   = iocwriter.DiamondIocWriter, 
-        dynamic_load = False, 
-        architecture = architecture, 
-        register_dbd = True, 
+        ioc_writer   = iocwriter.DiamondIocWriter,
+        dynamic_load = False,
+        architecture = architecture,
+        register_dbd = True,
         simulation   = options.simarch)
-    
+
     # Parse a RELEASE file to do the ModuleVersion calls
     if dependency_tree is not None:
         ParseRelease(dependency_tree,
             options.iocname + '_RELEASE', '../../configure/RELEASE',
-            options.debug)    
+            options.debug)
     return options

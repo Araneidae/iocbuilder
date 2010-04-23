@@ -11,8 +11,8 @@ __all__ = ['makeArgInfo', 'filter_dict']
 def filter_dict(d, l):
     return dict((n, d[n]) for n in set(l) & set(d))
 
-    
-## This function produces an ArgInfo list for the xml frontend to 
+
+## This function produces an ArgInfo list for the xml frontend to
 # iocbuilder. It uses the arguments and defaults from the supplied init
 # method and annotates them with types and descriptions. Example:
 #
@@ -21,14 +21,14 @@ def filter_dict(d, l):
 #     def __init__(self, arg1, arg2=1):
 #         self.__super.__init__(self)
 #         ... do other stuff...
-# 
+#
 #     ArgInfo = makeArgInfo(__init__,
 #         arg1 = Simple('Description for arg1', str),
 #         arg2 = Simple('Description for arg2', int))
 # \endcode
 class ArgInfo(object):
     # Here ArgInfo contains the following fields:
-    # 
+    #
     #     .descriptions       Dictionary mapping argument names to meta-data
     #     .required_names     List of mandatory arguments (without defaults)
     #     .default_names      List of arguments with default values
@@ -77,7 +77,7 @@ class ArgInfo(object):
             self.default_values = []
 
         self.__validate()
-        
+
 
     def __validate(self):
         # Validates the complete ArgInfo data.
@@ -105,7 +105,7 @@ class ArgInfo(object):
             'Arguments %s not described' % (all_names - set_descs)
         assert set_descs <= all_names, \
             'Descriptions for unknown arguments %s' % (set_descs - all_names)
-        
+
     ## Returns list of all possible argument names.  If excludes is given
     # then it lists names that will not be returned.
     def Names(self, without=[]):
@@ -127,7 +127,7 @@ class ArgInfo(object):
         result.descriptions.update(other.descriptions)
         result.__validate()
         return result
-        
+
     ## Return a new ArgInfo object. If including is specified, then only
     # include the argument descriptions for each arg in including. If without
     # is specified, then don't include argument descriptions for each arg in
@@ -146,15 +146,15 @@ class ArgInfo(object):
             if name in self.required_names:
                 result.required_names.append(name)
             elif name in self.default_names:
-                result.default_names.append(name)                
+                result.default_names.append(name)
                 result.default_values.append(
                     self.default_values[self.default_names.index(name)])
             elif name in self.optional_names:
                 result.optional_names.append(name)
             result.descriptions[name] = self.descriptions[name]
-        result.__validate()     
-        return result                       
-    
+        result.__validate()
+        return result
+
 makeArgInfo = ArgInfo
 
 
@@ -168,7 +168,7 @@ __all__ += ['Simple', 'Choice', 'Enum', 'Ident', 'List', 'Sevr']
 ## These are the types supported by the Simple function
 _simpleTypes = [int, str, float, bool]
 
-## This is the base class that Simple, Choice, etc. create instanced of. It 
+## This is the base class that Simple, Choice, etc. create instanced of. It
 #  is not meant to be instantiated directly'''
 class ArgType(object):
     _extras = ['values', 'labels', 'ident']
@@ -177,14 +177,14 @@ class ArgType(object):
         self.typ = typ
         for k in extras:
             assert k in self._extras, '%s is not one of %s' % (k, self._extras)
-        self.__dict__.update(extras)        
-        
+        self.__dict__.update(extras)
+
 ## Just a simple type.
 # \param desc Description of the argument
-# \param typ Type of the argument, one of _simpleTypes          
+# \param typ Type of the argument, one of _simpleTypes
 def Simple(desc, typ=str):
     assert typ in _simpleTypes, \
-        '%s is not a supported simple type %s' % (typ, _simpleTypes)    
+        '%s is not a supported simple type %s' % (typ, _simpleTypes)
     desc = '%s %s' % (desc, typ)
     return ArgType(desc, typ)
 
@@ -192,11 +192,11 @@ def Simple(desc, typ=str):
 # \param desc Description of the argument
 # \param values List of possible values, type must be one of _simpleTypes, and
 # the same for all in the list of values
-# \param labels List of optional labels for the values        
+# \param labels List of optional labels for the values
 def Choice(desc, values, labels = None):
     typ = type(values[0])
     assert typ in _simpleTypes, \
-        '%s is not a supported simple type %s' % (typ, _simpleTypes)     
+        '%s is not a supported simple type %s' % (typ, _simpleTypes)
     for v in values:
         assert typ == type(v), \
             'Value "%s" doesn\'t have same type as "%s"' % (v, values[0])
@@ -208,7 +208,7 @@ def Choice(desc, values, labels = None):
         assert len(values) == len(labels), \
             'Labels %s do not have the same length as values %s' % \
             (labels, values)
-        argdescs = [ '%s: %s' % x for x in zip(labels, values) ]        
+        argdescs = [ '%s: %s' % x for x in zip(labels, values) ]
         desc += '\n '.join(argdescs)
         return ArgType(desc, typ, values = values, labels = labels)
 
@@ -225,7 +225,7 @@ def Enum(desc, values):
 # xmlbuilder will look at all the defined objects so far, and offer a selection
 # of those that are a subclass of \c typ as options for this argument
 def Ident(desc, typ):
-    desc = '%s %s' % (desc, typ)        
+    desc = '%s %s' % (desc, typ)
     return ArgType(desc, typ, ident = True)
 
 ## Deprecated. Do not use

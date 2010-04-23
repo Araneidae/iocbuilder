@@ -50,7 +50,7 @@ def PrintDisclaimerCommand(cmd):
         print '#!' + cmd
         PrintDisclaimerScript()
     return f
-    
+
 
 # A support routine for writing files using the print mechanism.  This is
 # simply a wrapper around sys.stdout redirection.  Use this thus:
@@ -73,7 +73,7 @@ class WriteFileWrapper:
             sys.stdout = self
         else:
             sys.stdout = self.__output
-        
+
         if header:
             header()
 
@@ -86,7 +86,7 @@ class WriteFileWrapper:
             assert len(full_line) <= self.__maxLineLength, \
                 'Line %s too long' % repr(full_line)
         self.__line = self.__line + lines[-1]
-        
+
         self.__output.write(string)
 
     # Call this to close the file being written and to restore normal output
@@ -108,7 +108,7 @@ def WriteFile(filename, writer, *argv, **argk):
         print writer
     output.Close()
 
-    
+
 # Class to support the creation of data files, either dynamically generated
 # inline, or copied from elsewhere.  Designed to be passed down to makefile
 # building tasks.
@@ -145,7 +145,7 @@ class DataDirectory:
         self.__AddFilename(target_name)
         shutil.copyfile(filename, self.Path(target_name, True))
 
-        
+
 # Class to support the generation of makefiles.
 class Makefile:
     def __init__(self, path, header, footer, name = 'Makefile'):
@@ -190,7 +190,7 @@ class IocWriter:
 
     def __init__(self, iocRoot=''):
         self.iocRoot = iocRoot
-        
+
         # Set up the appropriate methods for the actions required during IOC
         # writing.
 
@@ -210,7 +210,7 @@ class IocWriter:
 
         # Add filename to list of databases known to this IOC
         self.AddDatabase = iocinit.iocInit.AddDatabaseName
-        
+
         # Copies all files bound to IOC into given location
         self.SetDataPath = iocinit.IocDataSet.SetDataPath
         self.CopyDataFiles = iocinit.IocDataSet.CopyDataFiles
@@ -222,17 +222,17 @@ class IocWriter:
         self.SetIocName = iocinit.iocInit.SetIocName
 
 
-        
+
     def WriteFile(self, filename, writer, *argv, **argk):
         if not isinstance(filename, types.StringTypes):
             filename = os.path.join(*filename)
         WriteFile(os.path.join(self.iocRoot, filename), writer, *argv, **argk)
-        
+
 
     # This method resets only the record data but not the remaining IOC state.
     # This should only be used if incremental record creation without building
     # a new IOC is required.
-    # 
+    #
     # It is harmless to call this method repeatedly.
     def ResetRecords(self):
         recordset.Reset()
@@ -280,7 +280,7 @@ class SimpleIocWriter(IocWriter):
 # style.
 class DiamondIocWriter(IocWriter):
     __all__ = ['WriteIoc', 'WriteNamedIoc']
-    
+
 
     MAIN_CPP = '''\
 #include "epicsExit.h"
@@ -289,7 +289,7 @@ class DiamondIocWriter(IocWriter):
 
 int main(int argc,char *argv[])
 {
-    if(argc>=2) {    
+    if(argc>=2) {
         iocsh(argv[1]);
         epicsThreadSleep(.2);
     }
@@ -336,7 +336,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
 
     def MakeDirectory(self, *dir_names):
         os.makedirs(os.path.join(self.iocRoot, *dir_names))
-        
+
     def DeleteIocDirectory(self):
         # Checks that the newly computed iocBoot directory is a plausible IOC
         # directory.  This prevents any unfortunate accidents caused by
@@ -361,10 +361,10 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
                     shutil.rmtree(os.path.join(self.iocRoot, file))
         else:
             shutil.rmtree(self.iocRoot)
-        
+
 
     # Published methods: alternative IOC constructors
-        
+
     ## The Diamond style of IOC as supported by this writer is of the
     # following form, where <ioc>=<domain>-<techArea>-IOC-<id> and <iocDir>
     # is either <techArea> or <ioc> depending on whether long_name is set.
@@ -432,7 +432,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
     def StartMakefiles(self, makefile_name):
         header = self.MAKEFILE_HEADER
         footer = self.MAKEFILE_FOOTER
-            
+
         self.makefile_db   = Makefile(self.iocDbDir,   header, footer)
         self.makefile_src  = Makefile(self.iocSrcDir,  header, footer)
         self.makefile_boot = Makefile(self.iocBootDir, header, footer)
@@ -473,7 +473,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
 
         # Finally generate the make files
         self.WriteMakefiles()
-        
+
     # Outputs all the individual make files.
     def WriteMakefiles(self):
         self.makefile_top.Generate(self.iocRoot)
@@ -483,7 +483,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
 
 
     # Individual stages of IOC generation
-    
+
 
     def CreateDatabaseFiles(self):
         # Names of the db files we're about to build
@@ -507,7 +507,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             makefile.AddLine('DB += %s' % expanded)
         for func in _DbMakefileHooks:
             db_filename = ''
-            if self.CountRecords(): 
+            if self.CountRecords():
                 db_filename = db
             expanded_filename = ''
             if self.CountSubstitutions():
@@ -524,12 +524,12 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             prod_ioc = 'PROD_IOC'
         makefile.AddLine('%s = %s' % (prod_ioc, ioc))
         makefile.AddLine('DBD += %s.dbd' % ioc)
-        
+
         for dbd_part in Hardware.GetDbdList():
             makefile.AddLine('%s_DBD += %s.dbd' % (ioc, dbd_part))
         makefile.AddLine(
             '%s_SRCS += %s_registerRecordDeviceDriver.cpp' % (ioc, ioc))
-        
+
         # Library dependencies need to be expressed in reverse dependency
         # order so that each library pulls in the required symbols from the
         # next library loaded.
@@ -575,22 +575,22 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
                 'envPaths cdCommands:\n'
                 '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(T_A) $@')
             self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
-            
+
     def CreateBootFiles_linux(self, scripts):
         ioc = self.ioc_name
         self.WriteFile((self.iocBootDir, 'st%s.sh' % ioc),
             self.LINUX_CMD % dict(ioc = ioc),
             header = PrintDisclaimerCommand('/bin/sh'))
-        if not self.substitute_boot:            
+        if not self.substitute_boot:
             self.makefile_boot.AddLine('%s += envPaths' % scripts)
         self.makefile_boot.AddLine(
             '%s += ../st%s.sh' % (scripts, self.ioc_name))
-        
+
     def CreateBootFiles_vxWorks(self, scripts):
-        if not self.substitute_boot:    
+        if not self.substitute_boot:
             self.makefile_boot.AddLine('%s += cdCommands' % scripts)
 
-        
+
     def CreateConfigureFiles(self):
         # Create the configure directory by copying files over from EPICS
         # base.  We don't copy RELEASE because we need to rewrite it
@@ -601,7 +601,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         for file in template_files:
             if file != 'RELEASE':
                 shutil.copy(
-                    os.path.join(template_dir, file), 
+                    os.path.join(template_dir, file),
                     os.path.join(self.iocRoot, 'configure'))
 
         self.WriteConfigFile('CONFIG_SITE' in template_files)
@@ -609,14 +609,14 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         # Write out configure/RELEASE
         releases = []
         for module in sorted(libversion.ModuleBase.ListModules()):
-## \todo Do something sensible on check_release        
+## \todo Do something sensible on check_release
 # Something like this might be a good idea --
 #             if self.check_release:
 #                 module.CheckDependencies()
             releases.append(
                 '%s = %s' % (module.MacroName(), module.LibPath()))
         self.WriteFile('configure/RELEASE', '\n'.join(releases))
-        
+
     def WriteConfigFile(self, config_site):
         # If CONFIG_SITE exists add our configuration to that, otherwise add
         # it to CONFIG: this system changed in 3.14.11.  Either way, the
@@ -633,7 +633,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             ARCH = ''
         self.WriteFile(('configure', config_file),
             config_text % dict(
-                ARCH = ARCH, 
+                ARCH = ARCH,
                 CHECK_RELEASE = self.check_release and 'YES' or 'NO'),
             mode = 'a')
 
@@ -642,7 +642,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         # Note that the data files have to be generated after almost
         # everything else, as they can be generated by Initialise commands.
         self.CopyDataFiles(self.iocRoot, True)
-        
+
 
 
 # functions to be called when generating Db/Makefile

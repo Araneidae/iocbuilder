@@ -11,7 +11,7 @@ def Extend_mbbiDirect(mbbiDirect):
 
         def register(self, offset, length):
             return _Bits(self, BIT_INPUT, records.bi, offset, length)
-        
+
     return mbbiDirect
 
 
@@ -40,8 +40,8 @@ def ExtendClass(recordClass):
     else:
         return extension(recordClass)
 
-    
-    
+
+
 
 
 

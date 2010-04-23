@@ -5,7 +5,7 @@ import os, re, sys
 import recordset
 from arginfo import *
 
-__all__ = ['AutoSubstitution']    
+__all__ = ['AutoSubstitution']
 
 # This iterator will find any $(...) macro in line. The number of ( brackets
 # ) and brackets in the expression will match
@@ -13,8 +13,8 @@ def find_macros(line):
     bracket = 0
     i = 0
     macro = ''
-    
-    while i < len(line):        
+
+    while i < len(line):
         if bracket > 0:
             # we're in a macro
             match = bracket_open.match(line, i)
@@ -23,7 +23,7 @@ def find_macros(line):
                 bracket += 1
             else:
                 # we've closed a bracket
-                match = bracket_close.match(line, i)                
+                match = bracket_close.match(line, i)
                 bracket -= 1
             if bracket == 0:
                 # we've closed the macro bracket
@@ -32,8 +32,8 @@ def find_macros(line):
                 i += 1
             else:
                 # we've closed a non-macro bracket
-                macro += match.groups()[0]                                
-                i = match.end()                
+                macro += match.groups()[0]
+                i = match.end()
         else:
             # we're not in a macro, find the start of the next one
             match = macro_start.search(line, i)
@@ -51,14 +51,14 @@ def populate_class(cls, template_file):
     default_names = []
     default_values = []
     optional_names = []
-    Obs = {}    
+    Obs = {}
     doc = ''
-    for line in text.splitlines():        
+    for line in text.splitlines():
         # find all macro names
         for mtext in find_macros(line):
             if '=' in mtext:
                 # this a macro with a default value
-                mtext, default = mtext.split('=', 1)                
+                mtext, default = mtext.split('=', 1)
                 # check it's not a required value
                 assert mtext not in required_names + optional_names, \
                     'Cannot define default macro "%s", already defined as '\
@@ -70,7 +70,7 @@ def populate_class(cls, template_file):
                         'Cannot set macro "%s" to "%s", already defined with '\
                         'value "%s" in "%s"' % (mtext, default, \
                             old_default, template_file)
-                else:                            
+                else:
                     # add it as a default value
                     default_names.append(mtext)
                     default_values.append(default)
@@ -85,7 +85,7 @@ def populate_class(cls, template_file):
                         if mtext not in optional_names:
                             optional_names.append(mtext)
                 else:
-                    if mtext not in required_names:                
+                    if mtext not in required_names:
                         required_names.append(mtext)
 
     # find all the descriptions for ArgInfo objects
@@ -98,12 +98,12 @@ def populate_class(cls, template_file):
                     default_values.append(
                         default_values.pop(default_names.index(name)))
                 l.append(l.pop(l.index(name)))
-                
-                         
+
+
     for name, desc in macro_desc_re.findall(text):
         search = re.search(r"\n#[ \t]*", desc)
         if search:
-            desc = re.sub(search.group(), "\n", desc)    
+            desc = re.sub(search.group(), "\n", desc)
         # a __doc__ macro is the docstring for the object
         if name == '__doc__':
             doc = desc
@@ -128,12 +128,12 @@ def populate_class(cls, template_file):
 
     # store the docstring
     if doc:
-        cls.__doc__ = doc     
-    # create Arguments        
+        cls.__doc__ = doc
+    # create Arguments
     if cls.Arguments is None:
         cls.Arguments = required_names + default_names + optional_names
-    # create Defaults        
-    if not hasattr(cls, 'Defaults'):                    
+    # create Defaults
+    if not hasattr(cls, 'Defaults'):
         cls.Defaults = dict(zip(
             default_names + optional_names,
             default_values + ['' for x in optional_names]))
@@ -144,7 +144,7 @@ def populate_class(cls, template_file):
         cls.ArgInfo.default_names = default_names
         cls.ArgInfo.default_values = default_values
         cls.ArgInfo.required_names = required_names
-        cls.ArgInfo.optional_names = optional_names    
+        cls.ArgInfo.optional_names = optional_names
 
 
 ## Subclass of Substitution that scans its template file to find the macros it
@@ -153,7 +153,7 @@ class AutoSubstitution(recordset.Substitution):
     BaseClass = True
     ## Set this to False to supress warnings on undescribed macros
     WarnMacros = True
-    ## This is set to True to disable scanning of the template file in 
+    ## This is set to True to disable scanning of the template file in
     # other subclasses of this
     Scanned = False
 
@@ -168,7 +168,7 @@ class AutoSubstitution(recordset.Substitution):
     @classmethod
     def fromModuleVersion(cls, moduleVersion):
         '''Make autosubstitution objects for all files in the db dir
-        of moduleVersion object'''        
+        of moduleVersion object'''
         path = os.path.join(moduleVersion.LibPath(), 'db')
         if os.path.isdir(path):
             # for each db file
@@ -212,4 +212,4 @@ macro_desc_re = re.compile(
     r'([^\n]+' # This start the description capture and the first line
     r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # subsequent non-'blank' line
     re.MULTILINE)
-                                        
+

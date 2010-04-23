@@ -3,24 +3,24 @@
 ## This file coordinates the initialisation of an IOC: a variety of methods
 # are exported from epics for configuring global IOC parameters, and the
 # following methods are provided for general use:
-# 
+#
 #   PrintHeader()
 #       Prints the preamble of an IOC initialisation file, including most of
 #       the IOC configuration settings defined by the Set... functions.
-# 
+#
 #   PrintFooter()
 #       Prints the postamble to the IOC initialisation, including the code
 #       required to load the configured database files.
-# 
+#
 # Supports the following configurations:
-# 
+#
 #   AddDatabaseName(database)
 #       Called (indirectly) from the IOC writer: adds the named database to
 #       the startup script.
-# 
+#
 #   EpicsEnvSet(key, value)
 #       Adds key=value to startup script.
-# 
+#
 #   AddIocFile(filename)
 #       Adds file to be copied into IOC directory tree.
 
@@ -56,7 +56,7 @@ def quote_IOC_string_linux(text):
         'Unquotable characters %s in message' % unsafe_chars
     quote = '\''
     return quote + '\'"\'"\''.join(text.split(quote)) + quote
-    
+
 quote_IOC_string_vxWorks = quote_c_string
 
 
@@ -69,12 +69,12 @@ def setenv_vxWorks(name, value):
 
 class iocInit(Singleton):
     DefaultEnvironment = { 'EPICS_TS_MIN_WEST' : 0 }
-    
+
     def __init__(self):
         self.__TargetDir = None
         self.__Gateway = None
         self.__ClockRate = None
-        
+
         # List of databases to be loaded into this ioc
         self.__DatabaseNameList = []
         self.__EnvList = dict(self.DefaultEnvironment)
@@ -83,7 +83,7 @@ class iocInit(Singleton):
         self.__IocCommands_PreInit = []
         self.__IocCommands_PostInit = []
 
-        
+
     def Initialise(self):
         # We can't import the IOC until we've finished importing (at least,
         # not if we want EPICS_BASE to behave like other modules), so we have
@@ -111,16 +111,16 @@ class iocInit(Singleton):
         # been specified then use that.  Otherwise, if __TargetDir is not
         # set then assume that st.cmd will be started in the correct
         # target directory.
-        if not self.substitute_boot:        
-            print '< cdCommands'        
-        self.cd_home()        
+        if not self.substitute_boot:
+            print '< cdCommands'
+        self.cd_home()
         print 'tyBackspaceSet(127)'
 
     def PrintHeader_linux(self, ioc_root):
         if not self.substitute_boot:
             print '< envPaths'
-        self.cd_home()        
-                        
+        self.cd_home()
+
     def cd_home_vxWorks(self):
         print 'cd top'
     def cd_home_linux(self):
@@ -146,7 +146,7 @@ class iocInit(Singleton):
             print 'sysClkRateSet %d' % self.__ClockRate
         if self.__Gateway:
             print 'routeAdd "0", %s' % quote_IOC_string(self.__Gateway)
-                    
+
 
     def PrintFooter(self):
         print
@@ -172,7 +172,7 @@ class iocInit(Singleton):
                 print command
             print
 
-        
+
     # Writes out a complete IOC startup script.
     def PrintIoc(self, ioc_root=None):
         self.PrintHeader(ioc_root)
@@ -180,12 +180,12 @@ class iocInit(Singleton):
         self.PrintFooter()
         Hardware.PrintPostIocInit()
 
-        
+
 
     def AddDatabaseName(self, database):
         self.__DatabaseNameList.append(database)
 
-        
+
     ## Sets the working directory for the IOC.  This path will be assigned
     # to the homeDir environment variable, and all other IOC files will be
     # loaded relative to this directory.
@@ -245,7 +245,7 @@ class iocInit(Singleton):
             self.__IocCommands_PreInit.append(command)
 
 
-        
+
 # This class gathers together files to be placed in the IOC's data
 # directory.
 class IocDataSet(Singleton):
@@ -293,7 +293,7 @@ class _IocDataBase(autosuper_object):
 
     # A convenient alias.
     GetDataPath = IocDataSet.GetDataPath
-                
+
     def __init__(self, name):
         self.name = name
         IocDataSet._AddDataFile(self, name)
@@ -353,7 +353,7 @@ class IocDataStream(_IocDataBase):
             os.chmod(filename, self.mode)
         self.written = True
 
-    
+
 # Export all the names exported by iocInit()
 __all__ = ['IocDataFile', 'IocDataStream']
 for name in _ExportList:

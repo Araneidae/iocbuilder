@@ -12,7 +12,7 @@ import hardware
 
 
 __all__ = [
-    'ModuleVersion', 'ModuleBase', 'modules', 'autodepends', 
+    'ModuleVersion', 'ModuleBase', 'modules', 'autodepends',
     'SetSimulation', 'DummySimulation']
 
 
@@ -40,7 +40,7 @@ def _CheckPythonModule(path, module):
 
 
 _ValidNameChars = re.compile(
-    '[^' + 
+    '[^' +
     string.ascii_uppercase + string.ascii_lowercase +
     string.digits + '_' + ']')
 
@@ -51,16 +51,16 @@ def PythonIdentifier(name):
         name = '_' + name
     return name
 
-    
+
 
 
 ## Specifies module version and imports definitions.
 #
 # Declares the version of an EPICS support module and loads its definitions
 # from the appropriate \c builder.py file into the \c iocbuilder namespace.
-# 
+#
 # The arguments are:
-# 
+#
 # \param libname
 #     Name of the support module.  This will be upper-cased to form the
 #     \c configure/RELEASE macro name.
@@ -69,7 +69,7 @@ def PythonIdentifier(name):
 #     subdirectory of the support module directory.
 # \param home
 #     Directory where the support module is located.  If not specified
-#     then \c EPICS_BASE 
+#     then \c EPICS_BASE
 # \param use_name
 #     If set (by default) the support module is located as a
 #     subdirectory of home; if false, home (possibly plus version) is
@@ -106,7 +106,7 @@ class ModuleVersion:
     # that have been loaded so that we can auto instantiate them if
     # requested.
     _AutoInstances = []
-    
+
     def __init__(self, libname,
             version=None, home=None, use_name=True,
             suppress_import=False, load_path=None, override=False,
@@ -136,7 +136,7 @@ class ModuleVersion:
         assert (not override) <= (not libDefined), \
                'Module %s multiply defined' % libname
         assert override <= libDefined, 'Module %s not defined' % libname
-        
+
         # Add this to the list of module versions, create the associated
         # module and finally attempt to load any definitions associated with
         # this module.
@@ -150,7 +150,7 @@ class ModuleVersion:
             if auto_instantiate:
                 for subclass in ModuleVersion._AutoInstances:
                     subclass._AutoInstantiate()
-        
+
 
     ## Returns the path to the module directory defined by this entry.
     #
@@ -161,7 +161,7 @@ class ModuleVersion:
     def LibPath(self, macro_name=False):
         if macro_name:
             return '$(%s)' % self.__macroname
-        
+
         path = self.home
         if self.use_name:
             path = os.path.join(path, self.__name)
@@ -241,13 +241,13 @@ class ModuleVersion:
                 # ensuring that all imports with ModuleFile are treated as
                 # local to ModuleFile.
                 self.module.__path__ = [os.path.dirname(ModuleFile)]
-            
+
             assert self._LoadingModule is None, \
                 'Calling ModuleVersion inside an EPICS module is a BAD idea!'
             ModuleVersion._LoadingModule = self
             execfile(ModuleFile, self.module.__dict__)
             ModuleVersion._LoadingModule = None
-            
+
             if hasattr(self.module, '__all__'):
                 for name in self.module.__all__:
                     assert not hasattr(hardware, name), \
@@ -258,11 +258,11 @@ class ModuleVersion:
             print >>sys.stderr, \
                 'Module definitions for', self.__name, 'not found'
 
-    
+
 
 ## All entities which need to depend on module versions should subclass
 # this class to obtain access to their configuration information.
-# 
+#
 # By default the name of the class will be used both as an index into the
 # ModuleVersion entry and as the subdirectory name in the support directory.
 # When the external name of the module doesn't match the class name then
@@ -271,7 +271,7 @@ class ModuleVersion:
 # \code
 #     ModuleName = 'true-module-name'
 # \endcode
-# 
+#
 # This class will always define a \c ModuleName symbol.  If the same module
 # is to be used by all subclasses then this can be enabled by defining the
 # symbol
@@ -283,7 +283,7 @@ class ModuleVersion:
 class ModuleBase(autosuper_object):
 
     # Class initialisation.
-    
+
     def __init_meta__(cls, subclass):
         dict = cls.__dict__
 
@@ -413,7 +413,7 @@ class ModuleBase(autosuper_object):
         cls._ModuleBaseInstances.append(self)
         return self
 
-        
+
     ## Returns the path to the module.  If macro_name is set then a macro
     # for the path is returned, otherwise the true path is returned.
     @classmethod
@@ -445,7 +445,7 @@ class ModuleBase(autosuper_object):
             if f is not None:
                 f(**args)
 
-        
+
 ## This is a decorator helper function designed to be used with functions
 # which require resources from one or more ModuleBase subclasses.  This is
 # designed to be used as shown in the following example
@@ -455,7 +455,7 @@ class ModuleBase(autosuper_object):
 #         Dependencies = (genSub,)
 #         LibFileList = ['diagToolsResample']
 #         AutoInstantiate = True
-# 
+#
 #     @autodepends(resampleLib)
 #     def ResampleWaveform(name, ...):
 #         return records.genSub(name,
@@ -506,7 +506,7 @@ def SetSimulation(real, sim):
         if sim is None:
             class sim(DummySimulation):
                 pass
-        
+
         # first replace it in the list of subclasses
         index = ModuleBase.ModuleBaseClasses.index(real)
         ModuleBase.ModuleBaseClasses[index] = sim

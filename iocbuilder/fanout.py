@@ -18,7 +18,7 @@ __all__ = ['create_fanout', 'create_dfanout']
 def _fanout_helper(
     fanout_name, link_list, fanout_size,
     record_factory, field_name, fixup_link, firstargs, nextargs):
-    
+
     # First break the list of links into chunks small enough for each fanout
     # record.  First chop it into segments small enough to fit into each
     # fanout record, leaving room for an extra link.  The last record can take
@@ -43,7 +43,7 @@ def _fanout_helper(
         for i, link in enumerate(links):
             setattr(record, field_name(i), link)
         recordList.append(record)
-        
+
     # Chain the fanout records together using the last field in each record:
     # we've taken care to reserve this field when we split the link list!
     next_name = field_name(fanout_size - 1)
@@ -51,7 +51,7 @@ def _fanout_helper(
         setattr(prev, next_name, fixup_link(next))
 
     return recordList
-        
+
 
 
 ## Creates one or more fanout records (as necessary) to fan processing out to
@@ -77,14 +77,14 @@ def create_fanout(name, *record_list, **args):
     nextargs = args.copy()
     nextargs['SCAN'] = 'Passive'
     if nextargs.has_key('PINI'):  del nextargs['PINI']
-    
+
     def fieldname(i):   return 'LNK%d' % (i + 1)
     def identity(x):    return x
     record_list = _fanout_helper(
         name, record_list, 6, records.fanout, fieldname,
         identity, firstargs, nextargs)
     return record_list[0]
-    
+
 
 ## Creates one or more data fanout records (as necessary) to fan a data output
 # out to a list of records.  If no more than 8 records are given then this
@@ -107,7 +107,7 @@ def create_dfanout(name, *record_list, **args):
     nextargs.update(dict(SCAN = 'Passive', OMSL = 'supervisory'))
     if nextargs.has_key('DOL'):   del nextargs['DOL']
     if nextargs.has_key('PINI'):  del nextargs['PINI']
-    
+
     def fieldname(i):   return 'OUT%c' % (ord('A') + i)
     record_list = _fanout_helper(
         name, record_list, 8, records.dfanout, fieldname,

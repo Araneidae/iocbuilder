@@ -38,7 +38,7 @@ class RecordSet(support.Singleton):
 
     # Returns the number of published records.
     def CountRecords(self):
-        return len(self.__RecordSet)            
+        return len(self.__RecordSet)
 
 
 
@@ -97,7 +97,7 @@ class Substitution(libversion.ModuleBase):
     def __init_meta__(cls, subclass):
         if cls.TemplateFile:
             cls.TemplateFiles.append(cls.TemplateFile)
-        
+
 
     BaseClass = True
     # List of all template files
@@ -107,10 +107,10 @@ class Substitution(libversion.ModuleBase):
     TemplateFile = None
     ## These are the arguments that any instance of the class will expect
     Arguments = None
-    
+
     TemplateDir = None
     SubstitutionSet = SubstitutionSet()
-    TemplateDir = 'db'   
+    TemplateDir = 'db'
 
     # Computes the template file name.  If macro_name is true then a form
     # suitable for msi macro expansion is returned.
@@ -130,18 +130,18 @@ class Substitution(libversion.ModuleBase):
     def _PrintPattern(cls):
         if cls.Arguments:
             print 'pattern {', ', '.join(cls.Arguments), '}'
-        
+
 
     ## Creates a substitution instance with the given arguments.  The
     # arguments need to match the arguments expected by the template to
     # be expanded.
     def __init__(self, **args):
         self.__super.__init__()
-        
+
         # If we have Defaults, then update the argdict with them
         if hasattr(self, "Defaults"):
             args = dict(self.Defaults, **args)
-        
+
         # Check that all the required arguments have been given: we can't do
         # template expansion unless every argument is specified.
         assert self.TemplateFile, 'Must specify template file'
@@ -187,14 +187,14 @@ class Substitution(libversion.ModuleBase):
         print '#    %s' % ', '.join(argList)
         print '#', 75 * '-'
         print
-        
+
         msi = [os.path.join(msiPath, 'msi')] + \
               ['-M%s' % arg for arg in argList] + [template]
         p = subprocess.Popen(msi, stdout=subprocess.PIPE)
         for line in p.stdout:
             print line,
         assert p.wait() == 0, 'Error running msi'
-        
+
 
 RecordsSubstitutionSet = Substitution.SubstitutionSet
 
@@ -214,7 +214,7 @@ def QuoteArgument(argument):
     return '"' + ''.join(map(QuoteChar, str(argument))) + '"'
 
 
-        
+
 # Publicly available methods.
 PublishRecord = RecordSet.PublishRecord
 LookupRecord = RecordSet.LookupRecord
