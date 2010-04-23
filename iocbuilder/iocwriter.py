@@ -148,12 +148,13 @@ class DataDirectory:
         
 # Class to support the generation of makefiles.
 class Makefile:
-    def __init__(self, path, header, footer):
+    def __init__(self, path, header, footer, name = 'Makefile'):
         self.path = path
         self.header = header
         self.lines = []
         self.footer = footer
         self.rules = []
+        self.name = name
 
     def AddLine(self, *lines):
         self.lines.extend(lines)
@@ -166,7 +167,7 @@ class Makefile:
             print line
 
     def Generate(self, root):
-        output = WriteFileWrapper(os.path.join(root, self.path, 'Makefile'))
+        output = WriteFileWrapper(os.path.join(root, self.path, self.name))
         self.__print(self.header)
         print
         self.__print(self.lines)
@@ -347,11 +348,19 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         dirlist = os.listdir(self.iocRoot)
         require_list = ['configure', 'iocBoot']
         ignore_list = ['bin', 'db', 'dbd', 'Makefile', 'data'] + \
-            fnmatch.filter(dirlist, '%sApp' % (self.ioc_name))
-        assert set(dirlist) - set(ignore_list) == set(require_list), \
+            fnmatch.filter(dirlist, '%sApp' % (self.ioc_name)) + \
+            self.keep_files
+        print self.iocRoot, dirlist, require_list, ignore_list
+        checklist = set(dirlist) - set(ignore_list)
+        assert checklist == set(require_list) or not checklist, \
             'Directory %s doesn\'t appear to be an IOC directory' % \
                 self.iocRoot
-        shutil.rmtree(self.iocRoot)
+        if self.keep_files:
+            for file in dirlist:
+                if file not in self.keep_files:
+                    shutil.rmtree(os.path.join(self.iocRoot, file))
+        else:
+            shutil.rmtree(self.iocRoot)
         
 
     # Published methods: alternative IOC constructors
@@ -393,17 +402,19 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
     # Top level IOC writer control
 
     def __init__(self, path, ioc_name,
-            check_release = True, substitute_boot = False):
+            check_release = True, substitute_boot = False,
+            keep_files = [], makefile_name = 'Makefile'):
         # Remember parameters
         IocWriter.__init__(self, path)  # Sets up iocRoot
         self.check_release = check_release
         self.substitute_boot = substitute_boot
+        self.keep_files = keep_files
 
         self.cross_build = configure.Architecture() != paths.EPICS_HOST_ARCH
 
         # Create the working skeleton
         self.CreateIocNames(ioc_name)
-        self.StartMakefiles()
+        self.StartMakefiles(makefile_name)
         self.CreateSkeleton()
 
         # Actually generate the IOC
@@ -418,7 +429,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.iocBootDir = os.path.join('iocBoot', 'ioc' + ioc_name)
         self.iocDataDir = os.path.join(iocAppDir, 'data')
 
-    def StartMakefiles(self):
+    def StartMakefiles(self, makefile_name):
         header = self.MAKEFILE_HEADER
         footer = self.MAKEFILE_FOOTER
             
@@ -426,7 +437,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.makefile_src  = Makefile(self.iocSrcDir,  header, footer)
         self.makefile_boot = Makefile(self.iocBootDir, header, footer)
         self.makefile_top  = Makefile('',
-            self.TOP_MAKEFILE_HEADER, self.TOP_MAKEFILE_FOOTER)
+            self.TOP_MAKEFILE_HEADER, self.TOP_MAKEFILE_FOOTER,
+            name = makefile_name)
 
     def CreateSkeleton(self):
         # Create the complete skeleton after first erasing any previous IOC

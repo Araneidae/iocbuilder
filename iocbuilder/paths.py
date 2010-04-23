@@ -32,8 +32,6 @@ def SetEpicsBase(epics_base):
     module_path = GetModulePath()
     msiPath = GetMsiPath()
 
-    print 'paths.EPICS_BASE =', EPICS_BASE
-
 
 
 EPICS_HOST_ARCH = 'linux-x86'
