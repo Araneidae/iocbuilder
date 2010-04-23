@@ -8,7 +8,7 @@ DOXYGEN := /dls_sw/work/tools/RHEL5/bin/doxygen
 all install: $(DOCDIR)
 
 # rule for documentation
-$(DOCDIR): config.cfg manual.src $(wildcard ../iocbuilder/*.py)
+$(DOCDIR): config.cfg $(wildcard *.src) $(wildcard ../iocbuilder/*.py)
 	mkdir -p $(DOCDIR)
 	$(DOXYGEN) config.cfg
 

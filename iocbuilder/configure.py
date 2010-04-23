@@ -35,11 +35,49 @@ def Call_TargetOS(self, name, *args, **kargs):
     else:
         return method(*args, **kargs)
 
-    
+
 class Configure(Singleton):
     # Ensure we don't have to cope with multiple reconfigurations.
     __called = False
 
+    
+    ## This is the lowest level IOC builder initialisation function.
+    #
+    # Typically it is not called directly, instead one of its proxies, \ref
+    # ConfigureIOC(), \ref ConfigureTemplate() or \ref ParseEtcArgs(), must be
+    # called before any other builder functions are called.  This function
+    # completes the configuration of the IOC builder and initialisation of the
+    # builder's name space.
+    #
+    # \param module_path
+    #   This configures where ModuleVersion() will look for modules.  By
+    #   default the setting configured in \ref paths is used.
+    # \param record_names
+    #   This configures the record naming convention.  For examples see \ref
+    #   recordnames.BasicRecordNames "BasicRecordNames", the simplest
+    #   format, \ref recordnames.TemplateRecordNames "TemplateRecordNames"
+    #   for naming templates, and \ref recordnames.DiamondRecordNames
+    #   "DiamondRecordNames" for normal IOC generation.
+    # \param ioc_writer
+    #   This configures how IOCs are written.  Possible options are \ref
+    #   iocwriter.SimpleIocWriter "SimpleIocWriter" for writing standalone
+    #   databases or \ref iocwriter.DiamondIocWriter "DiamondIocWriter" for
+    #   standard DLS IOCs.
+    # \param dynamic_load
+    #   This flag configures whether support modules are linked in or loaded
+    #   at run-time.  Probably now obsolete, as static linking is now the
+    #   rule.
+    # \param architecture
+    #   Configures the target architecture.  Must be set if an IOC is to be
+    #   generated, not required for template only generation.
+    # \param register_dbd
+    #   Whether to call the register database function in the startup script.
+    #   Like \c dynamic_load, probably obsolete.
+    # \param simulation
+    #   Controls whether simulation module definitions are to be selected.
+    # \param epics_base
+    #   Can be used to override the default selection of \c EPICS_BASE taken
+    #   from the environment.
     def __call__(self,
             module_path  = None,    # Configures where ModuleVersion looks
             record_names = None,    # Configure how records are named
@@ -115,6 +153,29 @@ def LoadVersionFile(filename, **context):
 # Some sensible default configurations.
 
 
+## ConfigureIOC is a function.
+#
+# This is some more
+# It takes some arguments
+#
+# blah
+#
+#   \param architecture  Architecture of target system, defaults to
+#       'vxWorks-ppc604_long'
+#   \param record_names  Class used to define record naming convention,
+#       defaults to standard Diamond naming convention
+#   \param **kargs    Some more
+#
+# Here is a list:
+#   - one
+#   - two
+#
+# and an numbered:
+#   -# one
+#   -# two
+#
+# \ref Configure.__call__() "Configure()" is called, see also
+# ConfigureTemplate()
 def ConfigureIOC(
         architecture = 'vxWorks-ppc604_long',
         record_names = recordnames.DiamondRecordNames,
@@ -128,6 +189,7 @@ def ConfigureIOC(
         **kargs)
 
 
+## ConfigureTemplate is a function.
 def ConfigureTemplate(record_names = None):
     import recordnames
     if record_names is None:
@@ -195,7 +257,7 @@ def ParseRelease(dependency_tree, release, sup_release=None, debug=False):
                 home=home))
     return vs                        
             
-# An options parser for the standard gui options
+## An options parser for the standard gui options
 def ParseEtcArgs(dependency_tree=None, architecture = 'vxWorks-ppc604_long'):
     '''Does the following:
     * Parse sys.argv using the options parser

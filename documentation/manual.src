@@ -29,6 +29,7 @@ This manual is divided in the following sections:
 - \subpage generating_records
 - \subpage builder_files
 - \subpage troubleshooting
+- \subpage cross_reference
 
 \section Developer Manual
 The following sections are suitable for developers of the iocbuilder module:
