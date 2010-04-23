@@ -563,7 +563,6 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             (self.iocBootDir, 'st%s.%s' % (self.ioc_name, extension)),
             self.PrintIoc, '../..', maxLineLength = self.IOCmaxLineLength)
 
-        self.makefile_boot.AddLine('ARCH = %s' % configure.Architecture())
         if self.cross_build:
             scripts = 'SCRIPTS_%s' % configure.TargetOS()
         else:
@@ -576,7 +575,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         else:
             self.makefile_boot.AddRule(
                 'envPaths cdCommands:\n'
-                '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(ARCH) $@')
+                '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(T_A) $@')
             self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
             
     def CreateBootFiles_linux(self, scripts):
@@ -620,7 +619,6 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
                 '%s = %s' % (module.MacroName(), module.LibPath()))
         self.WriteFile('configure/RELEASE', '\n'.join(releases))
         
-
     def WriteConfigFile(self, config_site):
         # If CONFIG_SITE exists add our configuration to that, otherwise add
         # it to CONFIG: this system changed in 3.14.11.  Either way, the
