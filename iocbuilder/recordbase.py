@@ -1,4 +1,4 @@
-# Support for generating epics records.
+'''Support for generating epics records.'''
 
 import string
 
@@ -11,9 +11,9 @@ __all__ = ['PP', 'CP', 'MS', 'NP', 'ImportRecord', 'Parameter']
 
 
 
+# Converts a bound function to an unbound function which can then be rebound:
+# the extra binding is passed as the first argument.
 def _unbind(function):
-    '''Converts a bound function to an unbound function which can then be
-    rebound: the extra binding is passed as the first argument.'''
     def wrapper(*args, **kargs):
         return function(*args, **kargs)
     return wrapper
@@ -23,15 +23,14 @@ def _unbind(function):
 #
 #   Record class    
 
+## Base class for all record types.
 class Record(object):
-    '''Base class for all record types.'''
 
+    # Creates a subclass of the record with the given record type and
+    # validator bound to the subclass.  The device used to load the record is
+    # remembered so that it can subsequently be instantiated if necessary.
     @classmethod
     def CreateSubclass(cls, device, recordType, validate):
-        '''Creates a subclass of the record with the given record type and
-        validator bound to the subclass.  The device used to load the record
-        is remembered so that it can subsequently be instantiated if
-        necessary.'''
         # Each record we publish is a class so that individual record
         # classes can be subclassed when convenient.
         class BuildRecord(Record):
@@ -45,23 +44,23 @@ class Record(object):
         return bits.ExtendClass(BuildRecord)
         
 
+    ## Converts a short form record name into the full record name as it will
+    # appear in the generated database.
     @classmethod
     def RecordName(cls, name):
-        '''Converts a short form record name into the full record name as it
-        will appear in the generated database.'''
         return recordnames.RecordNames.RecordName(name)
 
 
     __MetadataHooks = []
 
+    # Called to add hooks for meta-data.  The hook class should provide
+    # a function
+    #     hook_cls.PrintMetadata(record)
+    # which will be called as the record is generated.  All the given
+    # hook_functions will be exported as methods of the class which will be
+    # called with the class instance as its first argument.
     @classmethod
     def AddMetadataHook(cls, hook_cls, **hook_functions):
-        '''Called to add hooks for meta-data.  The hook class should provide
-        a function
-            hook_cls.PrintMetadata(record)
-        which will be called as the record is generated.  All the given
-        hook_functions will be exported as methods of the class which will be
-        called with the class instance as its first argument.'''
         cls.__MetadataHooks.append(hook_cls)
         for name, function in hook_functions.items():
             setattr(cls, name, _unbind(function))
@@ -76,13 +75,12 @@ class Record(object):
             self.__dict__[name] = value
         
     
-    # Builds standard record name using the currently configured RecordName
-    # hook.
+    # Record constructor.  Needs to be told the type of record that this will
+    # be, a field validation object (which will be used to check field names
+    # and field value assignments), the name of the record being created, and
+    # initialisations for any other fields.  Builds standard record name using
+    # the currently configured RecordName hook.
     def __init__(self, record, **fields):
-        '''Record constructor.  Needs to be told the type of record that
-        this will be, a field validation object (which will be used to
-        check field names and field value assignments), the name of the
-        record being created, and initialisations for any other fields.'''
 
         # Make sure the Device class providing this record is instantiated
         self._device._AutoInstantiate()
@@ -111,10 +109,9 @@ class Record(object):
 
 
 
-    # Call to generate database description of this record.
+    # Call to generate database description of this record.  Outputs record
+    # definition in .db file format.  Hooks for meta-data can go here.
     def Print(self):
-        '''Outputs record definition in .db file format.  Hooks for
-        meta-data can go here.'''
         print
         for hook in self.__MetadataHooks:
             hook(self)
@@ -193,10 +190,10 @@ class Record(object):
         self._validate.ValidFieldName(fieldname)
         return _Link(self, fieldname)
 
+    ## Can be called to validate the given field name, returns True iff this
+    # record type supports the given field name.
     @classmethod
     def ValidFieldName(cls, fieldname):
-        '''Can be called to validate the given field name, returns True iff
-        this record type supports the given field name.'''
         try:
             # The validator is specified to raise an AttributeError exception
             # if the field name cannot be validated.  We translate this into
@@ -276,16 +273,15 @@ class _Link:
     def __call__(self, *specifiers):
         return _Link(self.record, self.field, *self.specifiers + specifiers)
 
+    # Returns the value currently assigned to this field.
     def Value(self):
-        '''Returns the value currently assigned to this field.'''
         return self.record._Record__fields[self.field]
 
 
 
+# A Parameter is used to wrap a template parameter before being assigned to a
+# record field.
 class Parameter:
-    '''A Parameter is used to wrap a template parameter before being assigned
-    to a record field.'''
-    
     def __init__(self, name):
         self.__name = name
 
@@ -299,26 +295,23 @@ class Parameter:
 
 # Some helper routines for building links
 
-# PP: Process Passive.  Any record updated through a PP link is processed if
-# it is set for passive scan.
+## "Process Passive": any record update through a PP output link will be
+# processed if its scan is Passive.
 def PP(record):
-    '''"Process Passive": any record update through a PP output link will be
-    processed if its scan is Passive.'''
     return record('PP')
 
-
+## "Channel Process": a CP input link will cause the linking record to process
+# any time the linked record is updated.
 def CP(record):
-    '''"Channel Process": a CP input link will cause the linking record to
-    process any time the linked record is updated.'''
     return record('CP')
 
+## "Maximise Severity": any alarm state on the linked record is propogated to
+# the linking record.
 def MS(record):
-    '''"Maximise Severity": any alarm state on the linked record is propogated
-    to the linking record.'''
     return record('MS')
 
+## "No Process": the linked record is not processed.
 def NP(record):
-    '''"No Process": the linked record is not processed.'''
     return record('NPP')
 
 # ... put the rest in some time

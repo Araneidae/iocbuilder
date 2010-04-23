@@ -1,19 +1,19 @@
-# Support for default record name configurations.
+'''Support for default record name configurations.'''
 
 import string
 
 __all__ = ['BasicRecordNames', 'TemplateRecordNames', 'DiamondRecordNames']
 
 
+# Base class for record name configuration.
 class RecordNamesBase:
-    '''Base class for record name configuration.'''
     def RecordName(self, name):
         return name
 
 
+## Default record name support: each record is created with precisely the name
+# it is given.
 class BasicRecordNames(RecordNamesBase):
-    '''Default record name support: each record is created with precisely
-    the name it is given.'''
 
     __VersionInfo = { '3.13' : 29, '3.14' : 61 }
     
@@ -29,9 +29,8 @@ class BasicRecordNames(RecordNamesBase):
         return name
 
 
+## Simple support for building templates.
 class TemplateRecordNames(RecordNamesBase):
-    '''Simple support for building templates.  To be expanded.'''
-    
     __all__ = ['TemplateName']
  
     def __init__(self, device='DEVICE'):
@@ -46,20 +45,19 @@ class TemplateRecordNames(RecordNamesBase):
         self.__Name = name
     
 
+## Support for record names following the Diamond naming convention.
+# Record names are of the form
+#     DD[DDD]-TT-CCCCC-NN:RRRRRRRRRR
+# where DDDDD names a domain within the machine, TT names a technical
+# area, CCCCC names a device (or component), NN is a two digit sequence
+# number, and RRRRRRRRRR is the final part of the record name.
+# 
+# When this naming convention is enabled the domain, technical area,
+# device and sequence number (id) are specified before records are
+# created using the methods SetDomain, SetTechnicalArea and SetDevice.
+# When each record is created only the final part of its name then needs
+# to be specified.
 class DiamondRecordNames(RecordNamesBase):
-    '''Support for record names following the Diamond naming convention.
-    Record names are of the form
-        DD[DDD]-TT-CCCCC-NN:RRRRRRRRRR
-    where DDDDD names a domain within the machine, TT names a technical
-    area, CCCCC names a device (or component), NN is a two digit sequence
-    number, and RRRRRRRRRR is the final part of the record name.
-
-    When this naming convention is enabled the domain, technical area,
-    device and sequence number (id) are specified before records are
-    created using the methods SetDomain, SetTechnicalArea and SetDevice.
-    When each record is created only the final part of its name then needs
-    to be specified.'''
-    
     __all__ = [
         'SetDomain', 'SetTechnicalArea', 'SetDevice', 'GetDevice',
         'UnsetDevice', 'RecordName' ]
@@ -69,19 +67,18 @@ class DiamondRecordNames(RecordNamesBase):
 
     __VersionInfo = { '3.13' : (10, 2), '3.14' : (42, 20) }
 
-    def __init__(self, version='3.13'):
-        '''The version parameter identifies the epics version.  This determines
-        the maximum name length and other naming conventions.'''
+    # The version parameter identifies the epics version.  This determines
+    # the maximum name length and other naming conventions.
+    def __init__(self, version='3.14'):
         self.__MaxNameLength, self.__MaxNameComponents = \
             self.__VersionInfo[version]
         self.__TechnicalArea = None
         self.__Domain = None
         self.__Device = None
 
+    ## The domain, and optionally the technical area, are set by calling this
+    # routine.  Both of these must be defined before records can be created.
     def SetDomain(self, domain, area=None):
-        '''The domain, and optionally the technical area, are set by calling
-        this routine.  Both of these must be defined before records can be
-        created.'''
         assert 0 < len(domain) <= 5, 'Invalid domain name %s' % domain
         # Set the technical area and domain
         self.__Domain = domain
@@ -89,14 +86,14 @@ class DiamondRecordNames(RecordNamesBase):
             self.SetTechnicalArea(area)
 
 
+    ## Sets the technical area for record creation.
     def SetTechnicalArea(self, area):
-        '''Sets the technical area for record creation.'''
         assert len(area) == 2, 'Invalid area name %s' % area
         self.__TechnicalArea = area
 
 
+    ## Sets the component and its id before records are created.
     def SetDevice(self, component, id, domain=None, ta=None):
-        '''Sets the component and its id before records are created.'''
         if domain is not None:
             self.__Domain = domain
         if ta is not None:
@@ -109,18 +106,18 @@ class DiamondRecordNames(RecordNamesBase):
             self.__Domain, self.__TechnicalArea, component, id)
 
 
+    ## Returns the currently set device name.
     def GetDevice(self):
-        '''Returns the currently set device name.'''
         if self.__Device:
             return self.__Device
         else:
             raise AttributeError('Device not currently defined')
 
 
+    ## This should be called after creating a block of records to ensure that
+    # the device name isn't incorrectly reused.'  SetDevice() must be called
+    # again before further records are created.
     def UnsetDevice(self):
-        '''This should be called after creating a block of records to ensure
-        that the device name isn't incorrectly reused.'  SetDevice() must be
-        called again before further records are created.'''
         self.__Device = None
 
 

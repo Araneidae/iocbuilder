@@ -27,10 +27,10 @@ _FunctionList = (
 
 
 
+# This function is called late to complete the process of importing all the
+# exports from this module.  This is done late so that paths.EPICS_BASE can be
+# configured late.
 def ImportFunctions():
-    '''This function is called late to complete the process of importing all
-    the exports from this module.  This is done late so that paths.EPICS_BASE
-    can be configured late.'''
     libdb = CDLL(os.path.join(
         paths.EPICS_BASE, 'lib', paths.EPICS_HOST_ARCH, 'libdbStaticHost.so'))
 

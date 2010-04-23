@@ -44,46 +44,43 @@ class _FIRST:
             return -1
 
 
+## This class should be subclassed to implement devices.  Each instance of
+# this class will automatically announce itself as a device to be
+# initialised during IOC startup.
+# 
+# Each subclass may define the following: each of these methods or
+# attributes has appropriate default behaviour, so can be left undefined if
+# not needed.
+# 
+# \param Dependencies
+#         A list of modules on which this device depends; may be left
+#         undefined if there are no dependencies.  
+# 
+# \param LibFileList
+#         The list of library files that need to be loaded for the proper
+#         operation of this device.
+# 
+# \param BinFileList
+#         Any library binary files that need to be statically loaded.  These
+#         will be loaded after all the files listed in LibFileList.
+# 
+# \param DbdFileList
+#         The list of DBD files to be loaded for the operation of this
+#         device.
+# 
+# \param InitialiseOnce()
+#         If defined, this method is called once on the first instance of
+#         this device to perform any device specific pre-initialisation
+#         required.
+# 
+# \param Initialise()
+#         This method initialises all the hardware associated with each
+#         instance of this device
+# 
+# \param PostIocInitialise()
+#         This method performs any initialisation that is required after
+#         iocInit has been called.
 class Device(ModuleBase):
-    '''This class should be subclassed to implement devices.  Each instance of
-    this class will automatically announce itself as a device to be
-    initialised during IOC startup.
-
-    Each subclass may define the following: each of these methods or
-    attributes has appropriate default behaviour, so can be left undefined if
-    not needed.
-
-        Dependencies
-            A list of modules on which this device depends; may be left
-            undefined if there are no dependencies.  
-
-        LibFileList
-            The list of library files that need to be loaded for the proper
-            operation of this device.
-
-        BinFileList
-            Any library binary files that need to be statically loaded.  These
-            will be loaded after all the files listed in LibFileList.
-
-        DbdFileList
-            The list of DBD files to be loaded for the operation of this
-            device.
-
-        InitialiseOnce()
-            If defined, this method is called once on the first instance of
-            this device to perform any device specific pre-initialisation
-            required.
-
-        Initialise()
-            This method initialises all the hardware associated with each
-            instance of this device
-
-        PostIocInitialise()
-            This method performs any initialisation that is required after
-            iocInit has been called.
-
-    '''
-
     def __init_meta__(cls, subclass):
         # Load the DBD files as soon as the class is declared.  This allows
         # the record definitions to be available even before the class is
@@ -95,9 +92,9 @@ class Device(ModuleBase):
     FIRST = _FIRST()
 
     def __init__(self):
-        '''Constructing a Device subclass instance adds the class to the list
-        of libraries to be loaded and the instance to the list of devices to
-        be initialised.'''
+        # Constructing a Device subclass instance adds the class to the list
+        # of libraries to be loaded and the instance to the list of devices to
+        # be initialised.
         self.__super.__init__()
         
         # Add this instance to the list of devices to be configured
@@ -108,20 +105,24 @@ class Device(ModuleBase):
         self.__CommandsPostInit = []
 
 
-    # List of libraries to be loaded as part of the initialisation or
+    ## List of libraries to be loaded as part of the initialisation or
     # preconditions of this device.  This should be overridden by subclasses.
     LibFileList = []
-    # List of sys libraries
+    ## List of sys libraries
     SysLibFileList = []
-    # List of DBD files to be loaded for this device.  This should be
+    ## List of DBD files to be loaded for this device.  This should be
     # overridden by subclasses.
     DbdFileList = []
-    # List of binary files to be loaded dynamically.
+    ## List of binary files to be loaded dynamically.
     BinFileList = []
 
-    # Default empty definitions for initialisation.
+    ## This function is called for each instance of this device.
     Initialise = None
+
+    ## Define this method to be called once before all other initialisation
+    # calls if this device is instantiated.
     InitialiseOnce = None
+    ## Define this method to be called after \c iocInit in the startup script.
     PostIocInitialise = None
 
     # Initialisation phase: controls when initialisation will occur.
@@ -223,38 +224,35 @@ class Device(ModuleBase):
                 os.path.join(cls.LibPath(), 'dbd'), '%s.dbd' % dbd)
 
 
-    # Each device can allocate any interrupt vectors it needs by asking the
-    # current hardware instance.
+    ## This routine allocates a unique interrupt vector on each call.  This
+    # should be used for device initialisation code.  If called with count > 0
+    # then a contiguous block of that many interrupt vectors is allocated.
     @classmethod
     def AllocateIntVector(cls, count=1):
-        '''This routine allocates a unique interrupt vector on each call.
-        This should be used for device initialisation code.  If called with
-        count > 0 then a contiguous block of that many interrupt vectors is
-        allocated.'''
         return Hardware.AllocateIntVector(count)
 
 
 
+## This class encapsulates the construction of records from hardware.
+# Typically the hardware specific part consists simply of the DTYP
+# specification and an address field, which may be computed using extra
+# arguments and fields passed to the constructor.
 class RecordFactory:
-    '''This class encapsulates the construction of records from hardware.
-    Typically the hardware specific part consists simply of the DTYP
-    specification and an address field, which may be computed using extra
-    arguments and fields passed to the constructor.'''
 
+    ## Each record factory is passed a record constructor (factory), a link to
+    # the associated Device instance (device), the name of the EPICS device
+    # link (typically 'INP' or 'OUT'), an address string or address
+    # constructor, and a option addressing fixup routine (post).
     def __init__(self, factory, device, link, address, post=None):
-        '''Each record factory is passed a record constructor (factory),
-        a link to the associated Device instance (device), the name of the
-        EPICS device link (typically 'INP' or 'OUT'), an address string or
-        address constructor, and a option addressing fixup routine (post).'''
         self.factory = factory
         self.device = device
         self.link = link
         self.address = address
         self.post = post
 
+    # Calling a record factory instance builds a record with the given name
+    # and fields bound to the originating hardware.
     def __call__(self, name, *address_extra, **fields):
-        '''Calling a record factory instance builds a record with the given
-        name and fields bound to the originating hardware.'''
         
         # If the address is callable then we compute the address using the
         # address hook, simultaneously fixing up any fields that only belong

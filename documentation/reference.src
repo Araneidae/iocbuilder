@@ -3,8 +3,7 @@
 
 \section initialisation IOC builder Initialisation
 
-The first few lines in a Python IOC builder script might typically look as
-follows:
+The first few lines in a Python IOC builder script might look like this:
 
 \code
 from pkg_resources import require
@@ -19,16 +18,16 @@ LoadVersionFile('versions.py')
 
 One of the following initialisation functions should be called:
 
-- \ref ConfigureIOC() <br>
+- \ref iocbuilder.configure.ConfigureIOC "ConfigureIOC()" <br>
 This is the normal IOC initialisation function.  The default architecture is
 vxWorks.
-- \ref ConfigureTemplate() <br>
+- \ref iocbuilder.configure.ConfigureTemplate "ConfigureTemplate()" <br>
 This initialisation is appropriate the builder is being used to generate a
 template.
-- \ref ParseEtcArgs() <br>
+- \ref iocbuilder.configure.ParseEtcArgs "ParseEtcArgs()" <br>
 This initialisation picks up version information from \c configure/RELEASE and
 related files.
-- \ref iocbuilder.configure.Configure.__call__() "Configure(...)"  <br> 
+- \ref iocbuilder.configure.Configure "Configure(...)"  <br> 
 All the other calls above delegate to this more general purpose call.
 
 After the builder has been configured the required support modules should be
@@ -36,13 +35,9 @@ loaded using the following calls:
 
 - \ref iocbuilder.libversion.ModuleVersion "ModuleVersion()" <br>
 Calls to this function can be made inline for each support module.
-- \ref LoadVersionFile() <br>
+- \ref iocbuilder.configure.LoadVersionFile "LoadVersionFile()" <br>
 This is useful for packaging module definitions separately.
 
- \ copydoc iocbuilder::configure::Configure::__call__() or 
 
-
-Configure: \ref ConfigureIOC() or maybe configure.ConfigureIOC()
-- \ copydoc ConfigureIOC()
 
 */

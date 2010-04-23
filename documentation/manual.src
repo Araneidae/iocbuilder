@@ -116,7 +116,7 @@ defaults to \c vxWorks-ppc604_long.
 
 See the ParseEtcArgs() documentation for more details of what the function does.
 If it doesn't do what you want, you can dispense with it and call 
-\ref iocbuilder.configure.Configure.__call__ "Configure" directly.
+\ref iocbuilder.configure.Configure "Configure" directly.
 
 \b Note that if we run the script with a -h flag we get details of what 
 arguments to pass:

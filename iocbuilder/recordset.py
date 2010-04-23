@@ -1,4 +1,4 @@
-# IOC initialisation support code
+'''Collections of records.'''
 
 import os.path
 import subprocess
@@ -19,25 +19,25 @@ class RecordSet(support.Singleton):
     def Reset(self):
         self.__RecordSet = {}
 
+    # Add a record to the list of records to be published.
     def PublishRecord(self, name, record):
-        '''Add a record to the list of records to be published.'''
         assert name not in self.__RecordSet, 'Record %s already defined' % name
         self.__RecordSet[name] = record
 
+    # Returns the record with the given name.  We perform record name
+    # expansion using the currently configured record name hook.
     def LookupRecord(self, record):
-        '''Returns the record with the given name.  We perform record name
-        expansion using the currently configured record name hook.'''
         return self.__RecordSet[recordnames.RecordNames.RecordName(record)]
 
+    # Output complete set of records to stdout.
     def Print(self):
-        '''Output complete set of records to stdout.'''
         # Print the records in alphabetical order: gives the reader a fighting
         # chance to find their way around the generated database!
         for record in sorted(self.__RecordSet.keys()):
             self.__RecordSet[record].Print()
 
+    # Returns the number of published records.
     def CountRecords(self):
-        '''Returns the number of published records.'''
         return len(self.__RecordSet)            
 
 
@@ -50,23 +50,23 @@ class SubstitutionSet(support.autosuper_object):
         # substitutions in the order they were originally given.
         self.__Substitutions = support.OrderedDict()
 
+    # Erase all recorded substitution instances.
     def Reset(self):
-        '''Erase all recorded substitution instances.'''
         self.__Substitutions.clear()
 
     def AddSubstitution(self, substitution):
         self.__Substitutions.setdefault(
             substitution.TemplateName(True), []).append(substitution)
 
+    # Expand all the substitutions inline.  The path to locate the msi
+    # application used for expanding must be passed in.
     def ExpandSubstitutions(self, msiPath):
-        '''Expand all the substitutions inline.  The path to locate the msi
-        application used for expanding must be passed in.'''
         for subList in self.__Substitutions.values():
             for substitution in subList:
                 substitution.ExpandSubstitution(msiPath)
 
+    # Prints out a substitutions file.
     def Print(self, macro_name = True):
-        '''Prints out a substitutions file.'''
         # Print out the list in canonical order to help with comparison
         # across minor changes.
         for template, subList in self.__Substitutions.items():
@@ -82,34 +82,39 @@ class SubstitutionSet(support.autosuper_object):
         return len(self.__Substitutions)
 
 
+## Each sub-class of this class defines a Substitution.
+#
+# A Substitution is defined by specifying at least the following class members
+# in the subclass:
+#
+# \param Arguments
+#   List of names of Substitution arguments that must be filled in when
+#   specifying a Substitution.
+# \param TemplateFile
+#   Name of template file to be loaded.  By default this will be
+#   looked for in the db subdirectory of the library.
 class Substitution(libversion.ModuleBase):
-    '''Each sub-class of this class defines a Substitution.  A Substitution is
-    defined by specifying the following class members in the subclass:
-        Arguments = (...)
-            List of names of Substitution arguments that must be filled in when
-            specifying a Substitution.
-        TemplateFile = '...'
-            Name of template file to be loaded.  By default this will be
-            looked for in the db subdirectory of the library.
-    '''
-
     def __init_meta__(cls, subclass):
         if cls.TemplateFile:
             cls.TemplateFiles.append(cls.TemplateFile)
         
 
     BaseClass = True
-    TemplateFile = None
+    # List of all template files
     TemplateFiles = []
+
+    ## This should be assigned to in a subclass to specify the template file.
+    TemplateFile = None
+    ## These are the arguments that any instance of the class will expect
+    Arguments = None
+    
     TemplateDir = None
     SubstitutionSet = SubstitutionSet()
     TemplateDir = 'db'   
-    ## These are the arguments that any instance of the class will expect
-    Arguments = None
 
+    # Computes the template file name.  If macro_name is true then a form
+    # suitable for msi macro expansion is returned.
     def TemplateName(self, macro_name):
-        '''Computes the template file name.  If macro_name is true then
-        a form suitable for msi macro expansion is returned.'''
         assert self.TemplateFile is not None, 'No template file specified'
         if self.TemplateDir is None:
             return self.TemplateFile
@@ -118,19 +123,19 @@ class Substitution(libversion.ModuleBase):
                 self.LibPath(macro_name = macro_name),
                 self.TemplateDir, self.TemplateFile)
 
+    # Outputs the substitution pattern line associated with this Substitution.
+    # This is output in a format suitable for inclusion within a substitutions
+    # file.
     @classmethod
     def _PrintPattern(cls):
-        '''Outputs the substitution pattern line associated with this
-        Substitution.  This is output in a format suitable for inclusion within
-        a substitutions file.'''
         if cls.Arguments:
             print 'pattern {', ', '.join(cls.Arguments), '}'
         
 
+    ## Creates a substitution instance with the given arguments.  The
+    # arguments need to match the arguments expected by the template to
+    # be expanded.
     def __init__(self, **args):
-        '''Creates a substitution instance with the given arguments.  The
-        arguments need to match the arguments expected by the template to
-        be expanded.'''
         self.__super.__init__()
         
         # If we have Defaults, then update the argdict with them
@@ -158,9 +163,9 @@ class Substitution(libversion.ModuleBase):
             self.SubstitutionSet.AddSubstitution(self)
 
 
+    # Outputs a single substitution line, in order of arguments.  This should
+    # be preceded by a call to _PrintPattern().
     def _PrintSubstitution(self):
-        '''Outputs a single substitution line, in order of arguments.  This
-        should be preceded by a call to _PrintPattern().'''
         if self.Arguments:
             print '    {', ', '.join(
                 [QuoteArgument(self.args[arg]) for arg in self.Arguments]), \
@@ -169,9 +174,8 @@ class Substitution(libversion.ModuleBase):
             # Work around msi bug if no arguments given!
             print '    { _ }'
 
+    # Directly expand the substitution inline.
     def ExpandSubstitution(self, msiPath):
-        '''Directly expand the substitution inline.'''
-        
         argList = ['%s=%s' % (arg, QuoteArgument(self.args[arg]))
                    for arg in self.Arguments]
         template = self.TemplateName(False)
@@ -195,9 +199,9 @@ class Substitution(libversion.ModuleBase):
 RecordsSubstitutionSet = Substitution.SubstitutionSet
 
 
+# Converts a string into a form suitable for passing to the database expansion
+# and substitution framework.
 def QuoteArgument(argument):
-    '''Converts a string into a form suitable for passing to the database
-    expansion and substitution framework.'''
     # According to the msi documentation at
     #    http://www.aps.anl.gov/asd/controls/epics/EpicsDocumentation/
     #        ExtensionsManuals/msi/msi.html

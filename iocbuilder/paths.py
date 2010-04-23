@@ -1,4 +1,5 @@
-# Configurable paths.
+'''Configurable paths.'''
+
 import os
 
 
@@ -22,10 +23,9 @@ def GetMsiPath():
         '/'.join(EPICS_BASE.split('/')[:-1]), EPICS_HOST_ARCH)
 
 
+# Can be called to override the computed EPICS_BASE and other settings.
+# If called late then must be called before any of the paths are used!
 def SetEpicsBase(epics_base):
-    '''Can be called to override the computed EPICS_BASE and other settings.
-    If called late then must be called before any of the paths are used!'''
-
     global EPICS_BASE, msiPath, module_path
 
     EPICS_BASE = ValidateEpicsBase(epics_base)

@@ -1,4 +1,4 @@
-# Meta data argument info support.
+'''Meta data argument info support.'''
 
 import inspect, sys
 from libversion import ModuleBase
@@ -10,31 +10,30 @@ __all__ = ['makeArgInfo', 'filter_dict']
 # \param l List to filter dictionary keys by
 def filter_dict(d, l):
     return dict((n, d[n]) for n in set(l) & set(d))
+
     
+## This function produces an ArgInfo list for the xml frontend to 
+# iocbuilder. It uses the arguments and defaults from the supplied init
+# method and annotates them with types and descriptions. Example:
+#
+# \code
+# class mybase(ModuleBase):
+#     def __init__(self, arg1, arg2=1):
+#         self.__super.__init__(self)
+#         ... do other stuff...
+# 
+#     ArgInfo = makeArgInfo(__init__,
+#         arg1 = Simple('Description for arg1', str),
+#         arg2 = Simple('Description for arg2', int))
+# \endcode
 class ArgInfo(object):
-    '''This function produces an ArgInfo list for the xml frontend to 
-    iocbuilder. It uses the arguments and defaults from the supplied init
-    method and annotates them with types and descriptions. Example:
-
-    class mybase(ModuleBase):
-        def __init__(self, arg1, arg2=1):
-            self.__super.__init__(self)
-            ... do other stuff...
-
-        ArgInfo = makeArgInfo(__init__,
-            arg1 = Simple('Description for arg1', str),
-            arg2 = Simple('Description for arg2', int))
-    
-
-    Here ArgInfo contains the following fields:
-
-        .descriptions       Dictionary mapping argument names to meta-data
-        .required_names     List of mandatory arguments (without defaults)
-        .default_names      List of arguments with default values
-        .default_values     List of default values of arguments
-        .optional_names     List of optional arguments.
-    '''
-
+    # Here ArgInfo contains the following fields:
+    # 
+    #     .descriptions       Dictionary mapping argument names to meta-data
+    #     .required_names     List of mandatory arguments (without defaults)
+    #     .default_names      List of arguments with default values
+    #     .default_values     List of default values of arguments
+    #     .optional_names     List of optional arguments.
     def __init__(self, __source=None, __optional=[], __method=True, **descs):
         self.descriptions = descs
         for k,v in descs.items():
@@ -107,17 +106,17 @@ class ArgInfo(object):
         assert set_descs <= all_names, \
             'Descriptions for unknown arguments %s' % (set_descs - all_names)
         
+    ## Returns list of all possible argument names.  If excludes is given
+    # then it lists names that will not be returned.
     def Names(self, without=[]):
-        '''Returns list of all possible argument names.  If excludes is given
-        then it lists names that will not be returned.'''
         return [name
             for name in \
                 self.required_names + self.default_names + self.optional_names
             if name not in without]
 
+    ## Aggregates information about two ArgInfo objects into a single
+    # object.  Any overlap of names is treated as an error.
     def __add__(self, other):
-        '''Aggregates information about two ArgInfo objects into a single
-        object.  Any overlap of names is treated as an error.'''
         result = ArgInfo()
         result.descriptions = dict(self.descriptions, **other.descriptions)
         result.required_names = self.required_names + other.required_names
@@ -129,11 +128,11 @@ class ArgInfo(object):
         result.__validate()
         return result
         
+    ## Return a new ArgInfo object. If including is specified, then only
+    # include the argument descriptions for each arg in including. If without
+    # is specified, then don't include argument descriptions for each arg in
+    # without.
     def filtered(self, including = None, without = None):
-        '''Return a new ArgInfo object. If including is specified, then
-        only include the argument descriptions for each arg in including. If
-        without is specified, then don't include argument descriptions for
-        each arg in without'''        
         assert including is None or without is None, \
             'Can\'t filter and filter-out argInfo in the same operation'
         result = ArgInfo()
@@ -229,8 +228,8 @@ def Ident(desc, typ):
     desc = '%s %s' % (desc, typ)        
     return ArgType(desc, typ, ident = True)
 
+## Deprecated. Do not use
 def List(desc, num, func, *args, **kwargs):
-    '''Deprecated. Do not use'''
     print >> sys.stderr, '***Warning, List ArgInfo item is deprecated'
     return [ func('%s %d'%(desc,i), *args, **kwargs) for i in range(num) ]
 

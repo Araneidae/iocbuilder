@@ -1,3 +1,5 @@
+'''AutoSubstitution for scanning template files.'''
+
 from libversion import ModuleBase, modules
 import os, re, sys
 import recordset
@@ -5,8 +7,8 @@ from arginfo import *
 
 __all__ = ['AutoSubstitution']    
 
-# This iterator will find any $(...) macro in line. The number of ( brackets and
-# ) brackets in the expression will match
+# This iterator will find any $(...) macro in line. The number of ( brackets
+# ) and brackets in the expression will match
 def find_macros(line):
     bracket = 0
     i = 0
@@ -145,9 +147,9 @@ def populate_class(cls, template_file):
         cls.ArgInfo.optional_names = optional_names    
 
 
+## Subclass of Substitution that scans its template file to find the macros it
+# uses, and creates an ArgInfo object from them.
 class AutoSubstitution(recordset.Substitution):
-    '''Subclass of Substitution that scans its template file to find the macros it
-    uses, and creates and ArgInfo object from them'''
     BaseClass = True
     ## Set this to False to supress warnings on undescribed macros
     WarnMacros = True
@@ -186,19 +188,19 @@ class AutoSubstitution(recordset.Substitution):
                     TemplateFile = db
                     TrueName = clsname
 
-## This re matches an line like #% autosave 1 or # % gda_tag, template, ...
+# This re matches an line like #% autosave 1 or # % gda_tag, template, ...
 epics_parser_re = re.compile(r'^#[ \t]*%')
 
-## This re matches the $( msi syntax until the first ) or (
+# This re matches the $( msi syntax until the first ) or (
 macro_start = re.compile(r'\$\(([^\(\)]*)')
 
-## This re matches a ( until the next ) or (
+# This re matches a ( until the next ) or (
 bracket_open = re.compile(r'(\([^\(\)]*)')
 
-## This re matches a ) until the next ) or (
+# This re matches a ) until the next ) or (
 bracket_close = re.compile(r'(\)[^\(\)]*)')
 
-## This re matches a macro description line like #% macro, P, Pv Prefix.
+# This re matches a macro description line like #% macro, P, Pv Prefix.
 # It will also match multiline descriptions like:
 #% macro, P, Pv Prefix with
 # a very long macro
@@ -206,8 +208,8 @@ bracket_close = re.compile(r'(\)[^\(\)]*)')
 # a hash and multiple spaces or tabs.
 macro_desc_re = re.compile(
     r'^#[ \t]*%[ \t]*macro[ \t]*,[ \t]*' # This is the #% macro, prefix
-    r'([^, \t]+)[ \t]*,[ \t]*' # This captures the macro name and discards comma
+    r'([^, \t]+)[ \t]*,[ \t]*' # Captures the macro name and discards comma
     r'([^\n]+' # This start the description capture and the first line
-    r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # This is any subsequent non-'blank' line
+    r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # subsequent non-'blank' line
     re.MULTILINE)
                                         

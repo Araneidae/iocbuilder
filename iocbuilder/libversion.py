@@ -1,4 +1,5 @@
-#   Generic hardware module support
+'''Core definitions for modules.  Defines ModuleVersion version management
+and ModuleBase base class.'''
 
 import os
 import sys
@@ -16,17 +17,17 @@ __all__ = [
 
 
 
+# Define the directory path for locating modules.  This works with the Diamond
+# directory conventions.
 def SetModulePath(prod):
-    '''Define the directory path for locating modules.  This works with the
-    Diamond directory conventions.'''
     global prodSupport
     prodSupport = prod
 
 
+# Checks for a Python module or package at path/module, returns the path to
+# the python path to execute and a flag indicating whether the file is a
+# package.
 def _CheckPythonModule(path, module):
-    # Checks for a Python module or package at path/module, returns the path
-    # to the python path to execute and a flag indicating whether the file is
-    # a package.
     Places = [
         # Follow Python by first trying for a package before a plain module.
         (os.path.join(path, module, '__init__.py'), True),
@@ -43,9 +44,8 @@ _ValidNameChars = re.compile(
     string.ascii_uppercase + string.ascii_lowercase +
     string.digits + '_' + ']')
 
+# Converts an arbitrary string into a valid Python identifier.
 def PythonIdentifier(name):
-    '''Converts an arbitrary string into a valid Python identifier.'''
-
     name = _ValidNameChars.sub('_', name)
     if len(name) == 0 or name[0] in set(string.digits):
         name = '_' + name
@@ -54,14 +54,47 @@ def PythonIdentifier(name):
     
 
 
-# Module version information specifying:
-#   name     Directory name of module
-#   version  Version of module
-#   home     Home directory to locate module
+## Specifies module version and imports definitions.
+#
+# Declares the version of an EPICS support module and loads its definitions
+# from the appropriate \c builder.py file into the \c iocbuilder namespace.
+# 
+# The arguments are:
+# 
+# \param libname
+#     Name of the support module.  This will be upper-cased to form the
+#     \c configure/RELEASE macro name.
+# \param version
+#     Version of support module to be loaded, if specified: names a
+#     subdirectory of the support module directory.
+# \param home
+#     Directory where the support module is located.  If not specified
+#     then \c EPICS_BASE 
+# \param use_name
+#     If set (by default) the support module is located as a
+#     subdirectory of home; if false, home (possibly plus version) is
+#     the path to the support module.
+# \param suppress_import
+#     If set no builder definitions are loaded for this module.  Not
+#     normally very useful!
+# \param load_path
+#     Can be used to specify the path to the builder definitions for this
+#     module.  Otherwise the builder definitions are searched for in the
+#     following locations:
+# \code
+#         <module>/etc/builder
+#         <module>/builder
+#         <iocbuilder>/defaults/<module>
+# \endcode
+# \param override
+#     Can be set to allow definitions for a particular module to be
+#     loaded more than once.  May not always work as expected, in
+#     particular the old module definitions are not deleted first!
+# \param auto_instantiate
+#     If set then all ModuleBase subclasses marked as AutoInstantiate
+#     will be instantiated as soon as this module's definitions have
+#     been loaded.
 class ModuleVersion:
-    '''Create instances of this class to declare the version of each module
-    to be used.'''
-
     # Set of module macro names already allocated, used to ensure no clashes.
     __MacroNames = set()
 
@@ -78,45 +111,6 @@ class ModuleVersion:
             version=None, home=None, use_name=True,
             suppress_import=False, load_path=None, override=False,
             auto_instantiate=False):
-        '''Declares the version of an EPICS support module and loads its
-        definitions from the appropriate builder.py file into the iocbuilder
-        namespace.
-
-        The arguments are:
-
-        libname
-            Name of the support module.  This will be upper-cased to form the
-            configure/RELEASE macro name.
-        version
-            Version of support module to be loaded, if specified: names a
-            subdirectory of the support module directory.
-        home
-            Directory where the support module is located.  If not specified
-            then /dls_sw/prod/$DLS_EPICS_RELEASE/support is used.
-        use_name
-            If set (by default) the support module is located as a
-            subdirectory of home; if false, home (possibly plus version) is
-            the path to the support module.
-        suppress_import
-            If set no builder definitions are loaded for this module.  Not
-            normally very useful!
-        load_path
-            Can be used to specify the path to the builder definitions for this
-            module.  Otherwise the builder definitions are searched for in the
-            following locations:
-
-                <module>/etc/builder
-                <module>/builder
-                <iocbuilder>/defaults/<module>
-        override
-            Can be set to allow definitions for a particular module to be
-            loaded more than once.  May not always work as expected, in
-            particular the old module definitions are not deleted first!
-        auto_instantiate
-            If set then all ModuleBase subclasses marked as AutoInstantiate
-            will be instantiated as soon as this module's definitions have
-            been loaded.
-        '''
         if home is None:
             # By default pick up each module from the prod support directory.
             # It might be quite nice to extend this with a path search.
@@ -158,10 +152,13 @@ class ModuleVersion:
                     subclass._AutoInstantiate()
         
 
+    ## Returns the path to the module directory defined by this entry.
+    #
+    # \param macro_name
+    #   If set to True then the module path is returned as a macro
+    #   expression.  By default a true absolute filename to the module
+    #   location is returned.
     def LibPath(self, macro_name=False):
-        '''Returns the path to the module directory defined by this entry.
-        If macro_name is set then a form suitable for macro expansion is
-        returned.'''
         if macro_name:
             return '$(%s)' % self.__macroname
         
@@ -172,22 +169,27 @@ class ModuleVersion:
             path = os.path.join(path, self.version)
         return path
 
+    ## Returns an absolute path to a file within this module.
+    #
+    # \param filename
+    #   Name of file to be returned.  This call will fail of \c filename
+    #   cannot be found in the module.
     def ModuleFile(self, filename):
-        '''Returns an absolute path to a file within this module.'''
         filename = os.path.join(self.LibPath(), filename)
         assert os.access(filename, os.R_OK), 'File "%s" not found' % filename
         return filename
 
+    ## Returns the EPICS name of this module.
     def Name(self):
-        '''Returns the EPICS module name.'''
         return self.__name
 
+    ## Returns the EPICS macro name used to identify this module.
     def MacroName(self):
         return self.__macroname
 
+    ## Returns the Python identifier naming this module.  This is the EPICS
+    # module name converted to a valid Python identifier.
     def ModuleName(self):
-        '''Returns the Python identifier naming this module.  This is the
-        EPICS module name converted to a valid Python identifier.'''
         return self.__module_name
 
     # The following definitions ensure that when hashed and when compared
@@ -258,22 +260,27 @@ class ModuleVersion:
 
     
 
+## All entities which need to depend on module versions should subclass
+# this class to obtain access to their configuration information.
+# 
+# By default the name of the class will be used both as an index into the
+# ModuleVersion entry and as the subdirectory name in the support directory.
+# When the external name of the module doesn't match the class name then
+# the symbol \c ModuleName should be set equal to the external module name
+# thus:
+# \code
+#     ModuleName = 'true-module-name'
+# \endcode
+# 
+# This class will always define a \c ModuleName symbol.  If the same module
+# is to be used by all subclasses then this can be enabled by defining the
+# symbol
+# \code
+#     InheritModuleName = True
+# \endcode
+#
+# Note that this class is not normally subclassed outside of the IOC builder.
 class ModuleBase(autosuper_object):
-    '''All entities which need to depend on module versions should subclass
-    this class to obtain access to their configuration information.
-
-    By default the name of the class will be used both as an index into the
-    ModuleVersion entry and as the subdirectory name in the support directory.
-    When the external name of the module doesn't match the class name then
-    the symbol ModuleName should be set equal to the external module name
-    thus:
-        ModuleName = 'true-module-name'
-
-    This class will always define a ModuleName symbol.  If the same module
-    is to be used by all subclasses then this can be enabled by defining the
-    symbol
-        InheritModuleName = True
-    '''
 
     # Class initialisation.
     
@@ -346,8 +353,9 @@ class ModuleBase(autosuper_object):
     ## Dependencies are used to trigger relationships between classes.
     # Dependencies are triggered when the class is first instantiated.
     Dependencies = ()
-    # If this flag is set it allows this class to be automatically
-    # instantiated if necessary.
+    ## If this flag is set it allows this class to be automatically
+    # instantiated if necessary.  Of course, the \c __init__ method must be
+    # callable with no parameters if this flag is set.
     AutoInstantiate = False
 
     ## Set of instantiated modules as ModuleVersion instances
@@ -359,10 +367,10 @@ class ModuleBase(autosuper_object):
     ## List of all instances
     _ModuleBaseInstances = []
 
+    # This can be called to ensure that an instance of the invoked class
+    # exists.
     @classmethod
     def _AutoInstantiate(cls):
-        '''This can be called to ensure that an instance of the invoked class
-        exists.'''
         # Note that, as the class initialisation ensures each class has its
         # own instance of this flag, we're always checking our own status,
         # not that of a base class!
@@ -371,12 +379,12 @@ class ModuleBase(autosuper_object):
                 'Class %s cannot be automatically instantiated' % cls.__name__
             cls()
 
+    ## This method is designed as a hook to be called exactly once before
+    # any instances of this class are created.  It will also walk the
+    # Dependencies list, ensuring that all the depencencies are also
+    # instantiated.
     @classmethod
     def UseModule(cls):
-        '''This method is designed as a hook to be called exactly once before
-        any instances of this class are created.  It will also walk the
-        Dependencies list, ensuring that all the depencencies are also
-        instantiated.'''
         for dependency in cls.Dependencies:
             dependency._AutoInstantiate()
         cls._ReferencedClasses.append(cls)
@@ -406,28 +414,28 @@ class ModuleBase(autosuper_object):
         return self
 
         
+    ## Returns the path to the module.  If macro_name is set then a macro
+    # for the path is returned, otherwise the true path is returned.
     @classmethod
     def LibPath(cls, macro_name=False):
-        '''Returns the path to the module.  If macro_name is set then a macro
-        for the path is returned, otherwise the true path is returned.'''
         return cls.ModuleVersion.LibPath(macro_name = macro_name)
 
+    ## Returns an absolute path to a file within this module.
     @classmethod
     def ModuleFile(cls, filename):
-        '''Returns an absolute path to a file within this module.'''
         return cls.ModuleVersion.ModuleFile(filename)
 
+    ## Returns the set of all modules that have been instantiated.  The
+    # objects returned are ModuleVersion instances.
     @classmethod
     def ListModules(cls):
-        '''Returns the set of all modules that have been instantiated.  The
-        objects returned are ModuleVersion instances.'''
         return cls._ReferencedModules
 
+    # For every ModuleBase instance (or every sub-class if class_method
+    # is True) checks for a method with the given name, and if found, calls
+    # it.  Useful for binding events to all ModuleBase instances.
     @classmethod
     def CallModuleMethod(cls, name, class_method=False, **args):
-        '''For every ModuleBase instance (or every sub-class if class_method
-        is True) checks for a method with the given name, and if found, calls
-        it.  Useful for binding events to all ModuleBase instances.'''
         if class_method:
             l = cls._ReferencedClasses
         else:
@@ -438,24 +446,26 @@ class ModuleBase(autosuper_object):
                 f(**args)
 
         
+## This is a decorator helper function designed to be used with functions
+# which require resources from one or more ModuleBase subclasses.  This is
+# designed to be used as shown in the following example
+#
+# \code
+#     class resampleLib(Device):
+#         Dependencies = (genSub,)
+#         LibFileList = ['diagToolsResample']
+#         AutoInstantiate = True
+# 
+#     @autodepends(resampleLib)
+#     def ResampleWaveform(name, ...):
+#         return records.genSub(name,
+#             INAM = 'initResampleWaveform', ...)
+# \endcode
+#
+# Here \c resampleLib wraps a library of calls designed to be used with \c
+# genSub (hence the \c genSub dependency).  The \c autodepends(...) decoration
+# ensures that \c records.genSub is available, as is the \c INAM argument.
 def autodepends(*devices):
-    '''This is a decorator helper function designed to be used with functions
-    which require resources from one or more ModuleBase subclasses.  This is
-    designed to be used as shown in the following exampe
-
-        class resampleLib(Device):
-            Dependencies = (genSub,)
-            LibFileList = ['diagToolsResample']
-            AutoInstantiate = True
-
-        @autodepends(resampleLib)
-        def ResampleWaveform(name, ...):
-            return records.genSub(name,
-                INAM = 'initResampleWaveform', ...)
-
-    Here resampleLib wraps a library of calls designed to be used with genSub
-    (hence the genSub dependency).  The autodepends(...) decoration ensures
-    that records.genSub is available, as is the INAM argument.'''
     def device_wrapper(f):
         def wrapped_function(*args, **kargs):
             for device in devices:
@@ -471,21 +481,27 @@ def autodepends(*devices):
 # interrogated when modules are initialised.
 _ModuleVersionTable = {}
 
-# We maintain all loaded modules in a synthetic module.
+## The module iocbuilder.modules contains every EPICS module that has been
+## loaded.
 modules = CreateModule('iocbuilder.modules')
 modules.LoadedModules = {}
 
 
+# Used to create simulation objects with no behaviour.
 class DummySimulation(object):
-    '''Used to create simulation objects with no behaviour.'''
     def __init__(self, **kwargs):
         self.args = kwargs
 
 
 simulation_mode = False
+## If we are in simulation mode, then place \c sim instead of \c real in
+# iocbuilder.modules and ModuleBase.ModuleBaseClasses.
+#
+# \param real
+#   Class installed by default
+# \param sim
+#   Replacement simulation class.
 def SetSimulation(real, sim):
-    '''If we are in simulation mode, then place sim instead of real in
-    iocbuilder.modules and ModuleBase.ModuleBaseClasses.'''
     if simulation_mode:
         if sim is None:
             class sim(DummySimulation):

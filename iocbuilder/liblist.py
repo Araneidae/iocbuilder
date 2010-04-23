@@ -79,20 +79,20 @@ class Hardware(Singleton):
                 device.CallInitialise()
 
 
+    # Returns a list of all .dbd files.
     def GetDbdList(self):
-        '''Returns a list of all .dbd files.'''
         return [dbd
             for library in self.__LibraryList
             for dbd in library.DbdFileList]
 
+    # Returns a list of all library files.
     def GetLibList(self):
-        '''Returns a list of all library files.'''
         return [lib
             for library in self.__LibraryList
             for lib in library.LibFileList]
 
+    # Returns a list of all system library files.
     def GetSysLibList(self):
-        '''Returns a list of all system library files.'''
         return [lib
             for library in self.__LibraryList
             for lib in library.SysLibFileList]

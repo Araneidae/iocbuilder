@@ -33,9 +33,8 @@ class RecordTypes(Singleton):
         setattr(self, recordType,
             Record.CreateSubclass(device, recordType, validate))
 
+    # Checks whether the given recordType names a known valid record type.
     def __contains__(self, recordType):
-        '''Checks whether the given recordType names a known valid record
-        type.'''
         return recordType in self.__RecordTypes
 
 

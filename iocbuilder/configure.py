@@ -1,4 +1,4 @@
-# Epics framework configuration and IOC reset
+'''IOC builder configuration and initialisation.'''
 
 import os
 
@@ -8,26 +8,27 @@ import recordnames
 
 __all__ = [
     'Configure', 'LoadVersionFile', 'ConfigureIOC', 'ConfigureTemplate',
-    'Architecture', 'TargetOS', 'Call_TargetOS', 'ParseEtcArgs', 'ParseRelease']
+    'Architecture', 'TargetOS', 'Call_TargetOS',
+    'ParseEtcArgs', 'ParseRelease']
 
 
 def Architecture():
     return Configure.architecture
 
     
+# Returns the target OS for the configured architecture, currently either
+# linux or vxWorks.
 def TargetOS():
-    '''Returns the target OS for the configured architecture, currently
-    either linux or vxWorks.'''
     return Architecture().split('-', 1)[0]
 
 def Get_TargetOS(self, name, *default):
     return getattr(self, '%s_%s' % (name, TargetOS()), *default)
     
     
+# Helper function for calling a target OS specific function.  Looks up
+#     self.<name>_<TargetOS()>
+# and calls it with the given arguments if found, otherwise returns None.
 def Call_TargetOS(self, name, *args, **kargs):
-    '''Helper function for calling a target OS specific function.  Looks up
-        self.<name>_<TargetOS()>
-    and calls it with the given arguments if found, otherwise returns None.'''
     try:
         method = Get_TargetOS(self, name)
     except AttributeError:
@@ -36,6 +37,7 @@ def Call_TargetOS(self, name, *args, **kargs):
         return method(*args, **kargs)
 
 
+## Central IOC builder configuration settings.
 class Configure(Singleton):
     # Ensure we don't have to cope with multiple reconfigurations.
     __called = False
@@ -43,11 +45,11 @@ class Configure(Singleton):
     
     ## This is the lowest level IOC builder initialisation function.
     #
-    # Typically it is not called directly, instead one of its proxies, \ref
-    # ConfigureIOC(), \ref ConfigureTemplate() or \ref ParseEtcArgs(), must be
-    # called before any other builder functions are called.  This function
-    # completes the configuration of the IOC builder and initialisation of the
-    # builder's name space.
+    # Typically this function should not be called directly, instead one of
+    # its proxies, \ref ConfigureIOC(), \ref ConfigureTemplate() or \ref
+    # ParseEtcArgs(), must be called before any other builder functions are
+    # called.  This function completes the configuration of the IOC builder
+    # and initialisation of the builder's name space.
     #
     # \param module_path
     #   This configures where ModuleVersion() will look for modules.  By
@@ -140,10 +142,19 @@ class Configure(Singleton):
                 self.__add_symbol(name, getattr(configuration, name))
 
 
+## Loads a list of module version declarations.
+#
+# This function is used to load a set of \ref libversion.ModuleVersion
+# "ModuleVersion()" definitions.  The given file is executed with only
+# ModuleVersion() in scope; no other calls or definitions should occur in the
+# file.
+#
+# \param filename
+#   This is the name of the file to be loaded.
+# \param **context
+#   Further symbols can be passed through to the loaded file, however this is
+#   not recommended for normal use.
 def LoadVersionFile(filename, **context):
-    '''Loads a list of module version declarations.  The given file is
-    executed with execfile() with the ModuleVersion() function already in
-    scope: no other calls or definitions should occur in the file.'''
     from libversion import ModuleVersion
     execfile(filename, dict(context,
         ModuleVersion = ModuleVersion,
@@ -153,29 +164,21 @@ def LoadVersionFile(filename, **context):
 # Some sensible default configurations.
 
 
-## ConfigureIOC is a function.
+## Normal IOC builder initialisation function.
 #
-# This is some more
-# It takes some arguments
+# This function should normally be called before any other builder calls to
+# complete configuration of the IOC builder.  By default the \c vxWorks
+# architecture is selected and the DLS record naming convention is used for
+# record names; these can both be overridden.
 #
-# blah
-#
-#   \param architecture  Architecture of target system, defaults to
-#       'vxWorks-ppc604_long'
-#   \param record_names  Class used to define record naming convention,
-#       defaults to standard Diamond naming convention
-#   \param **kargs    Some more
-#
-# Here is a list:
-#   - one
-#   - two
-#
-# and an numbered:
-#   -# one
-#   -# two
-#
-# \ref Configure.__call__() "Configure()" is called, see also
-# ConfigureTemplate()
+# \param architecture
+#   Architecture of target system, defaults to \c 'vxWorks-ppc604_long'
+# \param record_names
+#   Class used to define record naming convention, defaults to standard
+#   Diamond naming convention 
+# \param **kargs
+#   See \ref Configure.__call__() "Configure()" for other arguments that can
+#   be passed.
 def ConfigureIOC(
         architecture = 'vxWorks-ppc604_long',
         record_names = recordnames.DiamondRecordNames,
@@ -189,7 +192,20 @@ def ConfigureIOC(
         **kargs)
 
 
-## ConfigureTemplate is a function.
+## Function for configuring builder for template generation.
+#
+# This function can be used to configure the IOC builder for template
+# generation.  By default record names are of the form
+# <tt>\$(DEVICE):\<name></tt> using the \ref recordnames.TemplateRecordNames
+# "TemplateRecordNames()" naming convention.
+#
+# If this call is used to initialise the builder only database files can be
+# written using the builder using \ref
+# iocwriter.SimpleIocWriter.WriteRecords() "WriteRecords()".
+#
+# \param record_names
+#   An alternative naming convention can be specified, the default is
+#   \ref recordnames.TemplateRecordNames "TemplateRecordNames()".
 def ConfigureTemplate(record_names = None):
     import recordnames
     if record_names is None:
@@ -256,8 +272,10 @@ def ParseRelease(dependency_tree, release, sup_release=None, debug=False):
         vs.append(ModuleVersion(name, version, use_name=use_name, 
                 home=home))
     return vs                        
-            
-## An options parser for the standard gui options
+
+
+
+## An options parser for the standard gui options.
 def ParseEtcArgs(dependency_tree=None, architecture = 'vxWorks-ppc604_long'):
     '''Does the following:
     * Parse sys.argv using the options parser

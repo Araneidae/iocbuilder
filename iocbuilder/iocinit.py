@@ -1,26 +1,26 @@
-# IOC initialisation support.
-#
-# This file coordinates the initialisation of an IOC: a variety of methods
+'''IOC initialisation support.'''
+
+## This file coordinates the initialisation of an IOC: a variety of methods
 # are exported from epics for configuring global IOC parameters, and the
 # following methods are provided for general use:
-#
+# 
 #   PrintHeader()
 #       Prints the preamble of an IOC initialisation file, including most of
 #       the IOC configuration settings defined by the Set... functions.
-#
+# 
 #   PrintFooter()
 #       Prints the postamble to the IOC initialisation, including the code
 #       required to load the configured database files.
-#
+# 
 # Supports the following configurations:
-#
+# 
 #   AddDatabaseName(database)
 #       Called (indirectly) from the IOC writer: adds the named database to
 #       the startup script.
-#
+# 
 #   EpicsEnvSet(key, value)
 #       Adds key=value to startup script.
-#
+# 
 #   AddIocFile(filename)
 #       Adds file to be copied into IOC directory tree.
 
@@ -173,8 +173,8 @@ class iocInit(Singleton):
             print
 
         
+    # Writes out a complete IOC startup script.
     def PrintIoc(self, ioc_root=None):
-        '''Writes out a complete IOC startup script.'''
         self.PrintHeader(ioc_root)
         Hardware.PrintBody()
         self.PrintFooter()
@@ -186,53 +186,57 @@ class iocInit(Singleton):
         self.__DatabaseNameList.append(database)
 
         
+    ## Sets the working directory for the IOC.  This path will be assigned
+    # to the homeDir environment variable, and all other IOC files will be
+    # loaded relative to this directory.
+    #     If targetDir=None is passed then instead the working directory on
+    # startup will be picked up as homeDir.  This is preferable, if possible,
+    # as it allows the IOC to be relocated.'''
     @export
     def SetTargetDir(self, targetDir=None):
-        '''Sets the working directory for the IOC.  This path will be assigned
-        to the homeDir environment variable, and all other IOC files will be
-        loaded relative to this directory.
-            If targetDir=None is passed then instead the working directory on
-        startup will be picked up as homeDir.  This is preferable, if possible,
-        as it allows the IOC to be relocated.'''
         self.__TargetDir = targetDir
 
+    ## Sets the server and repeater ports to be used for EPICS communication.
+    # The default port of 5064 does not need to be set.
     @export
     def SetEpicsPort(self, EpicsPort):
-        '''Sets the server and repeater ports to be used for EPICS
-        communication.  The default port of 5064 does not need to be set.'''
         self.EpicsEnvSet('EPICS_CA_SERVER_PORT', EpicsPort)
         self.EpicsEnvSet('EPICS_CA_REPEATER_PORT', EpicsPort + 1)
 
+    ## Sets the IP address of the network gateway.
     @export
     def SetGateway(self, Gateway):
-        '''Sets the IP address of the network gateway.'''
         self.__Gateway = Gateway
 
+    ## Sets the IP address of the NTP server to be used.
     @export
     def SetNtpServer(self, NtpServer):
-        '''Sets the IP address of the NTP server to be used.'''
         self.EpicsEnvSet('EPICS_TS_NTP_INET', NtpServer)
 
+    ## Sets machine IP address and port for EPICS logging.
     @export
     def SetEpicsLogging(self, LogAddress, LogPort):
-        '''Sets machine IP address and port for EPICS logging.'''
         self.EpicsEnvSet('EPICS_IOC_LOG_INET', LogAddress)
         self.EpicsEnvSet('EPICS_IOC_LOG_PORT', LogPort)
 
+    ## Sets the IOC clock rate.  The default clock rate is 60Hz, and
+    # changing this can cause some drivers to stop working.
     @export
     def SetClockRate(self, ClockRate):
-        '''Sets the IOC clock rate.  The default clock rate is 60Hz, and
-        changing this can cause some drivers to stop working.'''
         self.__ClockRate = ClockRate
 
+    ## Adds a key=value setting to the startup script.
     @export
     def EpicsEnvSet(self, key, value):
-        '''Adds a key=value setting to the startup script.'''
         if key in self.__EnvList and value != self.__EnvList[key]:
             print 'Changing environment variable %s from %s to %s' % (
                 key, self.__EnvList[key], value)
         self.__EnvList[key] = value
 
+    ## Adds an IOC command to the startup script.
+    #
+    # Don't do it this way, define a \ref iocbuilder.device.Device "Device"
+    # subclass instead.
     @export
     def IocCommand(self, command, post_init=False):
         if post_init:
@@ -242,10 +246,9 @@ class iocInit(Singleton):
 
 
         
+# This class gathers together files to be placed in the IOC's data
+# directory.
 class IocDataSet(Singleton):
-    '''This class gathers together files to be placed in the IOC's data
-    directory.'''
-    
     # The following global state is managed as class variables.
     __DataPath = None
     __DataFileList = {}
@@ -303,11 +306,10 @@ class _IocDataBase(autosuper_object):
 
 
 
+## This is used to package files which need to be copied into the IOC.  The
+# target directory is set by the IOC writer, relative to homeDir; the source
+# file is set by the constructor.
 class IocDataFile(_IocDataBase):
-    '''This class is used to package files which need to be copied into the
-    IOC.  The target directory is set by the IOC writer,  relative to homeDir;
-    the source file is set by the constructor.
-    '''
 
     def __init__(self, source_file):
         source_file = os.path.abspath(source_file)
@@ -325,9 +327,9 @@ class IocDataFile(_IocDataBase):
     def __cmp__(self, other):   return cmp(self.source, other.source)
 
 
+## This is used to package up a data stream which will be written to a freshly
+# generated file at the end of the IOC build process.
 class IocDataStream(_IocDataBase):
-    '''This is used to package up a data stream which will be written to a
-    freshly generated file at the end of the IOC build process.'''
 
     def __init__(self, name, mode=None):
         self.content = []
