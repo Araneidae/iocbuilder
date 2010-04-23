@@ -63,10 +63,10 @@ class WriteFileWrapper:
     generated file.'''
 
     def __init__(self, filename,
-            header=PrintDisclaimerScript, maxLineLength=0):
+            header=PrintDisclaimerScript, maxLineLength=0, mode='w'):
         '''Set header=None to suppress header output.'''
         self.__stdout = sys.stdout
-        self.__output = open(filename, 'w')
+        self.__output = open(filename, mode)
         self.__line = ''
 
         self.__maxLineLength = maxLineLength
@@ -295,76 +295,8 @@ class DiamondIocWriter(IocWriter):
     __all__ = ['WriteIoc', 'WriteNamedIoc']
     
 
-    IOC_configure_Skeleton = {
-        'CONFIG':
-'''include $(TOP)/configure/CONFIG_APP
-
-BUILD_ARCHS = %(ARCH)s
-''',
-
-    'CONFIG_APP':
-'''include $(TOP)/configure/RELEASE
--include $(TOP)/configure/RELEASE.$(EPICS_HOST_ARCH)
--include $(TOP)/configure/RELEASE.Common.$(T_A)
--include $(TOP)/configure/RELEASE.$(EPICS_HOST_ARCH).$(T_A)
-
-CONFIG=$(EPICS_BASE)/configure
-include $(CONFIG)/CONFIG
--include $(CONFIG)/CONFIG.Dls
-
-INSTALL_LOCATION = $(TOP)
-ifdef INSTALL_LOCATION_APP
-INSTALL_LOCATION = $(INSTALL_LOCATION_APP)
-endif
-
-ifdef T_A
--include $(TOP)/configure/O.$(T_A)/CONFIG_APP_INCLUDE
-endif
-
-# dbst based database optimization (default: NO)
-DB_OPT = NO
-''',
-
-        'Makefile':
-'''TOP=..
-
-include $(TOP)/configure/CONFIG
-
-# Set the following to NO to disable consistency checking of
-# the support applications defined in $(TOP)/configure/RELEASE
-CHECK_RELEASE = %(CHECK_RELEASE)s
-
-TARGETS = $(CONFIG_TARGETS)
-CONFIGS += $(subst ../,,$(wildcard $(CONFIG_INSTALLS)))
-
-include $(TOP)/configure/RULES
-''',
-
-        'RULES':
-'''#CONFIG
--include $(CONFIG)/RULES.Dls
-include  $(CONFIG)/RULES
-
-# Library should be rebuilt because LIBOBJS may have changed.
-$(LIBNAME): ../Makefile
-''',
-
-        'RULES_DIRS':
-'''include $(EPICS_BASE)/configure/RULES_DIRS
-''',
-
-        'RULES.ioc':
-'''include $(EPICS_BASE)/configure/RULES.ioc
-''',
-
-        'RULES_TOP':
-'''include $(EPICS_BASE)/configure/RULES_TOP
-''',
-    }
-    
-
-    MAIN_CPP = \
-'''#include "epicsExit.h"
+    MAIN_CPP = '''\
+#include "epicsExit.h"
 #include "epicsThread.h"
 #include "iocsh.h"
 
@@ -381,17 +313,28 @@ int main(int argc,char *argv[])
 '''
 
     # Startup shell script for linux IOC
-    LINUX_CMD = \
-'''cd "$(dirname "$0")"
+    LINUX_CMD = '''\
+cd "$(dirname "$0")"
 #    export HOME_DIR="$(cd "$(dirname "$0")"/../..; pwd)"
 # cd "$HOME_DIR"
 ./%(ioc)s st%(ioc)s.boot'''
+
+    # Configuration.  Unfortunately we need different configurations for old
+    # and newer versions of EPICS: we can't write CHECK_RELEASE to CONFIG, so
+    # at least for now we don't write it at all!
+    CONFIG_TEXT = '''\
+CROSS_COMPILER_TARGET_ARCHS = %(ARCH)s
+'''
+    CONFIG_SITE_TEXT = '''\
+CROSS_COMPILER_TARGET_ARCHS = %(ARCH)s
+CHECK_RELEASE = %(CHECK_RELEASE)s
+'''
 
 
     # Makefile templates
     TOP_MAKEFILE_HEADER = [
         'TOP = .',
-        'include $(TOP)/configure/CONFIG_APP']
+        'include $(TOP)/configure/CONFIG']
     TOP_MAKEFILE_FOOTER = [
         'include $(TOP)/configure/RULES_TOP']
 
@@ -575,7 +518,7 @@ int main(int argc,char *argv[])
         makefile = self.makefile_src
         ioc = self.ioc_name
         
-        makefile.AddLine('PROD_IOC = %s' % ioc)
+        makefile.AddLine('PROD_IOC_%s = %s' % (configure.TargetOS(), ioc))
         makefile.AddLine('DBD += %s.dbd' % ioc)
         
         for dbd_part in Hardware.GetDbdList():
@@ -616,7 +559,9 @@ int main(int argc,char *argv[])
 
         self.makefile_boot.AddLine('ARCH = %s' % configure.Architecture())
         configure.Call_TargetOS(self, 'CreateBootFiles')
-        self.makefile_boot.AddLine('SCRIPTS += st%s.boot' % self.ioc_name)        
+        scripts = 'SCRIPTS_%s' % configure.TargetOS()
+        self.makefile_boot.AddLine(
+            '%s += st%s.boot' % (scripts, self.ioc_name))
         if not self.substitute_boot:
             self.makefile_boot.AddRule(
                 'envPaths cdCommands:\n'
@@ -629,8 +574,9 @@ int main(int argc,char *argv[])
             self.LINUX_CMD % dict(ioc = ioc),
             header = PrintDisclaimerCommand('/bin/sh'))
         if not self.substitute_boot:            
-            self.makefile_boot.AddLine('SCRIPTS += envPaths')
-        self.makefile_boot.AddLine('SCRIPTS += ../st%s.sh' % self.ioc_name)
+            self.makefile_boot.AddLine('%s += envPaths' % scripts)
+        self.makefile_boot.AddLine(
+            '%s += ../st%s.sh' % (scripts, self.ioc_name))
         
     def CreateBootFiles_vxWorks(self):
         if not self.substitute_boot:    
@@ -638,12 +584,32 @@ int main(int argc,char *argv[])
 
         
     def CreateConfigureFiles(self):
-        # Write the configure skeleton: mostly standard boilerplate.
-        config_dict = dict(
-            ARCH = configure.Architecture(),
-            CHECK_RELEASE = self.check_release and 'YES' or 'NO')
-        for filename, content in self.IOC_configure_Skeleton.items():
-            self.WriteFile(('configure', filename), content % config_dict)
+        # Create the configure directory by copying files over from EPICS
+        # base.  We don't copy RELEASE because we need to rewrite it
+        # completely anyway.
+        template_dir = os.path.join(
+            paths.EPICS_BASE, 'templates/makeBaseApp/top/configure')
+        template_files = os.listdir(template_dir)
+        for file in template_files:
+            if file != 'RELEASE':
+                shutil.copy(
+                    os.path.join(template_dir, file), 
+                    os.path.join(self.iocRoot, 'configure'))
+
+        # If CONFIG_SITE exists add our configuration to that, otherwise add
+        # it to CONFIG: this system changed in 3.14.11.  Either way, the
+        # configuration text is appended to the end of the file.
+        if 'CONFIG_SITE' in template_files:
+            config_file = 'CONFIG_SITE'
+            config_text = self.CONFIG_SITE_TEXT
+        else:
+            config_file = 'CONFIG'
+            config_text = self.CONFIG_TEXT
+        self.WriteFile(('configure', config_file),
+            config_text % dict(
+                ARCH = configure.Architecture(),
+                CHECK_RELEASE = self.check_release and 'YES' or 'NO'),
+            mode = 'a')
 
         # Write out configure/RELEASE
         releases = []
