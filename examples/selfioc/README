@@ -1,0 +1,11 @@
+Self generating IOC.
+
+To convert a self generating IOC into a a "classic" IOC perform the
+following steps
+
+    make clean
+    make Makefile.builder
+    mv Makefile.builder Makefile
+    svn add *
+
+The IOC can now be commited as a non-generated IOC.

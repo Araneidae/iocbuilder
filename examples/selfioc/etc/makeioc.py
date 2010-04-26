@@ -12,5 +12,5 @@ iocbuilder.IocCommand('epicsEnvShow TOP')
 
 iocbuilder.WriteNamedIoc(
     os.path.join(here, '..'), 'TS-TEST-IOC-01',
-    keep_files = ['etc', 'Makefile', '.svn'],
+    keep_files = ['Makefile', 'etc', 'README', '.svn'],
     makefile_name = 'Makefile.builder')
