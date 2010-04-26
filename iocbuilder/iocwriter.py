@@ -350,7 +350,6 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         ignore_list = ['bin', 'db', 'dbd', 'Makefile', 'data'] + \
             fnmatch.filter(dirlist, '%sApp' % (self.ioc_name)) + \
             self.keep_files
-        print self.iocRoot, dirlist, require_list, ignore_list
         checklist = set(dirlist) - set(ignore_list)
         assert checklist == set(require_list) or not checklist, \
             'Directory %s doesn\'t appear to be an IOC directory' % \
@@ -366,8 +365,9 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
     # Published methods: alternative IOC constructors
 
     ## The Diamond style of IOC as supported by this writer is of the
-    # following form, where <ioc>=<domain>-<techArea>-IOC-<id> and <iocDir>
-    # is either <techArea> or <ioc> depending on whether long_name is set.
+    # following form, where \<ioc>=\<domain>-\<techArea>-IOC-\<id> and
+    # \<iocDir> is either \<techArea> or \<ioc> depending on whether long_name
+    # is set.
     #
     # \code
     #  <path>/<domain>/<iocDir>
