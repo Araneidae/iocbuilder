@@ -523,9 +523,4 @@ def SetSimulation(real, sim):
         if sim in ModuleBase.ModuleBaseClasses:
             ModuleBase.ModuleBaseClasses.remove(sim)
         # now in iocbuilder.modules
-        try:
-            modulename = sim.ModuleVersion.ModuleName()
-            delattr(getattr(modules, modulename), sim.__name__)
-        except:
-            pass
         return real
