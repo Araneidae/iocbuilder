@@ -232,7 +232,7 @@ def ConfigureTemplate(record_names = None):
 # - \c iocpath: the path to the ioc directory
 # - \c debug: if \c True, then debugging should happen
 # - \c architecture: The architecture (e.g. linux-x86)
-# - \c simarch: Equal to \c architecture if making a simulation, otherwise 
+# - \c simarch: Equal to \c architecture if making a simulation, otherwise
 #   \c None
 # - \c epics_base: Path to EPICS_BASE
 def ParseEtcArgs(
@@ -282,10 +282,10 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
 #
 # - If \c dependency_tree then:
 #  - Parse <tt>../../configure/RELEASE</tt>
-#  - Substitute macros in <tt>\<iocname>_RELEASE</tt> using 
+#  - Substitute macros in <tt>\<iocname>_RELEASE</tt> using
 #    <tt>../../configure/RELEASE</tt>
 #  - Set \c options.epics_base
-# - Run \ref iocbuilder.configure.Configure "Configure(...)" with the supplied 
+# - Run \ref iocbuilder.configure.Configure "Configure(...)" with the supplied
 #   information from \c options
 # - If \c dependecy_tree then:
 #  - Do a libversion::ModuleVersion call for each module listed in the tree created from
@@ -349,7 +349,7 @@ def ParseAndConfigure(options, dependency_tree=None, ioc_writer=None):
                 leaves.append(leaf)
         from libversion import ModuleVersion
         for name, version, path in [
-                (l.name, l.version, l.path) for l in leaves]:
+                (l.name, l.version, l.path) for l in leaves if l.path]:
             # for work and local modules, just tell iocbuilder the path
             if version in ['work', 'local']:
                 home = os.path.abspath(path)
