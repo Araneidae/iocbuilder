@@ -56,7 +56,7 @@ def _fanout_helper(
 
 ## Creates one or more fanout records (as necessary) to fan processing out to
 # a list of records.  If no more than 6 records are given then this creates a
-# single fanout record called name.  Otherwise, further records are created
+# single fanout record called \c name.  Otherwise, further records are created
 # and daisy-chained together: subsequent records are numbered in sequence.
 #
 # \param name
@@ -88,8 +88,8 @@ def create_fanout(name, *record_list, **args):
 
 ## Creates one or more data fanout records (as necessary) to fan a data output
 # out to a list of records.  If no more than 8 records are given then this
-# creates a single fanout record called name.  Otherwise, further records are
-# created and daisy-chained together: subsequent records are numbered in
+# creates a single dfanout record called \c name.  Otherwise, further records
+# are created and daisy-chained together: subsequent records are numbered in
 # sequence.
 #
 # \param name

@@ -1,22 +1,21 @@
 /**
-\page cross_reference Builder API Cross Reference
+\page building_iocs Brief Guide to Building IOCs
 
-\section initialisation IOC builder Initialisation
+\section ref_overview Brief Guide to Building IOCs
 
-The first few lines in a Python IOC builder script might look like this:
+Creating an IOC with the IOC builder involves the following steps:
 
-\code
-from pkg_resources import require
-require('iocbuilder')
+- \ref ref_initialisation
+- \ref ref_support
+- \ref ref_creation
+- \ref ref_ioc_config
+- \ref ref_writing
 
-import iocbuilder
-iocbuilder.ConfigureIOC()
 
-from iocbuilder import *
-LoadVersionFile('versions.py')
-\endcode
+\section ref_initialisation Initialisation and Import
 
-One of the following initialisation functions should be called:
+After importing the iocbuilder it must be configured by calling one of the
+following functions:
 
 - \ref iocbuilder.configure.ConfigureIOC "ConfigureIOC()" <br>
 This is the normal IOC initialisation function.  The default architecture is
@@ -31,14 +30,107 @@ and version information from \c configure/RELEASE and related files.
 - \ref iocbuilder.configure.Configure "Configure(...)"  <br> 
 All the other calls above delegate to this more general purpose call.
 
+
+\section ref_support Loading Support Modules
+
 After the builder has been configured the required support modules should be
-loaded using the following calls:
+loaded using one of the following three methods:
 
 - \ref iocbuilder.libversion.ModuleVersion "ModuleVersion()" <br>
 Calls to this function can be made inline for each support module.
 - \ref iocbuilder.configure.LoadVersionFile "LoadVersionFile()" <br>
 This is useful for packaging module definitions separately.
+- ParseEtcArgs() plus ParseAndConfigure().
+
+The builder will look for a Python module called \c builder in the \c etc
+subdirectory of each loaded EPICS support module: this can be a file \c
+builder.py or a Python package \c builder, ie a subdirectory containing a \c
+__init__.py file.
 
 
+\section ref_creation Creating IOC Resources
+
+Each loaded support module will load resources into the IOC builder, but they
+have to be invoked in order to appear in the generated IOC.  Support module
+resources appear in two places:
+
+- \ref iocbuilder.libversion.modules "modules"  All loaded EPICS support
+modules are loaded as submodules of this module.
+- \ref iocbuilder.hardware "hardware"  Names explicitly exported from EPICS
+support modules.
+
+Each support module provides its own API, accessible through these two names.
+
+
+\subsection ref_records Creating Records
+
+The naming convention for records is enforced by the \c record_names argument
+passed to \ref iocbuilder.configure.Configure "Configure()", but the default
+naming convention is \ref iocbuilder.recordnames.DiamondRecordNames
+"DiamondRecordNames" which provides the following functions:
+
+- \ref iocbuilder.recordnames.DiamondRecordNames.SetDomain "SetDomain()"  Sets
+up the domain and optionally the technical area.
+- \ref iocbuilder.recordnames.DiamondRecordNames.SetTechnicalArea
+"SetTechnicalArea()"  Can be used to set up technical area separately from
+domain.
+- \ref iocbuilder.recordnames.DiamondRecordNames.SetDevice "SetDevice()"
+Completes setting up the device name by specifying device and id.
+- \ref iocbuilder.recordnames.DiamondRecordNames.GetDevice "GetDevice()"
+Returns the computed device name.
+- \ref iocbuilder.recordnames.DiamondRecordNames.UnsetDevice "UnsetDevice()"
+Clears the device name.
+
+When using \ref iocbuilder.recordnames.DiamondRecordNames "DiamondRecordNames"
+the device name must first be set up by calling \ref
+iocbuilder.recordnames.DiamondRecordNames.SetDomain "SetDomain()" and \ref
+iocbuilder.recordnames.DiamondRecordNames.SetDevice "SetDevice()" before any
+records are created.
+
+Records are then created either by invoking the record factory methods of the
+\ref iocbuilder.dbd.records "records" class, or by invoking record factory
+methods of imported support classes.  In both cases the resulting records are
+instances of the \ref iocbuilder.recordbase.Record "Record" class.
+
+Other related routines:
+
+- \ref iocbuilder.recordbase.PP "PP()", \ref iocbuilder.recordbase.CP "CP()",
+\ref iocbuilder.recordbase.MS "MS()", \ref iocbuilder.recordbase.NP "NP()" --
+used to modify links to records.
+- \ref iocbuilder.recordbase.ImportRecord "ImportRecord()"
+- \ref iocbuilder.recordbase.Parameter "Parameter()"
+
+Helper routines for record creation:
+
+- \ref iocbuilder.fanout.create_fanout "create_fanout()"
+- \ref iocbuilder.fanout.create_dfanout "create_dfanout()"
+
+
+\section ref_ioc_config Configuring the Generated IOC
+
+A number of calls help to configure the generated IOC.
+
+- \ref iocbuilder.iocinit.iocInit.SetTargetDir "SetTargetDir()"
+- \ref iocbuilder.iocinit.iocInit.SetEpicsPort "SetEpicsPort()"
+- \ref iocbuilder.iocinit.iocInit.SetGateway "SetGateway()"
+- \ref iocbuilder.iocinit.iocInit.SetNtpServer "SetNtpServer()"
+- \ref iocbuilder.iocinit.iocInit.SetEpicsLogging "SetEpicsLogging()"
+- \ref iocbuilder.iocinit.iocInit.SetClockRate "SetClockRate()"
+- \ref iocbuilder.iocinit.iocInit.EpicsEnvSet "EpicsEnvSet()"
+- \ref iocbuilder.iocinit.iocInit.IocCommand "IocCommand()"
+
+
+\section ref_writing Writing the Generated IOC
+
+If the \ref iocbuilder.iocwriter.DiamondIocWriter "DiamondIocWriter" has been
+used then the builder script should end by invoking one of the following
+functions:
+
+- \ref iocbuilder.iocwriter.DiamondIocWriter.WriteNamedIoc "WriteNamedIoc".
+- \ref iocbuilder.iocwriter.DiamondIocWriter.WriteIoc "WriteIoc"
+
+Note that once either of these has been called the builder script cannot do
+any further work, in particular a builder script is not designed to generate
+more than one IOC.
 
 */

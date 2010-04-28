@@ -27,7 +27,8 @@
 import os
 import shutil
 
-from support import Singleton, autosuper_object, quote_c_string
+import support
+from support import autosuper_object, quote_c_string
 from liblist import Hardware
 from libversion import ModuleVersion
 from configure import TargetOS, Get_TargetOS, Call_TargetOS, Architecture
@@ -67,7 +68,8 @@ def setenv_vxWorks(name, value):
     print 'putenv ' + quote_c_string('%s=%s' % (name, value))
 
 
-class iocInit(Singleton):
+## Container for IOC initialisation functions.
+class iocInit(support.Singleton):
     DefaultEnvironment = { 'EPICS_TS_MIN_WEST' : 0 }
 
     def __init__(self):
@@ -189,9 +191,11 @@ class iocInit(Singleton):
     ## Sets the working directory for the IOC.  This path will be assigned
     # to the homeDir environment variable, and all other IOC files will be
     # loaded relative to this directory.
-    #     If targetDir=None is passed then instead the working directory on
-    # startup will be picked up as homeDir.  This is preferable, if possible,
-    # as it allows the IOC to be relocated.'''
+    #
+    # By default, if this is not called, instead the working directory on
+    # startup will be picked up and assigned to a local EPICS variable.  This
+    # is preferable, if possible, as it allows the IOC to be relocated, but
+    # does require that the IOC be started using the IOC redirector.
     @export
     def SetTargetDir(self, targetDir=None):
         self.__TargetDir = targetDir
@@ -248,13 +252,12 @@ class iocInit(Singleton):
 
 # This class gathers together files to be placed in the IOC's data
 # directory.
-class IocDataSet(Singleton):
+class IocDataSet(support.Singleton):
     # The following global state is managed as class variables.
     __DataPath = None
     __DataFileList = {}
 
     def SetDataPath(self, DataPath):
-        '''Assigns the path to the data directory as seen by the IOC.'''
         self.__DataPath = DataPath
 
     def GetDataPath(self):

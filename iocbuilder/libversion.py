@@ -6,8 +6,7 @@ import sys
 import string
 import re
 
-from support import autosuper_object, SameDirFile, CreateModule
-
+import support
 import hardware
 
 
@@ -204,7 +203,7 @@ class ModuleVersion:
         # modules.  If we can find any module definitions then they will be
         # loaded into this module.
         ModuleName = 'iocbuilder.modules.%s' % self.__module_name
-        self.module = CreateModule(ModuleName)
+        self.module = support.CreateModule(ModuleName)
         setattr(modules, self.__module_name, self.module)
         self.ClassesList = []
         modules.LoadedModules[self.__module_name] = self.ClassesList
@@ -225,7 +224,7 @@ class ModuleVersion:
                 # Then in the module root
                 (self.LibPath(), 'builder'),
                 # Failing that, try for a defaults entry.
-                (SameDirFile(__file__, 'defaults'), self.__name)]
+                (support.SameDirFile(__file__, 'defaults'), self.__name)]
             for path, module in Places:
                 ModuleFile, IsPackage = _CheckPythonModule(path, module)
                 if ModuleFile:
@@ -280,7 +279,7 @@ class ModuleVersion:
 # \endcode
 #
 # Note that this class is not normally subclassed outside of the IOC builder.
-class ModuleBase(autosuper_object):
+class ModuleBase(support.autosuper_object):
 
     # Class initialisation.
 
@@ -482,8 +481,12 @@ def autodepends(*devices):
 _ModuleVersionTable = {}
 
 ## The module iocbuilder.modules contains every EPICS module that has been
-## loaded.
-modules = CreateModule('iocbuilder.modules')
+# loaded.
+#
+# Every EPICS support module is added to \c modules using the module name
+# converted to a Python identifier (by converting invalid characters to
+# underscores).
+modules = support.CreateModule('iocbuilder.modules')
 modules.LoadedModules = {}
 
 

@@ -24,6 +24,10 @@ def _unbind(function):
 #   Record class
 
 ## Base class for all record types.
+#
+# All record types known to the IOC builder (loaded from DBD files in EPICS
+# support modules) are subclasses of this class and are published as
+# attributes of the \ref iocbuilder.dbd.records "records" class.
 class Record(object):
 
     # Creates a subclass of the record with the given record type and
@@ -80,6 +84,40 @@ class Record(object):
     # and field value assignments), the name of the record being created, and
     # initialisations for any other fields.  Builds standard record name using
     # the currently configured RecordName hook.
+
+    ## Record constructor.
+    #
+    # This is used to construct a record of a particular record type.  The
+    # record is added to database of the generated IOC, or can simply be
+    # written out to a separate .db file, depending on the chosen IOC writer.
+    #
+    # \param record
+    #   The name of the record being generated.  The detailed name of the
+    #   record is determined by the configured record name convention, and
+    #   normally the device part of the record name is not specified here.
+    # \param **fields
+    #   All of the fields supported by the record type appear as attributes
+    #   of the class.  Values can be specified in the constructor, or can be
+    #   assigned subsequently to the generated instance.
+    #
+    # For example, the following code generates a record which counts how
+    # many times it has been processed:
+    #
+    # \code
+    #   cntr = records.calc('CNTR', CALC = 'A+1', VAL = 0)
+    #   cntr.A = cntr
+    # \endcode
+    # This will generate a database somewhat like this:
+    # \verbatim
+    # record(calc, "$(DEVICE):CNTR")
+    # {
+    #     field(A,    "$(DEVICE):CNTR")
+    #     field(CALC, "A+1")
+    #     field(VAL,  "0")
+    # }
+    # \endverbatim
+    #
+    # Record links can be wrapped with PP(), CP(), MS() and NP() calls.
     def __init__(self, record, **fields):
 
         # Make sure the Device class providing this record is instantiated
@@ -132,7 +170,7 @@ class Record(object):
         print '}'
 
 
-    # The string for a record is just its name.
+    ## The string for a record is just its name.
     def __str__(self):
         return self.name
 
@@ -146,7 +184,7 @@ class Record(object):
         return _Link(self, None, *specifiers)
 
 
-    # Assigning to a record attribute updates a field.
+    ## Assigning to a record attribute updates a field.
     def __setattr__(self, fieldname, value):
         if fieldname == 'address':
             fieldname = self.__address
@@ -183,7 +221,7 @@ class Record(object):
         del self.__fields[fieldname]
 
 
-    # Reading a record attribute returns a link to the record.
+    ## Reading a record attribute returns a link to the field.
     def __getattr__(self, fieldname):
         if fieldname == 'address':
             fieldname = self.__address
@@ -216,12 +254,9 @@ class Record(object):
 
 
 
-# Class to wrap an imported record name.  This should behave much the same
-# as a real record, but of course we can't add fields and we may even not
-# know the type of the record.  So in practice all we can really do is to
-# create links.
-#
-# It may be possible to unify this class with the Record class.
+## Records can be imported by name.  An imported record has no specification
+# of its type, and so no validation can be done: all that can be done to an
+# imported record is to link to it.
 class ImportRecord:
     def __init__(self, name, type=None):
         self.name = name
@@ -279,7 +314,7 @@ class _Link:
 
 
 
-# A Parameter is used to wrap a template parameter before being assigned to a
+## A Parameter is used to wrap a template parameter before being assigned to a
 # record field.
 class Parameter:
     def __init__(self, name):
@@ -289,7 +324,6 @@ class Parameter:
         return '$(%s)' % self.__name
 
     def Validate(self, record, field):
-        '''Parameter validation always succeeds!'''
         return True
 
 

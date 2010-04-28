@@ -247,17 +247,15 @@ class SimpleIocWriter(IocWriter):
     __all__ = ['WriteRecords', 'WriteHardware']
 
     ## Writes all the currently generated records to the given file.
-    # The set of records will be reset after this has been done.  The
-    # filename can be specified in two parts: the filename proper is
-    # written to the st.cmd file, while the file is written to
-    # path/filename if path is given.
+    # The set of records will be reset after this has been done, and so
+    # further records can be generated and written.
     def WriteRecords(self, filename):
         # Let the IOC know about this database.
         self.AddDatabase(filename)
         # Write out the database: record set and template expansions.  In
         # this version we fully expand template instances.
         self.WriteFile(filename, self.PrintAndExpandRecords)
-        # Finally reset the two resources we've just consumed.
+        # Finally reset the record set.
         self.ResetRecords()
 
     def PrintAndExpandRecords(self):
@@ -364,43 +362,83 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
 
     # Published methods: alternative IOC constructors
 
-    ## The Diamond style of IOC as supported by this writer is of the
-    # following form, where \<ioc>=\<domain>-\<techArea>-IOC-\<id> and
-    # \<iocDir> is either \<techArea> or \<ioc> depending on whether long_name
-    # is set.
+    ## A wrapper around WriteNamedIoc() to write an IOC with standard name.
     #
+    # The IOC written by this call is placed below \<path> in the directory
     # \code
-    #  <path>/<domain>/<iocDir>
-    #    Makefile         Top level makefile to call <ioc>App Makefiles
-    #    iocBoot/
-    #      ioc<ioc>/      Directory for st.cmd and other ioc resources
-    #        st<ioc>.cmd  IOC startup script
-    #        <ioc files>  Other ioc specific files may be placed here
-    #    <ioc>App/
-    #      Makefile       Makefile to build IOC db directory and file
-    #      Db/            Directory containing substitutions and other files
-    #        <ioc>.db     Generated database file
-    #        <ioc>.substitutions   Substitutions file
+    #   <path>/<domain>/<iocDir>
     # \endcode
+    #
+    # where \<ioc>=\<domain>-\<techArea>-IOC-\<id> and \<iocDir> is either
+    # \<techArea> or \<ioc> depending on whether \c long_name is set.
+    #
+    # \param path
+    # \param domain
+    # \param techArea
+    # \param id
+    #   The IOC name is computed from these four parameters as described
+    #   above.
+    # \param long_name
+    #   Determines whether the full IOC name is used as part of the path to
+    #   the IOC.
+    # \param **kargs
+    #   See WriteNamedIoc() for the remaining possible arguments.
     @classmethod
     def WriteIoc(cls,
-            path, domain, techArea, id = 1, long_name = False, **argk):
+            path, domain, techArea, id = 1, long_name = False, **kargs):
         ioc_name = '%s-%s-IOC-%02d' % (domain, techArea, id)
         if long_name:
             iocDir = ioc_name
         else:
             iocDir = techArea
         cls.WriteNamedIoc(
-            os.path.join(path, domain, iocDir), ioc_name, **argk)
+            os.path.join(path, domain, iocDir), ioc_name, **kargs)
 
     ## Creates an IOC in path with the specified name.
+    # Simply wraps \ref DiamondIocWriter.__init__
     @classmethod
-    def WriteNamedIoc(cls, path, ioc_name, **argk):
-        cls(path, ioc_name, **argk)
+    def WriteNamedIoc(cls, *args, **kargs):
+        cls(*args, **kargs)
 
 
     # Top level IOC writer control
 
+    ## Creates an IOC in path with the specified name.  A complete standard
+    # IOC directory is created and population based at \c path with internal
+    # name \c ioc_name.  The directory structure is:
+    #
+    # \verbatim
+    #  <path>/
+    #    Makefile         Top level makefile to call <ioc>App Makefiles
+    #    iocBoot/
+    #      ioc<ioc_name>/       Directory for st.cmd and other ioc resources
+    #        st<ioc_name>.cmd   IOC startup script
+    #        <ioc files>        Other ioc specific files may be placed here
+    #    <ioc_name>App/
+    #      Makefile       Makefile to build IOC db directory and file
+    #      Db/            Directory containing substitutions and other files
+    #        <ioc>.db     Generated database file
+    #        <ioc>.substitutions   Substitutions file
+    # \endverbatim
+    #
+    # The target directory is erased unless the \c keep_files parameter is
+    # set.
+    #
+    # \param path
+    #   Directory where IOC will be written
+    # \param ioc_name
+    #   Name of IOC used for internal files
+    # \param check_release
+    #   Whether to set the CHECK_RELEASE flag in the build.  Defaults to True.
+    # \param substitute_boot
+    #   Whether \c msi is run over the generated boot scripts.  Defaults to
+    #   False, not really recommended as can generate broken boot scripts
+    #   without warning.
+    # \param keep_files
+    #   List of files in \c path to keep, defaults to empty list.  If empty
+    #   the IOC directory is completely erased.
+    # \param makefile_name
+    #   Name of the makefile for the generated IOC, defaults to \c Makefile.
     def __init__(self, path, ioc_name,
             check_release = True, substitute_boot = False,
             keep_files = [], makefile_name = 'Makefile'):
@@ -609,10 +647,10 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         # Write out configure/RELEASE
         releases = []
         for module in sorted(libversion.ModuleBase.ListModules()):
-## \todo Do something sensible on check_release
-# Something like this might be a good idea --
-#             if self.check_release:
-#                 module.CheckDependencies()
+            ## \todo Do something sensible on check_release
+            # Something like this might be a good idea --
+            #             if self.check_release:
+            #                 module.CheckDependencies()
             releases.append(
                 '%s = %s' % (module.MacroName(), module.LibPath()))
         self.WriteFile('configure/RELEASE', '\n'.join(releases))

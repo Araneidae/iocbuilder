@@ -24,6 +24,10 @@ in IP socket A of a carrier card in VME slot 4:
 
 import support
 
+## Hardware module containing all exported resources.
+#
+# All names exported from EPICS support modules using the \c __all__
+# identifier are added to this module.
 hardware = support.CreateModule('iocbuilder.hardware')
 
 __all__ = ['hardware']

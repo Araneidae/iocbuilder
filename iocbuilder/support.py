@@ -66,8 +66,6 @@ def countChars(start='A', stop='Z'):
     return iter(map(chr, range(ord(start), ord(stop) + 1)))
 
 
-unsafe_chars = re.compile(r'[\\"\1-\37]')
-
 # Converts a string into a form suitable for interpretation by the IOC shell
 # -- actually, all we do is ensure that dangerous characters are quoted
 # appropriately and enclose the whole thing in quotes.
@@ -88,7 +86,7 @@ def quote_c_string(s):
     return '"%s"' % unsafe_chars.sub(replace, str(s))
 
 
-# An ordered dictionary, similar to that provided by Python 3, but not quite
+## An ordered dictionary, similar to that provided by Python 3, but not quite
 # as complete.
 class OrderedDict(dict):
     def __init__(self):
@@ -243,7 +241,10 @@ class autosuper_meta(type):
             base.__dict__['__init_meta__'](cls, subclass)
 
 
-# Class that can be subclassed to inherit autosuper behaviour.
+## Class that can be subclassed to inherit autosuper behaviour.
+#
+# All subclasses of this class share an attribute \c __super which allows
+# self.__super to be used rather than super(Class, self).
 class autosuper_object(object):
     __metaclass__ = autosuper_meta
 
@@ -262,3 +263,6 @@ def AutoRegisterClass(register, ignoreParent=True, superclass=type):
                 register(cls, name)
 
     return DoRegister
+
+# At end for doxygen!
+unsafe_chars = re.compile(r'[\\"\1-\37]')

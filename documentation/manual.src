@@ -29,12 +29,9 @@ This manual is divided in the following sections:
 - \subpage generating_records
 - \subpage builder_files
 - \subpage troubleshooting
-- \subpage cross_reference
+- \subpage building_iocs.  This is a brief guide to the IOC builder API for
+writing IOC builder scripts.
 
-\section Developer Manual
-The following sections are suitable for developers of the iocbuilder module:
-- \subpage internal_API
-- \subpage todo
 */
 //-----------------------------------------------------------
 /**\page using_iocbuilder Creating an IOC using iocbuilder
@@ -607,10 +604,5 @@ it as a dependency
 /**\page troubleshooting Troubleshooting
 If you get an odd error, first make sure that you have called 
 \c self.__super.__init__() in your builder class.
-*/
-//-----------------------------------------------------------
-/**\page internal_API Internal API
-\todo This is for developers interested in modifying the internals of 
-iocbuilder. Like all internal documentation, this is always written last...
 */
 //-----------------------------------------------------------

@@ -1,4 +1,4 @@
-# Implements the set of records provided by a dbd
+'''Implements the set of records provided by a dbd'''
 
 import os, os.path
 import ctypes
@@ -38,8 +38,16 @@ class RecordTypes(Singleton):
         return recordType in self.__RecordTypes
 
 
-# This class will be published to the outside world as "records", the
-# collection of available record types.
+## Every record type loaded from a DBD is present as an attribute of this
+## class with the name of the record type.
+#
+# For example, to create an ai record, simply write
+# \code
+#   records.ai('NAME', DESC = 'A test ai record', EGU = 'V')
+# \endcode
+#
+# Each record is of type \ref iocbuilder.recordbase.Record "Record", see for
+# more details.
 records = RecordTypes
 
 # Possible field types as returned by dbGetFieldType

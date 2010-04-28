@@ -17,19 +17,20 @@ class BasicRecordNames(RecordNamesBase):
 
     __VersionInfo = { '3.13' : 29, '3.14' : 61 }
 
+    # The version parameter specifies the EPICS version: this determines
+    # the maximum name length.
     def __init__(self, version='3.14'):
-        '''The version parameter specifies the EPICS version: this determines
-        the maximum name length.'''
         self.maxLength = self.__VersionInfo[version]
 
     def RecordName(self, name):
-        '''Internal method.'''
         assert 0 < len(name) <= self.maxLength, \
             'Record name "%s" too long' % name
         return name
 
 
 ## Simple support for building templates.
+#
+# Records are named "$(DEVICE):name".
 class TemplateRecordNames(RecordNamesBase):
     __all__ = ['TemplateName']
 
@@ -37,20 +38,21 @@ class TemplateRecordNames(RecordNamesBase):
         self.__Name = device
 
     def RecordName(self, name):
-        '''Internal method.'''
         return '$(%s):%s' % (self.__Name, name)
 
+    ## Can be used to update the template name.
     def TemplateName(self, name):
-        '''Sets the template name (default value is 'DEVICE').'''
         self.__Name = name
 
 
 ## Support for record names following the Diamond naming convention.
 # Record names are of the form
+# \code
 #     DD[DDD]-TT-CCCCC-NN:RRRRRRRRRR
-# where DDDDD names a domain within the machine, TT names a technical
-# area, CCCCC names a device (or component), NN is a two digit sequence
-# number, and RRRRRRRRRR is the final part of the record name.
+# \endcode
+# where \c DDDDD names a domain within the machine, \c TT names a technical
+# area, \c CCCCC names a device (or component), \c NN is a two digit sequence
+# number, and \c RRRRRRRRRR is the final part of the record name.
 #
 # When this naming convention is enabled the domain, technical area,
 # device and sequence number (id) are specified before records are
@@ -78,6 +80,14 @@ class DiamondRecordNames(RecordNamesBase):
 
     ## The domain, and optionally the technical area, are set by calling this
     # routine.  Both of these must be defined before records can be created.
+    #
+    # \param domain
+    #   The machine domain for records to be created.  Frequently this only
+    #   needs to be set once, as an IOC will only serve records for one
+    #   machine domain.
+    # \param area
+    #   The technical area used for records being created.  This can be
+    #   omitted, in which case SetTechnicalArea() must be called.
     def SetDomain(self, domain, area=None):
         assert 0 < len(domain) <= 5, 'Invalid domain name %s' % domain
         # Set the technical area and domain
@@ -86,18 +96,35 @@ class DiamondRecordNames(RecordNamesBase):
             self.SetTechnicalArea(area)
 
 
-    ## Sets the technical area for record creation.
+    ## Sets the technical area for record creation.  Only required if
+    # SetDomain() was called with only one parameter.
     def SetTechnicalArea(self, area):
         assert len(area) == 2, 'Invalid area name %s' % area
         self.__TechnicalArea = area
 
 
     ## Sets the component and its id before records are created.
-    def SetDevice(self, component, id, domain=None, ta=None):
+    # This function must be called before creating any records.  By default
+    # it takes just the component and id parameters, but the entire device
+    # name can be specified if required.
+    #
+    # Note that normally SetDomain() should be called first, but domain and
+    # area can be specified if appropriate.
+    #
+    # \param component
+    #   The component name for records.
+    # \param id
+    #   The component identifier number.  Must be a number in the range 1 to
+    #   99.
+    # \param domain
+    #   The domain can be overridden here.
+    # \param area
+    #   Similarly the technical area can be overridden.
+    def SetDevice(self, component, id, domain=None, area=None):
         if domain is not None:
             self.__Domain = domain
-        if ta is not None:
-            self.__TechnicalArea = ta
+        if area is not None:
+            self.__TechnicalArea = area
         assert self.__TechnicalArea != None and self.__Domain != None, \
             'Must set domain and area before creating records'
         assert 0 < len(component) <= 5, 'Invalid component name %s' % component
@@ -128,7 +155,6 @@ class DiamondRecordNames(RecordNamesBase):
     # letters, digits or underscores.  The rules for 3.14 allow for longer
     # names with more components.
     def RecordName(self, record, device=None):
-        '''Internal method.'''
         if not device:  device = self.__Device
         assert 0 < len(record) <= self.__MaxNameLength, \
                'Record name "%s" too long' % record

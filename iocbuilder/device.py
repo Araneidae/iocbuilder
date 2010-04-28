@@ -10,7 +10,7 @@ the Device class defined here.'''
 import os.path
 
 from liblist import Hardware
-from libversion import ModuleBase
+import libversion
 from dbd import LoadDbdFile
 from configure import Configure, Architecture
 from support import Singleton
@@ -80,7 +80,7 @@ class _FIRST:
 # \param PostIocInitialise()
 #         This method performs any initialisation that is required after
 #         iocInit has been called.
-class Device(ModuleBase):
+class Device(libversion.ModuleBase):
     def __init_meta__(cls, subclass):
         # Load the DBD files as soon as the class is declared.  This allows
         # the record definitions to be available even before the class is
@@ -243,6 +243,17 @@ class RecordFactory:
     # the associated Device instance (device), the name of the EPICS device
     # link (typically 'INP' or 'OUT'), an address string or address
     # constructor, and a option addressing fixup routine (post).
+    #
+    # \param factory
+    #   Record constructor to be used.
+    # \param device
+    #   Associated DTYP setting
+    # \param link
+    #   Associated address link to go into INP or OUT field.
+    # \param address
+    #   Field name to receive address link
+    # \param post
+    #   Optional hook for post processing of fields.
     def __init__(self, factory, device, link, address, post=None):
         self.factory = factory
         self.device = device
@@ -253,7 +264,6 @@ class RecordFactory:
     # Calling a record factory instance builds a record with the given name
     # and fields bound to the originating hardware.
     def __call__(self, name, *address_extra, **fields):
-
         # If the address is callable then we compute the address using the
         # address hook, simultaneously fixing up any fields that only belong
         # to the address computation.  Otherwise we hope it's a static string
