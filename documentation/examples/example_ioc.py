@@ -10,7 +10,8 @@ import iocbuilder
 from dls_dependency_tree import dependency_tree
 
 # parse the options supplied to the program
-options = iocbuilder.ParseEtcArgs(dependency_tree, architecture="linux-x86")
+options, args = iocbuilder.ParseEtcArgs(architecture="linux-x86")
+iocbuilder.ParseAndConfigure(options, dependency_tree)
 
 # import the builder objects
 from iocbuilder.modules import *

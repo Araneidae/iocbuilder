@@ -9,7 +9,7 @@ import recordnames
 __all__ = [
     'Configure', 'LoadVersionFile', 'ConfigureIOC', 'ConfigureTemplate',
     'Architecture', 'TargetOS', 'Call_TargetOS',
-    'ParseEtcArgs', 'ParseRelease']
+    'ParseEtcArgs', 'ParseAndConfigure']
 
 
 def Architecture():
@@ -213,83 +213,34 @@ def ConfigureTemplate(record_names = None):
     Configure(record_names = record_names)
 
 
-def ParseRelease(dependency_tree, release, sup_release=None, debug=False):
-    '''Read release, and create a dependency tree from it. If sup_release is a
-    valid release file, then add it as a new dependency to the tree. Flatten
-    the tree, and do the corresponding ModuleVersion call for each leaf in it.
-    Return a list of ModuleVersion objects. If debug then print the
-    ModuleVersion call made'''
-    ## The list of ModuleVersions to return
-    vs = []
-    # If we have a release file, then parse it
-    if os.path.isfile(release):
-        tree = dependency_tree(None, release, includes=False, warnings=False)
-    else:
-        tree = dependency_tree(None, warnings=False)
-    # if we have a sup_release then add it to the tree
-    if os.path.isfile(sup_release):
-        leaf = dependency_tree(tree, sup_release, includes=False,
-            warnings=False)
-        tree.leaves.append(leaf)
-    # print the tree if requested
-    if debug:
-        print '# Generated RELEASE tree'
-        tree.print_tree()
-    # now flatten the leaves of the tree, and remove duplicates
-    leaves = []
-    for leaf in tree.flatten(include_self=False):
-        duplicates = [ l for l in leaves if l.name == leaf.name ]
-        if duplicates:
-            print '***Warning: Module "%s" defined with' % leaf.name, \
-                'multiple versions, using "%s"' % duplicates[0].version
-        else:
-            leaves.append(leaf)
-    # now do our ModuleVersion calls
-    from libversion import ModuleVersion
-    for name, version, path in [(l.name, l.version, l.path) for l in leaves]:
-        # for work and local modules, just tell iocbuilder the path
-        if version in ['work', 'local']:
-            home = os.path.abspath(path)
-            use_name = False
-            version = None
-        # invalid modules don't have a configure/RELEASE, so won't have a
-        # builder object
-        elif version == 'invalid':
-            continue
-        # prod modules need more hacking of the path to look right
-        else:
-            home = os.path.abspath(os.path.join(path, '..', '..'))
-            use_name = True
-        # iocs need to be treated more like support modules
-        if '/' in name:
-            name = name.split('/')[-1]
-        # print out the ModuleVersion call if asked
-        if debug:
-            print 'ModuleVersion(%s, %s, use_name=%s, home=%s)' % (
-                repr(name), repr(version), repr(use_name),
-                repr(home))
-        # add the ModuleVersion object to the list
-        vs.append(ModuleVersion(name, version, use_name=use_name,
-                home=home))
-    return vs
-
-
 
 ## An options parser for the standard gui options.
-def ParseEtcArgs(dependency_tree=None, architecture = 'vxWorks-ppc604_long'):
-    '''Does the following:
-    * Parse sys.argv using the options parser
-    * Run Configure with the supplied information
-    * Parse <iocname>_RELEASE if it exists and do ModuleVersion calls from it
-    * Return the options object
-    The options object has the following attributes:
-    * iocname: the name of the ioc that is to be built
-    * iocpath: the path to the ioc directory
-    * debug: if True, then debugging should happen
-    * simarch: the architecture'''
+#
+# \param architecture
+#   Used to set the target architecture.
+# \param epics_base
+#   Can be used to override EPICS_BASE settings.
+#
+# Does the following:
+#
+# - Parse \c sys.argv using the options parser
+# - Return the \c options object, and \c args[1:]
+#
+# The options object has the following attributes:
+#
+# - \c iocname: the name of the ioc that is to be built
+# - \c iocpath: the path to the ioc directory
+# - \c debug: if \c True, then debugging should happen
+# - \c architecture: The architecture (e.g. linux-x86)
+# - \c simarch: Equal to \c architecture if making a simulation, otherwise 
+#   \c None
+# - \c epics_base: Path to EPICS_BASE
+def ParseEtcArgs(
+        architecture = 'vxWorks-ppc604_long', epics_base = None):
     # first parse the normal options
     from optparse import OptionParser
-    parser = OptionParser('''usage: %prog [options] <ioc_name>
+    parser = OptionParser('''\
+usage: %prog [options] <ioc_name>
 
 This program will configure iocbuilder to write an ioc structure. It should
 be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
@@ -297,8 +248,10 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
         help='Print lots of debug information')
     parser.add_option('--sim', dest='simarch',
         help='Create an ioc with arch=SIMARCH in simulation mode')
+    parser.add_option('--arch', dest='architecture', default = architecture,
+        help='Specify target system architecture')
     (options, args) = parser.parse_args()
-    if len(args) != 1:
+    if len(args) < 1:
         parser.error(
             '*** Error: Incorrect number of arguments '
             '- you must the IOC name as input')
@@ -308,20 +261,118 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
         os.path.join('..', '..', 'iocs', options.iocname))
     if options.simarch:
         options.iocpath += '_sim'
-        architecture = options.simarch
+        options.architecture = options.simarch
+    options.epics_base = epics_base
+    options.build_root = '.'
+    return options, args[1:]
+
+
+## Parse RELEASE files and setup iocbuilder using the information in them
+#
+# \param options
+#   The \c options object returned from ParseEtcArgs()
+# \param dependency_tree
+#   If present will be used to parse module dependencies from
+#   \c configure/RELEASE and other files.
+# \param ioc_writer
+#   Use a different \c ioc_writer. If not specified iocwriter.DiamondIocWriter
+#   will be used
+#
+# Does the following:
+#
+# - If \c dependency_tree then:
+#  - Parse <tt>../../configure/RELEASE</tt>
+#  - Substitute macros in <tt>\<iocname>_RELEASE</tt> using 
+#    <tt>../../configure/RELEASE</tt>
+#  - Set \c options.epics_base
+# - Run \ref iocbuilder.configure.Configure "Configure(...)" with the supplied 
+#   information from \c options
+# - If \c dependecy_tree then:
+#  - Do a libversion::ModuleVersion call for each module listed in the tree created from
+#    <tt>\<iocname>_RELEASE</tt> and <tt>../../configure/RELEASE</tt>
+def ParseAndConfigure(options, dependency_tree=None, ioc_writer=None):
+    # if we have a dependency_tree class, then parse RELEASE file
+    if dependency_tree is not None:
+        # If we have a release file, then parse it
+        release = os.path.join(
+            options.build_root, '..', '..', 'configure', 'RELEASE')
+        if os.path.isfile(release):
+            tree = dependency_tree(None, release, warnings=False)
+        else:
+            tree = dependency_tree(None, warnings=False)
+        # add any leaves in
+        extra_release = os.path.join(
+            options.build_root, options.iocname + '_RELEASE')
+        if os.path.isfile(extra_release):
+            class hacked_tree(dependency_tree):
+                def init_version(self):
+                    self.modules.update(tree.modules)
+            extra_tree = hacked_tree(None, extra_release, warnings=False)
+            if options.debug:
+                print '# Release tree'
+                tree.print_tree()
+            if options.debug:
+                print '# Extra tree'
+                extra_tree.print_tree()
+            tree.leaves += extra_tree.leaves
+        # print the tree if requested
+        if options.debug:
+            print '# Generated RELEASE tree'
+            tree.print_tree()
+        if 'EPICS_BASE' in tree.macros:
+            options.epics_base = tree.macros['EPICS_BASE']
+
     # do the relevant configure call
-    import iocwriter
+    if ioc_writer is None:
+        import iocwriter
+        ioc_writer = iocwriter.DiamondIocWriter
     Configure(
         record_names = recordnames.BasicRecordNames(),
-        ioc_writer   = iocwriter.DiamondIocWriter,
+        ioc_writer   = ioc_writer,
         dynamic_load = False,
-        architecture = architecture,
+        architecture = options.architecture,
         register_dbd = True,
-        simulation   = options.simarch)
+        simulation   = options.simarch,
+        epics_base   = options.epics_base)
 
-    # Parse a RELEASE file to do the ModuleVersion calls
+    # do the ModuleVersion calls on a dependency tree
+    vs = []
     if dependency_tree is not None:
-        ParseRelease(dependency_tree,
-            options.iocname + '_RELEASE', '../../configure/RELEASE',
-            options.debug)
-    return options
+        # now flatten the leaves of the tree, and remove duplicates
+        leaves = []
+        for leaf in tree.flatten(include_self=True):
+            duplicates = [ l for l in leaves if l.name == leaf.name ]
+            if duplicates:
+                print '***Warning: Module "%s" defined with' % leaf.name, \
+                    'multiple versions, using "%s"' % duplicates[0].version
+            else:
+                leaves.append(leaf)
+        from libversion import ModuleVersion
+        for name, version, path in [
+                (l.name, l.version, l.path) for l in leaves]:
+            # for work and local modules, just tell iocbuilder the path
+            if version in ['work', 'local']:
+                home = os.path.abspath(path)
+                use_name = False
+                version = None
+            # invalid modules don't have a configure/RELEASE, so won't have a
+            # builder object
+            elif version == 'invalid':
+                continue
+            # prod modules need more hacking of the path to look right
+            else:
+                home = os.path.abspath(os.path.join(path, '..', '..'))
+                use_name = True
+            # iocs need to be treated more like support modules
+            if '/' in name:
+                name = name.split('/')[-1]
+            # print out the ModuleVersion call if asked
+            if options.debug:
+                print 'ModuleVersion(%s, %s, use_name=%s, home=%s)' % (
+                    repr(name), repr(version), repr(use_name),
+                    repr(home))
+            # add the ModuleVersion object to the list
+            vs.append(ModuleVersion(name, version, use_name=use_name,
+                    home=home))
+
+    return vs

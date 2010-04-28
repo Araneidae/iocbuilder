@@ -24,9 +24,10 @@ vxWorks.
 - \ref iocbuilder.configure.ConfigureTemplate "ConfigureTemplate()" <br>
 This initialisation is appropriate the builder is being used to generate a
 template.
-- \ref iocbuilder.configure.ParseEtcArgs "ParseEtcArgs()" <br>
-This initialisation picks up version information from \c configure/RELEASE and
-related files.
+- \ref iocbuilder.configure.ParseEtcArgs "ParseEtcArgs()" and 
+\ref iocbuilder.configure.ParseAndConfigure "ParseAndConfigure()" <br>
+This initialisation picks up ioc information from command line arguments,
+and version information from \c configure/RELEASE and related files.
 - \ref iocbuilder.configure.Configure "Configure(...)"  <br> 
 All the other calls above delegate to this more general purpose call.
 
