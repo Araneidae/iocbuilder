@@ -34,6 +34,7 @@ class ArgInfo(object):
     #     .default_names      List of arguments with default values
     #     .default_values     List of default values of arguments
     #     .optional_names     List of optional arguments.
+
     def __init__(self, __source=None, __optional=[], __method=True, **descs):
         self.descriptions = descs
         for k,v in descs.items():
@@ -115,16 +116,50 @@ class ArgInfo(object):
             if name not in without]
 
     ## Aggregates information about two ArgInfo objects into a single
-    # object.  Any overlap of names is treated as an error.
+    # object.  Argument details in the second ArgInfo object override settings
+    # in the first.
     def __add__(self, other):
         result = ArgInfo()
         result.descriptions = dict(self.descriptions, **other.descriptions)
-        result.required_names = self.required_names + other.required_names
-        result.default_names  = self.default_names  + other.default_names
-        result.default_values = self.default_values + other.default_values
-        result.optional_names = self.optional_names + other.optional_names
-        result.descriptions = self.descriptions.copy()
-        result.descriptions.update(other.descriptions)
+        result.required_names = self.required_names[:]
+        result.default_names  = self.default_names[:]
+        result.default_values = self.default_values[:]
+        result.optional_names = self.optional_names[:]
+
+        # Because any type of argument can be convered to any other type, but
+        # we are keen to preserve argument order, the process of merging is
+        # rather involved.
+        def del_required(name):
+            if name in result.required_names:
+                result.required_names.remove(name)
+        def del_optional(name):
+            if name in result.optional_names:
+                result.optional_names.remove(name)
+        def del_default(name):
+            if name in result.default_names:
+                i = result.default_names.index(name)
+                del result.default_names[i]
+                del result.default_values[i]
+
+        for name in other.required_names:
+            del_optional(name)
+            del_default(name)
+            if name not in result.required_names:
+                result.required_names.append(name)
+        for (name, value) in zip(other.default_names, other.default_values):
+            del_required(name)
+            del_optional(name)
+            if name in result.default_names:
+                result.default_values[result.default_names.index(name)] = value
+            else:
+                result.default_names.append(name)
+                result.default_values.append(value)
+        for name in other.optional_names:
+            del_required(name)
+            del_default(name)
+            if name not in result.optional_names:
+                result.optional_names.append(name)
+
         result.__validate()
         return result
 
