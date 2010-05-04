@@ -17,7 +17,8 @@ import paths
 from liblist import Hardware
 
 
-__all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter', 'SetSource']
+__all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter', 'SetSource',
+    'DocumentationIocWriter']
 
 _Source = os.path.realpath(sys.argv[0])
 
@@ -272,7 +273,78 @@ class SimpleIocWriter(IocWriter):
         self.WriteFile(filename, self.PrintIoc,
             maxLineLength=self.IOCmaxLineLength)
 
+## This IOC Writer creates a documentation file for doxygen detailing how
+# to build this IOC
+class DocumentationIocWriter(IocWriter):
+    __all__ = ['WriteNamedIoc']
 
+    ## Creates build instructions page in path.
+    # Simply wraps \ref DocumentationIocWriter.__init__
+    @classmethod
+    def WriteNamedIoc(cls, *args, **kargs):
+        cls(*args, **kargs)
+
+    ## Creates build instructions page in path. The file is written to \c path
+    # using doxygen syntax so that it can appear in the documentation.
+    # \param path
+    #   Full path of the filename to write to
+    # \param ioc_name
+    #   Name of IOC used in instructions
+    # \param *args
+    #   Discarded
+    # \param **kwargs
+    #   Discarded
+    def __init__(self, path, ioc_name, *args, **kwargs):
+        # Remember parameters
+        fname = os.path.basename(path)
+        path = os.path.dirname(path)
+        IocWriter.__init__(self, path)  # Sets up iocRoot
+        self.ioc_name = ioc_name
+        self.page_name = fname
+        self.SetIocName(self.ioc_name, False)
+        self.WriteFile(fname, self.CreateBuildInstructions)
+
+    def CreateBuildInstructions(self):
+        print "/**"
+        print "\page %s Build Instructions for %s" % \
+            (self.page_name, self.ioc_name)
+        print "Build Instructions for %s" %self.ioc_name
+        print "<ol>"
+        print "<li> Add the dependencies to configure/RELEASE."
+        print "\\verbatim"
+        gen_paths = [(m.LibPath(), m.MacroName())
+            for m in libversion.ModuleBase.ListModules()]
+        for path,name in gen_paths:
+            if name != "EPICS_BASE":
+                print name+"="+path
+        print "\\endverbatim"
+        print
+        print "<li> Add the DBD dependencies to src/Makefile"
+        print "\\verbatim"
+        for dbd in Hardware.GetDbdList():
+            print "%s_DBD += %s.dbd" % (self.ioc_name, dbd)
+        print "\\endverbatim"
+        print
+        print "<li> Add the LIBS dependencies to src/Makefile"
+        print "\\verbatim"
+        for lib in reversed(Hardware.GetLibList()):
+            print "%s_LIBS += %s" % (self.ioc_name, lib)
+        for lib in reversed(Hardware.GetSysLibList()):
+            print '%s_SYS_LIBS += %s' % (self.ioc_name, lib)
+        print "\\endverbatim"
+        print
+        print "<li> Use the template files to add records to the database."
+        print "\\verbatim",
+        recordset.RecordsSubstitutionSet.Print()
+        print "\\endverbatim"
+        print
+        print "<li> Add the startup commands to st.cmd"
+        print "\\verbatim"
+        Hardware.PrintBody()
+        Hardware.PrintPostIocInit()
+        print "\\endverbatim"
+        print "</ol>"
+        print "**/"
 
 ## This IOC writer generates a complete IOC application tree in the Diamond
 # style.
