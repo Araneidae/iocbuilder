@@ -407,7 +407,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
     def MakeDirectory(self, *dir_names):
         os.makedirs(os.path.join(self.iocRoot, *dir_names))
 
-    def DeleteIocDirectory(self):
+    def DeleteIocDirectory(self, makefile_name):
         # Checks that the newly computed iocBoot directory is a plausible IOC
         # directory.  This prevents any unfortunate accidents caused by
         # accidentially pointing at some other directory by mistake...
@@ -419,15 +419,19 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         require_list = ['configure', 'iocBoot']
         ignore_list = ['bin', 'db', 'dbd', 'Makefile', 'data'] + \
             fnmatch.filter(dirlist, '%sApp' % (self.ioc_name)) + \
-            self.keep_files
+            self.keep_files + [makefile_name]
         checklist = set(dirlist) - set(ignore_list)
-        assert checklist == set(require_list) or not checklist, \
+        assert checklist <= set(require_list), \
             'Directory %s doesn\'t appear to be an IOC directory' % \
                 self.iocRoot
         if self.keep_files:
             for file in dirlist:
                 if file not in self.keep_files:
-                    shutil.rmtree(os.path.join(self.iocRoot, file))
+                    file = os.path.join(self.iocRoot, file)
+                    try:
+                        os.remove(file)
+                    except OSError:
+                        shutil.rmtree(file)
         else:
             shutil.rmtree(self.iocRoot)
 
@@ -525,7 +529,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         # Create the working skeleton
         self.CreateIocNames(ioc_name)
         self.StartMakefiles(makefile_name)
-        self.CreateSkeleton()
+        self.CreateSkeleton(makefile_name)
 
         # Actually generate the IOC
         self.GenerateIoc()
@@ -550,10 +554,10 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             self.TOP_MAKEFILE_HEADER, self.TOP_MAKEFILE_FOOTER,
             name = makefile_name)
 
-    def CreateSkeleton(self):
+    def CreateSkeleton(self, makefile_name):
         # Create the complete skeleton after first erasing any previous IOC
         if os.access(self.iocRoot, os.F_OK):
-            self.DeleteIocDirectory()
+            self.DeleteIocDirectory(makefile_name)
 
         # The order here corresponds to the order of generation in the TOP
         # makefile.

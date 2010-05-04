@@ -246,8 +246,8 @@ This program will configure iocbuilder to write an ioc structure. It should
 be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
     parser.add_option('-d', action='store_true', dest='debug',
         help='Print lots of debug information')
-    parser.add_option("--doc", dest="doc", 
-        help="Write out information in format for doxygen build instructions")        
+    parser.add_option("--doc", dest="doc",
+        help="Write out information in format for doxygen build instructions")
     parser.add_option('--sim', dest='simarch',
         help='Create an ioc with arch=SIMARCH in simulation mode')
     parser.add_option('--arch', dest='architecture', default = architecture,
@@ -269,7 +269,7 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
         import iocwriter
         options.ioc_writer = iocwriter.DocumentationIocWriter
     else:
-        options.ioc_writer = None                                
+        options.ioc_writer = None
     options.epics_base = epics_base
     options.build_root = '.'
     return options, args[1:]
