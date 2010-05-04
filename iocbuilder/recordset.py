@@ -71,6 +71,16 @@ class SubstitutionSet(support.autosuper_object):
         # across minor changes.
         for template, subList in self.__Substitutions.items():
             print
+            if hasattr(subList[0], "ArgInfo"):
+                lines = []
+                for x in subList[0].Arguments:
+                    if x in subList[0].ArgInfo.descriptions:
+                        a = subList[0].ArgInfo.descriptions[x]
+                        lines.append((x, a.desc.split("\n")[0]))
+                format = "#  %%-%ds  %%s" % max([len(x[0]) for x in lines])
+                if lines:
+                    print "# Macros:"
+                    print "\n".join([format % l for l in lines])
             print 'file %s' % template
             print '{'
             subList[0]._PrintPattern()

@@ -274,9 +274,6 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
 # \param dependency_tree
 #   If present will be used to parse module dependencies from
 #   \c configure/RELEASE and other files.
-# \param ioc_writer
-#   Use a different \c ioc_writer. If not specified iocwriter.DiamondIocWriter
-#   will be used
 #
 # Does the following:
 #
@@ -288,9 +285,10 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
 # - Run \ref iocbuilder.configure.Configure "Configure(...)" with the supplied
 #   information from \c options
 # - If \c dependecy_tree then:
-#  - Do a libversion::ModuleVersion call for each module listed in the tree created from
-#    <tt>\<iocname>_RELEASE</tt> and <tt>../../configure/RELEASE</tt>
-def ParseAndConfigure(options, dependency_tree=None, ioc_writer=None):
+#  - Do a libversion::ModuleVersion call for each module listed in the tree
+#    created from <tt>\<iocname>_RELEASE</tt> and
+#    <tt>../../configure/RELEASE</tt>
+def ParseAndConfigure(options, dependency_tree=None):
     # if we have a dependency_tree class, then parse RELEASE file
     if dependency_tree is not None:
         # If we have a release file, then parse it
@@ -323,12 +321,12 @@ def ParseAndConfigure(options, dependency_tree=None, ioc_writer=None):
             options.epics_base = tree.macros['EPICS_BASE']
 
     # do the relevant configure call
-    if ioc_writer is None:
+    if options.ioc_writer is None:
         import iocwriter
-        ioc_writer = iocwriter.DiamondIocWriter
+        options.ioc_writer = iocwriter.DiamondIocWriter
     Configure(
         record_names = recordnames.BasicRecordNames(),
-        ioc_writer   = ioc_writer,
+        ioc_writer   = options.ioc_writer,
         dynamic_load = False,
         architecture = options.architecture,
         register_dbd = True,

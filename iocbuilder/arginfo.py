@@ -220,7 +220,7 @@ class ArgType(object):
 def Simple(desc, typ=str):
     assert typ in _simpleTypes, \
         '%s is not a supported simple type %s' % (typ, _simpleTypes)
-    desc = '%s %s' % (desc, typ)
+    desc = '%s\n%s' % (desc, typ)
     return ArgType(desc, typ)
 
 ## A choice of different values, with optional different labels
@@ -235,7 +235,7 @@ def Choice(desc, values, labels = None):
     for v in values:
         assert typ == type(v), \
             'Value "%s" doesn\'t have same type as "%s"' % (v, values[0])
-    desc = '%s %s\nValues:\n ' % (desc, typ)
+    desc = '%s\n%s\nValues:\n ' % (desc, typ)
     if labels is None:
         desc += '\n '.join(map(str,values))
         return ArgType(desc, typ, labels = values)
@@ -260,13 +260,13 @@ def Enum(desc, values):
 # xmlbuilder will look at all the defined objects so far, and offer a selection
 # of those that are a subclass of \c typ as options for this argument
 def Ident(desc, typ):
-    desc = '%s %s' % (desc, typ)
+    desc = '%s\n%s' % (desc, typ)
     return ArgType(desc, typ, ident = True)
 
 ## Deprecated. Do not use
 def List(desc, num, func, *args, **kwargs):
     print >> sys.stderr, '***Warning, List ArgInfo item is deprecated'
-    return [ func('%s %d'%(desc,i), *args, **kwargs) for i in range(num) ]
+    return [ func('%s\n%d'%(desc,i), *args, **kwargs) for i in range(num) ]
 
 ## choice of possible values for SEVR field
 # \param desc Description of the argument
