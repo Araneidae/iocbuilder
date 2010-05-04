@@ -1,7 +1,7 @@
 /**
-\page building_iocs Brief Guide to Building IOCs
+\page building_iocs Brief Guide to Building IOCs using \c iocbuilder
 
-\section ref_overview Brief Guide to Building IOCs
+\section ref_overview Brief Guide to Building IOCs using \c iocbuilder
 
 Creating an IOC with the IOC builder involves the following steps:
 
@@ -40,7 +40,10 @@ loaded using one of the following three methods:
 Calls to this function can be made inline for each support module.
 - \ref iocbuilder.configure.LoadVersionFile "LoadVersionFile()" <br>
 This is useful for packaging module definitions separately.
-- ParseEtcArgs() plus ParseAndConfigure().
+- If \ref iocbuilder.configure.ParseAndConfigure "ParseAndConfigure()" was
+passed a \c dependency_tree object then it will do 
+\ref iocbuilder.libversion.ModuleVersion "ModuleVersion()" calls for each
+module it finds in \c configure/RELEASE
 
 The builder will look for a Python module called \c builder in the \c etc
 subdirectory of each loaded EPICS support module: this can be a file \c

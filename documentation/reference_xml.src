@@ -1,0 +1,145 @@
+/**\page using_xmlbuilder Creating an IOC using the xml front end
+This page will walk through creating a simple IOC using the xmlbuilder gui front
+end to iocbuilder
+
+\section pre Prerequisites
+- Run the \c dls-make-etc-dir.py script to create an \c etc directory.
+
+\section dir Directory structure
+- \c \<module\>/etc/makeIocs/\<iocname\>_RELEASE is an optional file that 
+specifies module dependencies that are not captured in 
+\c \<module\>/configure/RELEASE 
+- <tt>\<module\>/etc/makeIocs/\<iocname\>.xml</tt> is an XML file that containts
+elements representing builder objects. The xmlbuilder module can create 
+iocbuilder objects from this file, and the \c xeb.py application is included to
+edit this file.
+
+\section ex Example
+Following the steps below will create a simple IOC with a single instance of a
+eurotherm2k controller. If you want to try this out for yourself you can copy
+\c example_ioc.xml and \c example_ioc_RELEASE from 
+\c \<iocbuilder\>/documentation/examples/ to \c \<module\>/etc/makeIocs/
+Typing \c make in the \c \<module\>/etc/makeIocs/ directory will create an IOC 
+\c example_ioc in \c \<module\>/iocs/example_ioc 
+
+\subsection ex1 \<iocname\>_RELEASE
+The following text is from 
+\c \<iocbuilder\>/documentation/examples/example_ioc_RELEASE
+\include example_ioc_RELEASE
+This is just a standard RELEASE file that lists paths to other modules. The 
+iocbuilder will walk the tree of \c \<module\>/configure/RELEASE and 
+\c \<iocname\>_RELEASE if it exists, and import the relevant builder files from 
+these modules in depth first order (i.e. all dependencies of a module before the
+module itself).
+
+\subsection ex2 \<iocname\>.xml
+The following text is from 
+\c \<iocbuilder\>/documentation/examples/example_ioc.xml
+\include example_ioc.xml
+- The \c \<components\> element represents the IOC and provides
+ - a root node to place objects under
+ - a place to specify the architecture for the real IOC
+- Each element under the \c \<components\> element represents a builder object
+and each of its attributes is a named argument
+
+\section build Building the IOC
+The make rule runs \c dls-xml-iocbuilder.py which reads the xml file. For each
+element it creates the corresponding builder element and then writes out the 
+IOC. It has a debug mode where it will write the python calls it makes to
+stdout, and a simulation mode to write a simulation output.
+
+\section xeb xeb.py
+You can hand edit the xml file if you want, but the most useful way to edit it
+is with the gui tool \c xeb.py
+
+If you run the following:
+\code
+[tmc43@pc0043 eurotherm2k]$$ xeb.py <module>/etc/makeIocs/example_ioc.xml
+\endcode
+You will be presented with the gui:
+\image html ss1.png "Gui snapshot"
+As you can see, the main window is split into 3 sections, the \ref 
+table_sec on the top left, the \ref undo_sec on
+the bottom left and the \ref object_sec on the right, with a 
+\ref menu_sec along the top.
+
+\subsection table_sec Table selector
+The table selector shows an entry for each builder class that has objects
+defined. If you click on one of them, the table is displayed in the 
+\ref object_sec. If you right click you will be presented with the 
+\ref component_menu
+
+\subsection undo_sec Undo stack
+This contains a list of the actions that have been performed on the visible
+table. You can click up and down to undo and redo actions
+
+\subsection object_sec Table editor
+In this pane you are presented with a spreadsheet view of the current table.
+If you mouse over a value you will be shown a tooltip describing that argument.
+If there are a choice of values for a field they will also be shown in the
+tooltip as well as being autocomplete options. If you right click you will be
+presented with the \ref edit_menu
+
+The cells are colourcoded as follows:
+- White background: Required argument
+- Yellow background: Optional argument
+- Shaded background: Cell selected
+- Black text: Normal value
+- Grey text: No value entered, default value shown
+- Red text and background: Invalid value
+
+\image html ss2.png "Editing an object"
+
+\subsection menu_sec Menu bar
+This contains the following menus:
+
+\subsection file_menu File menu
+<div style="position:relative; left:30px; top:0px; height:190px; width:187px">
+\image html ss3.png
+</div>
+- New: Create a new xml data structure
+- Open: Open an existing xml file
+- Reload: Reopen the current xml file
+- Save: Save as current xml file
+- Save As: Save as different xml file
+- Set Architecture: Set the architecture of the file
+
+\subsection edit_menu Edit menu
+<div style="position:relative; left:30px; top:0px; height:271px; width:231px">
+\image html ss4.png
+</div>
+- Insert Row: Insert a row above the currently selected row(s)
+- Insert Row Under: Insert a row below the currently selected row(s)
+- Remove Row: Delete the currently selected row(s)
+- Cut: Cut the contents of the table to the clipboard
+- Copy: Copy the contents of the table to the clipboard
+- Paste: If the clipboard contains 1 value and there is a multi-cell selection
+then paste the value to all cells, otherwise paste the contents from the top
+left cell selection
+- Clear: Clear the selected cell(s)
+- Fill Cells: Take the top left cell and fill down and across, incrementing
+trailing integer values. E.g. if cell(0,0) = "Text1", cells (0,0) -> (0,2) are
+selected and Fill cells clicked, cell(0,1) = "Text2" and cell(0,2) = "Text3"
+- Undo: Undo the last action on the selected table
+- Redo: Redo the last action on the selected table
+\subsection component_menu Components menu
+<div style="position:relative; left:30px; top:0px; height:157px; width:131px">
+\image html ss5.png
+</div>
+- Remove Table: Remove the currently selected table (its objects are not
+deleted until the file is saved)
+- Each remaining menu is the name of a support module, clicking on it will
+open a sub-menu which contains all the builder classes that the module provides.
+Clicking on one of these menu items will display it in the \ref object_sec
+- The records submenu contains all the record types that are available to
+instantiate. More details in \ref xmlbuilder_rec
+
+\section xmlbuilder_rec Creating records from xmlbuilder
+\image html ss6.png "Editing records in xeb.py"
+At the moment there is limited record support in xmlbuilder. You can create
+named records of the supported types, but as dbds are not intelligently
+instantiated none of the \c DTYP information is validated correctly. This will
+be fixed in a future release. You can access record information from the
+record submenu of the \ref component_menu
+
+*/

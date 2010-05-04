@@ -1,0 +1,101 @@
+/**\page generating_records Creating records using \c iocbuilder
+Individual records can easily be added to an IOC definition, either as
+standalone records, or bound to hardware resources.  For example, the
+following builder script generates 'ai' and 'waveform' records on an 8401 ADC
+card.
+
+\code
+import iocbuilder
+iocbuilder.ConfigureIOC()
+from iocbuilder import *
+
+ModuleVersion('ipac',       '2-8dls4-3')
+ModuleVersion('Hy8401ip',   '3-11')
+
+card4 = hardware.Hy8002(4)
+adc = card4.Hy8401(0)
+
+SetDomain('TS', 'XX')
+SetDevice('DEV', 1)
+
+recs = []
+for i in range(8):
+    ch = adc.channel(i)
+    recs.extend([
+        ch.ai('AI%d' % (i+1), EGU = 'V', PREC = 4),
+        ch.waveform('WF%d' % (i+1), NELM = 1024, FTVL = 'FLOAT')])
+fan = create_fanout('TRIGGER', SCAN = '1 second', *recs)
+records.bo('GO', FLNK = fan)
+
+WriteIoc('iocs', 'TS', 'XX', 1)
+\endcode
+
+We've already seen what the first lines do, so let's start with the following
+new definitions.
+
+
+\section naming Record naming
+\code
+SetDomain('TS', 'XX')
+SetDevice('DEV', 1)
+\endcode
+
+The default record naming convention (as configured by ConfigureIOC(), as it
+happens) strictly follows the Diamond naming convention, where every record
+name is of the form
+\code
+<domain>-<ta>-<component>-<id>:<name>
+\endcode
+Here we specify the first four components in the same order -- all records
+will then assume this "device" name -- thus in this case we will be
+generating records named <tt>TS-XX-DEV-01:\<name\></tt>, where \c \<name\> is 
+specified when we generate the record.
+
+
+\section hardware Hardware bound records
+\code
+    ch = adc.channel(i)
+    ch.ai('AI%d' % (i+1), EGU = 'V', PREC = 4)
+    ch.waveform('WF%d' % (i+1), NELM = 1024, FTVL = 'FLOAT')
+\endcode
+
+This part of the code above simply extracts one of the eight ADC channels and
+then generates an ai record named \c AI1 for the first channel (and so on up to
+\c AI8), and similarly waveform records named \c WF1 to \c WF8.
+
+The true record name is then generated from the device configured above to
+construct records with full names of the form <tt>TS-XX-DEV-01:AI1</tt> and so 
+on.
+
+Individual fields in each record can be specified during construction of the
+record (or fields can be assigned after construction).  All fields and values
+are validated against the dbd file where the record type is defined.  The
+\c DTYP and \c INP fields are automatically assigned, as these records are bound
+to hardware entities.
+
+
+\section fan Generating fanout records
+\code
+recs = []
+for i in range(8):
+    recs.extend([ ... ])
+fan = create_fanout('TRIGGER', SCAN = '1 second', *recs)
+\endcode
+
+All the records generated in the loop are gathered together into a single list
+-- and then create_fanout() is used to create a chain of fanout records.  This
+idiom allows the records to be processed together in a controlled way.
+
+
+\section unbound Generating unbound records
+\code
+records.bo('GO', FLNK = fan)
+\endcode
+
+The \c records object contains an attribute for each record type (automatically
+populated from dbd files), and can be used to create arbitrary records.  In
+this case we are generating a record named <tt>TS-XX-DEV-01:GO</tt> with its 
+forward link set to the previously created fanout -- thus processing \c GO will 
+trigger all the records in this example.
+
+*/
