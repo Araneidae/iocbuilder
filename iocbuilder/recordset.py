@@ -77,8 +77,8 @@ class SubstitutionSet(support.autosuper_object):
                     if x in subList[0].ArgInfo.descriptions:
                         a = subList[0].ArgInfo.descriptions[x]
                         lines.append((x, a.desc.split("\n")[0]))
-                format = "#  %%-%ds  %%s" % max([len(x[0]) for x in lines])
                 if lines:
+                    format = "#  %%-%ds  %%s" % max([len(x[0]) for x in lines])
                     print "# Macros:"
                     print "\n".join([format % l for l in lines])
             print 'file %s' % template

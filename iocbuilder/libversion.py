@@ -5,6 +5,7 @@ import os
 import sys
 import string
 import re
+import types
 
 import support
 import hardware
@@ -506,24 +507,33 @@ simulation_mode = False
 #   Replacement simulation class.
 def SetSimulation(real, sim):
     if simulation_mode:
+        # If no simulation, make a dummy one
         if sim is None:
-            class sim(DummySimulation):
+            class new_sim(DummySimulation):
                 pass
+        else:
+            # Try to subclass the sim object
+            try:
+                class new_sim(sim):
+                    pass
+            # It is probably a function, so just call it
+            except TypeError, e:
+                def new_sim(*args, **kwargs):
+                    return sim(*args, **kwargs)
 
         # first replace it in the list of subclasses
         index = ModuleBase.ModuleBaseClasses.index(real)
-        ModuleBase.ModuleBaseClasses[index] = sim
+        ModuleBase.ModuleBaseClasses[index] = new_sim
         # now in iocbuilder.modules
         for attr in [
                 '__name__', 'ModuleName', 'ArgInfo', 'Defaults', 'Arguments']:
             if hasattr(real, attr):
-                setattr(sim, attr, getattr(real, attr))
+                setattr(new_sim, attr, getattr(real, attr))
         modulename = real.ModuleVersion.ModuleName()
-        setattr(getattr(modules, modulename), real.__name__, sim)
-        return sim
+        setattr(getattr(modules, modulename), real.__name__, new_sim)
+        return new_sim
     else:
-        # first replace it in the list of subclasses
+        # Remove it from the list of subclasses
         if sim in ModuleBase.ModuleBaseClasses:
             ModuleBase.ModuleBaseClasses.remove(sim)
-        # now in iocbuilder.modules
         return real
