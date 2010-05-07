@@ -1,11 +1,10 @@
-#!/dls_sw/tools/bin/python2.5
+#!/bin/env python2.6
 
 from PyQt4.QtGui import QMainWindow, QMessageBox, QApplication, QTableView, \
     QGridLayout, QListWidget, QDockWidget, QAbstractItemView, QUndoView, QMenu, \
     QFileDialog, QInputDialog, QLineEdit, QListWidgetItem, QClipboard, QDialog, \
     QScrollArea, QTextEdit, QFont, QPushButton
 from PyQt4.QtCore import Qt, SIGNAL, SLOT, QSize, QVariant, QString
-from xmlbuilder import Store
 from delegates import ComboBoxDelegate
 import sys, signal, os, re, traceback
 from optparse import OptionParser
@@ -218,6 +217,7 @@ class GUI(QMainWindow):
         # initialise filename
         self.filename = None
         # make the data store
+        from xmlbuilder import Store        
         self.store = Store(debug = debug)
         # view the current table
         self.tableView = TableView(self)
@@ -507,4 +507,9 @@ def main():
     sys.exit(app.exec_())
 
 if __name__=="__main__":
+    sys.path.append(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    print sys.path        
+    from pkg_resources import require
+    require("dls_dependency_tree")
     main()

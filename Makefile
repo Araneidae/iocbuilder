@@ -1,36 +1,31 @@
-PYTHON = python2.4
-SCRIPT_DIR = /dls_sw/tools/bin
-TEST_INSTALL_DIR = /dls_sw/work/common/python/test/packages
-TEST_SCRIPT_DIR = /dls_sw/work/common/python/test/scripts
+# Specify defaults for testing
+PREFIX=/scratch/tools
+PYTHON=$(PREFIX)/bin/python2.6
+INSTALL_DIR=$(PREFIX)/lib/python2.6/site-packages
+SCRIPT_DIR=$(PREFIX)/bin
+MODULEVER=0.0
 
-# builds a versioned python egg of the diamond namespace
-# install with easy_install
-# see http://peak.telecommunity.com/DevCenter/setuptools
+# Override with any release info
+-include Makefile.private
 
-all: dist make_docs
-
-clean: remove clean_docs
-
-dist: setup.py $(wildcard cothread/*.py) 
-	$(PYTHON) setup.py bdist_egg
+# This is run when we type make
+dist: setup.py $(wildcard iocbuilder/*) $(wildcard xmlbuilder/*) make_docs
+	MODULEVER=$(MODULEVER) $(PYTHON) setup.py bdist_egg
 	touch dist
 
-remove:
+# Clean the module
+clean:
 	$(PYTHON) setup.py clean
-	-rm -rf build dist *egg-info print_documentation.sh
+	-rm -rf build dist *egg-info installed.files 
 	-find -name '*.pyc' -exec rm {} \;
+	$(MAKE) -C documentation clean	
 
-install: all
+# Install the built egg
+install: dist
 	$(PYTHON) setup.py easy_install -m \
-            --script-dir=$(SCRIPT_DIR) dist/*.egg
-
-test: all
-	$(PYTHON) setup.py easy_install -m \
-            --install-dir=$(TEST_INSTALL_DIR) \
-            --script-dir=$(TEST_SCRIPT_DIR) dist/*.egg
+		--record=installed.files \
+		--install-dir=$(INSTALL_DIR) \
+		--script-dir=$(SCRIPT_DIR) dist/*.egg
 
 make_docs:
-	make -C documentation
-
-clean_docs:
-	make -C documentation clean
+	$(MAKE) -C documentation	

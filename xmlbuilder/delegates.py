@@ -1,57 +1,10 @@
 from PyQt4.QtGui import QItemDelegate, QComboBox, QPushButton, QCompleter, QLineEdit, QBrush, QStyle, QColor, QPalette
-from PyQt4.QtCore import Qt, QVariant, SIGNAL
-'''
-class ComboBoxDelegate(QItemDelegate):
-
-    def createEditor(self, parent, option, index):
-        values = index.data(Qt.UserRole)        
-        if values.isNull():
-            return QItemDelegate.createEditor(self, parent, option, index)
-        elif values.type() == QVariant.Bool:
-            if index.column() == 0:                
-                return BoolButton("#", "", parent)            
-            else:
-                return BoolButton("true", "false", parent)
-        else:
-            editor = QComboBox(parent)
-            editor.setCompleter(None)
-            editor.addItems(values.toStringList())
-            return editor
-            
-    def setEditorData(self, editor, index):
-        if isinstance(editor, QComboBox):
-            # Ask for the index in the list
-            value = index.data(Qt.UserRole + 1).toInt()[0]
-            editor.setCurrentIndex(value)
-        elif isinstance(editor, BoolButton):
-            editor.setChecked(index.data(Qt.EditRole).toBool())            
-        else:
-            return QItemDelegate.setEditorData(self, editor, index)
-            
-    def setModelData(self, editor, model, index):
-        if isinstance(editor, QComboBox):
-            if index.column() in model._cValues:
-                value = model._cValues[index.column()][editor.currentIndex()]
-            else:
-                value = editor.currentText()
-            model.setData(index, QVariant(value), Qt.EditRole)           
-        elif isinstance(editor, BoolButton):
-            model.setData(index, QVariant(editor.isChecked()), Qt.EditRole)            
-        else:
-            return QItemDelegate.setModelData(self, editor, model, index)
-            
-    def updateEditorGeometry(self, editor, option, index):
-        if isinstance(editor, QComboBox):
-            editor.setGeometry(option.rect)         
-        elif isinstance(editor, BoolButton):
-            editor.setGeometry(option.rect)         
-        else:
-            return QItemDelegate.updateEditorGeometry(self, editor, option, index)
-'''            
+from PyQt4.QtCore import Qt, QVariant, SIGNAL        
 
 class ComboBoxDelegate(QItemDelegate):
 
     def createEditor(self, parent, option, index):
+        print "createEditor"    
         values = index.data(Qt.UserRole)        
         if values.isNull():
             return QItemDelegate.createEditor(self, parent, option, index)
@@ -65,6 +18,7 @@ class ComboBoxDelegate(QItemDelegate):
             return editor
             
     def setEditorData(self, editor, index):
+        print "setEditorData"
         if isinstance(editor, BoolButton):
             editor.setChecked(index.data(Qt.EditRole).toBool())       
         elif isinstance(editor, ComboLineEdit):    
@@ -73,6 +27,7 @@ class ComboBoxDelegate(QItemDelegate):
             return QItemDelegate.setEditorData(self, editor, index)
             
     def setModelData(self, editor, model, index):
+        print "setModelData"    
         if isinstance(editor, ComboLineEdit):
             model.setData(index, QVariant(editor.text()), Qt.EditRole)           
         elif isinstance(editor, BoolButton):
@@ -81,6 +36,7 @@ class ComboBoxDelegate(QItemDelegate):
             return QItemDelegate.setModelData(self, editor, model, index)    
             
     def updateEditorGeometry(self, editor, option, index):
+        print "updateEditorGeometry"
         if isinstance(editor, QComboBox):
             editor.setGeometry(option.rect)         
         elif isinstance(editor, ComboLineEdit):
@@ -100,9 +56,10 @@ class ComboLineEdit(QLineEdit):
     def __init__(self, l, parent):
         QLineEdit.__init__(self, parent)
         self.c = QCompleter(l, parent)
-        self.c.setCompletionMode(QCompleter.InlineCompletion)
+        self.c.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
         self.c.setCaseSensitivity(Qt.CaseInsensitive)
         self.setCompleter(self.c)
+        
 
 class BoolButton(QPushButton):
 

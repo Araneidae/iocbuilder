@@ -1,17 +1,11 @@
-#!/dls_sw/tools/bin/python2.5
+#!/bin/env python2.6
 
 from PyQt4.QtGui import QUndoGroup
 from PyQt4.QtCore import Qt, QString, SIGNAL
 from xmltable import Table
 import xml.dom.minidom, os, sys, traceback, time
 from optparse import OptionParser
-#sys.path.append("/dls_sw/work/common/python/iocbuilder")
-#sys.path.append("/home/mga83/epics/iocbuilder")
-sys.path.append("/dls_sw/tools/python2.4/lib/python2.4/site-packages/iocbuilder-2.4-py2.4.egg")
-sys.path.append("/dls_sw/tools/python2.4/lib/python2.4/site-packages/dls.environment-1.0-py2.4.egg")
-sys.path.append("/dls_sw/tools/python2.4/lib/python2.4/site-packages/dls_dependency_tree-1.12-py2.4.egg")
 from dls_dependency_tree import dependency_tree   
-
 
 class Store(object):
     def __init__(self, debug = False, DbOnly = False, doc = False,
@@ -302,4 +296,8 @@ def main():
         store.CreateIoc(iocpath, iocname)
 
 if __name__=="__main__":
+    sys.path.append(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    from pkg_resources import require
+    require("dls_dependency_tree")
     main()

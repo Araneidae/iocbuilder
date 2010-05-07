@@ -1,12 +1,8 @@
-#!/bin/env python2.4
-# green of a setup.py file for any dls module
-from setuptools import setup, find_packages, Extension
+from setuptools import setup
 
-# this line allows the version to be specified in the release script
-try:
-    version = version
-except:
-    version = "development"
+# these lines allow the version to be specified in Makefile.private
+import os
+version = os.environ.get("MODULEVER", "development")
 
 setup(
     name = 'iocbuilder',
@@ -14,6 +10,11 @@ setup(
     description = 'IOC builder',
     author = 'Michael Abbott',
     author_email = 'Michael.Abbott@diamond.ac.uk',
-    packages = ['iocbuilder'],
-    package_data = { 'iocbuilder': ['defaults/*.py', 'defaults/*/*.py'] },
+    install_requires = ['dls_dependency_tree'],
+    packages = ['iocbuilder', 'xmlbuilder'],
+    package_data = { 'iocbuilder': ['defaults/*.py', 'defaults/*/*.py'] },  
+    entry_points = {
+        'console_scripts': 
+            ['xeb.py = xmlbuilder.gui:main',
+             'dls-xml-iocbuilder.py = xmlbuilder.xmlbuilder:main']},
     zip_safe = False)
