@@ -5,7 +5,6 @@ from PyQt4.QtCore import Qt, QString, SIGNAL
 from xmltable import Table
 import xml.dom.minidom, os, sys, traceback, time
 from optparse import OptionParser
-from dls_dependency_tree import dependency_tree
 
 class Store(object):
     def __init__(self, debug = False, DbOnly = False, doc = False,
@@ -87,6 +86,7 @@ class Store(object):
             self.ioc_writer = iocbuilder.iocwriter.DocumentationIocWriter
         self.iocbuilder = iocbuilder
         # do the moduleversion calls
+        from dls_dependency_tree import dependency_tree        
         vs = self.iocbuilder.ParseAndConfigure(self, dependency_tree)
         # create AutoSubstitutions and moduleObjects
         for v in vs:

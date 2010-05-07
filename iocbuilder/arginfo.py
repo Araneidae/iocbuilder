@@ -38,8 +38,7 @@ class ArgInfo(object):
     def __init__(self, __source=None, __optional=[], __method=True, **descs):
         self.descriptions = descs
         for k,v in descs.items():
-            assert isinstance(v, ArgType) or \
-                min(isinstance(x, ArgType) for x in v), \
+            assert isinstance(v, ArgType), \
                 'ArgInfo description "%s" is not of valid type. Got:\n%s' % \
                     (k, v)
         self.optional_names = list(__optional)
@@ -198,7 +197,7 @@ makeArgInfo = ArgInfo
 #  Information about individual arguments.
 
 
-__all__ += ['Simple', 'Choice', 'Enum', 'Ident', 'List', 'Sevr']
+__all__ += ['Simple', 'Choice', 'Enum', 'Ident', 'Sevr']
 
 ## These are the types supported by the Simple function
 _simpleTypes = [int, str, float, bool]
@@ -262,11 +261,6 @@ def Enum(desc, values):
 def Ident(desc, typ):
     desc = '%s\n%s' % (desc, typ)
     return ArgType(desc, typ, ident = True)
-
-## Deprecated. Do not use
-def List(desc, num, func, *args, **kwargs):
-    print >> sys.stderr, '***Warning, List ArgInfo item is deprecated'
-    return [ func('%s\n%d'%(desc,i), *args, **kwargs) for i in range(num) ]
 
 ## choice of possible values for SEVR field
 # \param desc Description of the argument

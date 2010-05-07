@@ -56,60 +56,40 @@ class Table(QAbstractTableModel):
         self._cachedNameList = {}
 
     def __processArgType(self, name, ob, **args):
-        # First check to see if we've got a list of ArgType objects
-        if isinstance(ob, list):
-            if 'default' in args:
-                default = args.pop('default')[:]
-                assert isinstance(default, list), \
-                    'Default %s must be instance of list' % default
-                # make sure the list of defaults is at least as long as
-                # the list of ArgType objects
-                if len(default) > 0:
-                    default += default[:1] * len(ob)
-                else:
-                    default += [None] * len(ob)
-                for i, (o, d) in enumerate(zip(ob, default)):
-                    self.__processArgType('%s.%d' % (name, i), o, default = d,
-                        **args)
-            else:
-                for i, o in enumerate(ob):
-                    self.__processArgType('%s.%d' % (name, i), o, **args)
+        # this is the column index
+        col = len(self._header)
+        # If it's a name then be careful not to add it twice
+        if name == getattr(self.ob, 'UniqueName', 'name'):
+            self._needsname = True
+            assert ob.typ == str, 'Object name must be a string'
+            self._tooltips[1] = QVariant(ob.desc)
         else:
-            # we have a single ArgType object
-            # this is the column index
-            col = len(self._header)
-            # If it's a name then be careful not to add it twice
-            if name == getattr(self.ob, 'UniqueName', 'name'):
-                self._needsname = True
-                assert ob.typ == str, 'Object name must be a string'
-                self._tooltips[1] = QVariant(ob.desc)
+            # add the header, type and tooltip
+            self._header.append(QVariant(name))
+            self._types.append(ob.typ)
+            self._tooltips.append(QVariant(ob.desc))
+        # if we have a default value, set it
+        if 'default' in args:
+            if args['default'] is None:
+                self._defaults[col] = QVariant('None')
             else:
-                # add the header, type and tooltip
-                self._header.append(QVariant(name))
-                self._types.append(ob.typ)
-                self._tooltips.append(QVariant(ob.desc))
-            # if we have a default value, set it
-            if 'default' in args:
-                if args['default'] is None:
-                    self._defaults[col] = QVariant('None')
-                else:
-                    self._defaults[col] = QVariant(args['default'])
-            # if this is optional
-            elif 'optional' in args:
-                self._optional.append(col)
-            # it must be required
-            else:
-                self._required.append(col)
-            # if we have combo box items
-            if hasattr(ob, 'labels'):
-                self._cItems[col] = QVariant(
-                    QStringList([QString(str(x)) for x in ob.labels]))
-            # if we have combo box values
-            if hasattr(ob, 'values'):
-                self._cValues[col] = [QVariant(x) for x in ob.values]
-            # if it's an ident
-            if hasattr(ob, 'ident'):
-                self._idents.append(col)
+                self._defaults[col] = QVariant(args['default'])
+        # if this is optional
+        elif 'optional' in args:
+            self._optional.append(col)
+        # it must be required
+        else:
+            self._required.append(col)
+        # if we have combo box items
+        if hasattr(ob, 'labels'):
+            self._cItems[col] = QVariant(
+                QStringList([QString(str(x)) for x in ob.labels]))
+        # if we have combo box values
+        if hasattr(ob, 'values'):
+            self._cValues[col] = [QVariant(x) for x in ob.values]
+        # if it's an ident
+        if hasattr(ob, 'ident'):
+            self._idents.append(col)
 
     def __convert(self, variant, typ, py=False):
         # convert to the requested type
@@ -151,8 +131,6 @@ class Table(QAbstractTableModel):
         # create an arg dictionary
         args = {}
         # lookup and add attributes
-        lists = dict((k, v) for k, v in self.ob.ArgInfo.descriptions.items() \
-            if type(v) == list)
         header = [ str(x.toString()) for x in self._header ]
         debug = self._parent._objectName(self.ob) + '('
         if self._needsname or (obs is None):
@@ -164,31 +142,14 @@ class Table(QAbstractTableModel):
                 i += 1
                 continue
             attr = header[i]
-            if attr.split('.')[0] in lists and obs is not None:
-                attr = attr.split('.')[0]
-                i = [i
-                    for i, x in enumerate(header)
-                    if x.split('.')[0] == attr][0]
-                val = []
-                debug += attr + ' = ['
-                while i < len(row) and header[i].split('.')[0] == attr:
-                    val.append(self.__lookup(i, row[i], obs))
-                    if i in self._idents:
-                        debug += self.__lookup(i, row[i], None) + ', '
-                    else:
-                        debug += val[-1].__repr__() + ', '
-                    i += 1
-                if obs is not None and self._parent.debug:
-                    debug = debug[:-2] + '], '
-            else:
-                val =  self.__lookup(i, row[i], obs)
-                if obs is not None and self._parent.debug:
-                    if i in self._idents:
-                        debugval = self.__lookup(i, row[i], None)
-                    else:
-                        debugval = val.__repr__()
-                    debug += attr + '=' + debugval  + ', '
-                i += 1
+            val =  self.__lookup(i, row[i], obs)
+            if obs is not None and self._parent.debug:
+                if i in self._idents:
+                    debugval = self.__lookup(i, row[i], None)
+                else:
+                    debugval = val.__repr__()
+                debug += attr + '=' + debugval  + ', '
+            i += 1
             args[attr] = val
         if obs is not None and self._parent.debug:
             print debug[:-2] + ')'
