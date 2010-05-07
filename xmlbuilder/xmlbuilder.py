@@ -5,7 +5,7 @@ from PyQt4.QtCore import Qt, QString, SIGNAL
 from xmltable import Table
 import xml.dom.minidom, os, sys, traceback, time
 from optparse import OptionParser
-from dls_dependency_tree import dependency_tree   
+from dls_dependency_tree import dependency_tree
 
 class Store(object):
     def __init__(self, debug = False, DbOnly = False, doc = False,
@@ -17,10 +17,10 @@ class Store(object):
         self.build_root = "."
         self.iocname = "example"
         # This the group of undo stacks for each table
-        self.stack = QUndoGroup()   
+        self.stack = QUndoGroup()
         # this is a dict of tables
         self._tables = {}
-        self._tableNames = []        
+        self._tableNames = []
         # store the debug state
         self.debug = debug
         self.DbOnly = DbOnly
@@ -72,28 +72,28 @@ class Store(object):
         for k in [ k for k in sys.modules if k.startswith("iocbuilder") ]:
             del sys.modules[k]
         if "iocbuilder" in globals():
-            del(iocbuilder) 
+            del(iocbuilder)
         # now do the import and configure of iocbuilder
-        import iocbuilder   
+        import iocbuilder
         if self.debug:
             print "# Creating IOC with Architcture %s" % (self.architecture)
             if self.simarch:
                 print "# Simulation mode"
-            print "from iocbuilder import ModuleVersion, records"  
-        self.ioc_writer = None            
+            print "from iocbuilder import ModuleVersion, records"
+        self.ioc_writer = None
         if self.DbOnly:
             self.ioc_writer = iocbuilder.iocwriter.DbOnlyWriter
         elif self.doc:
             self.ioc_writer = iocbuilder.iocwriter.DocumentationIocWriter
         self.iocbuilder = iocbuilder
-        # do the moduleversion calls        
+        # do the moduleversion calls
         vs = self.iocbuilder.ParseAndConfigure(self, dependency_tree)
         # create AutoSubstitutions and moduleObjects
         for v in vs:
             if self.debug:
-                print "Making auto objects from %s" % v.LibPath() 
-            iocbuilder.AutoSubstitution.fromModuleVersion(v)                
-        # now we can make our tables    
+                print "Making auto objects from %s" % v.LibPath()
+            iocbuilder.AutoSubstitution.fromModuleVersion(v)
+        # now we can make our tables
         for i,o in enumerate(iocbuilder.ModuleBase.ModuleBaseClasses):
             # make sure we have an ArgInfo
             if not hasattr(o, "ArgInfo") or o.__name__.startswith("_"):
@@ -109,15 +109,15 @@ class Store(object):
         # now make the record types
         for recordtype in iocbuilder.records.GetRecords():
             cls = getattr(iocbuilder.records, recordtype)
-            simple = iocbuilder.arginfo.Simple                
+            simple = iocbuilder.arginfo.Simple
             argInfo = iocbuilder.arginfo.makeArgInfo(["record"], cls.FieldInfo().keys(),
                 record = simple("Record name", str),
-                **cls.FieldInfo())                
+                **cls.FieldInfo())
             class o(object):
                 r = cls
                 def __init__(self, record, **args):
                     self.r(record, **args)
-                ModuleName = "records"                    
+                ModuleName = "records"
                 ArgInfo = argInfo
             o.__name__ = recordtype
             # make a table object
@@ -128,9 +128,9 @@ class Store(object):
             self.stack.addStack(table.stack)
         self.setStored()
         # failure if there were no callables
-        self.setLastModified()        
+        self.setLastModified()
 
-     
+
     def Open(self, filename, sim = None):
         if self.debug:
             print "--- Parsing %s ---"%filename
@@ -146,13 +146,13 @@ class Store(object):
         else:
             self.architecture = str(components.attributes["arch"].value)
             self.simarch = None
-        self.New()   
-        self.iocbuilder.SetSource(os.path.realpath(filename))         
+        self.New()
+        self.iocbuilder.SetSource(os.path.realpath(filename))
         # proccess each component in turn
         problems = []
         warnings = []
         for node in components.childNodes:
-            # try to find the class of each component    
+            # try to find the class of each component
             if node.nodeType == node.COMMENT_NODE:
                 # If it's a comment, then mark as a comment and try to process
                 # its content
@@ -161,7 +161,7 @@ class Store(object):
                 root = self._elements(xml.dom.minidom.parseString(text))[0]
                 nodes = self._elements(root)
                 if len(nodes) == 0:
-                    continue              
+                    continue
             elif node.nodeType == node.ELEMENT_NODE:
                 # If it's an element node, then just add this node
                 commented = False
@@ -169,7 +169,7 @@ class Store(object):
             else:
                 # Ignore whitespace
                 continue
-            for node in nodes:          
+            for node in nodes:
                 # find the correct table
                 obname = str(node.nodeName)
                 if self._tables.has_key(obname):
@@ -180,11 +180,11 @@ class Store(object):
                     problems.append(obname)
                     continue
                 # make a new row
-                warnings += table.addNode(node, commented) 
+                warnings += table.addNode(node, commented)
         self.setStored()
-        self.setLastModified()        
+        self.setLastModified()
         return self._unique(problems, warnings)
-    
+
     def _unique(self, *ls):
         # make each list in args unique, then return a tuple of them
         ret = []
@@ -208,28 +208,28 @@ class Store(object):
             table = self._tables[name]
             # make the xml elements and add them to doc
             table.createElements(doc, name)
-        doc.documentElement.setAttribute("arch",self.architecture)    
+        doc.documentElement.setAttribute("arch",self.architecture)
         text = doc.toprettyxml()
         open(filename,"w").write(text)
         self.setStored()
 
     def CreateIoc(self, iocpath, iocname):
         obs = {}
-        if self.debug:    
-            print "from iocbuilder.modules import *"        
+        if self.debug:
+            print "from iocbuilder.modules import *"
         for name in self._tableNames:
             table = self._tables[name]
             # make builder objects
             table.createObjects(obs)
         self.iocbuilder.WriteNamedIoc(iocpath, iocname, check_release = True, \
             substitute_boot = True)
-        
+
     def getTable(self, name):
-        # return the table            
+        # return the table
         table = self._tables[name]
         self.stack.setActiveStack(table.stack)
         return table
-                                                
+
     def allTableNames(self):
         return sorted(self._tables.keys())
 
@@ -241,7 +241,7 @@ class Store(object):
 
     def getArch(self):
         return self.architecture
-        
+
     def setArch(self, arch):
         self.architecture = arch
 
@@ -249,15 +249,15 @@ class Store(object):
 def main():
     parser = OptionParser("usage: %prog [options] <xml-file>")
     parser.add_option("-d", action="store_true", dest="debug", help="Print lots of debug information")
-    parser.add_option("-D", action="store_true", dest="DbOnly", help="Only output files destined for the Db dir")  
+    parser.add_option("-D", action="store_true", dest="DbOnly", help="Only output files destined for the Db dir")
     parser.add_option("--doc", dest="doc", help="Write out information in format for doxygen build instructions")
-    parser.add_option("--sim", dest="simarch", help="Create an ioc with arch=SIMARCH in simulation mode")        
-    
+    parser.add_option("--sim", dest="simarch", help="Create an ioc with arch=SIMARCH in simulation mode")
+
     # parse arguments
     (options, args) = parser.parse_args()
     if len(args) != 1:
         parser.error("*** Error: Incorrect number of arguments - you must supply one input file (.xml)")
- 
+
     # define parameters
     if options.debug:
         debug = True
@@ -268,7 +268,7 @@ def main():
     else:
         DbOnly = False
 
-    # setup the store       
+    # setup the store
     xml_file = args[0]
     iocname = os.path.basename(xml_file).replace(".xml","")
     store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc)
@@ -276,21 +276,21 @@ def main():
     for prob in problems:
         print "***Error:", prob
     for warn in warnings:
-        print "***Warning:", warn        
-    
+        print "***Warning:", warn
+
     if options.doc:
         store.CreateIoc(options.doc, iocname)
     elif DbOnly:
         if options.simarch:
             iocname = iocname.replace("-IOC-","-SIM-")
-            store.iocbuilder.SetEpicsPort(6064)            
+            store.iocbuilder.SetEpicsPort(6064)
         iocpath = os.path.abspath(os.path.dirname(os.path.abspath(xml_file)))
-        store.CreateIoc(iocpath, iocname)        
+        store.CreateIoc(iocpath, iocname)
     else:
         # write the iocs
-        root = os.path.abspath(os.path.dirname(os.path.abspath(xml_file))+"/../../iocs/")     
-        iocpath = os.path.join(root, iocname)                
-        if options.simarch:          
+        root = os.path.abspath(os.path.dirname(os.path.abspath(xml_file))+"/../../iocs/")
+        iocpath = os.path.join(root, iocname)
+        if options.simarch:
             iocpath += "_sim"
 #            store.iocbuilder.SetEpicsPort(6064)
         store.CreateIoc(iocpath, iocname)

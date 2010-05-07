@@ -5,33 +5,33 @@ This page will walk through creating a simple IOC using the iocbuilder
 - Run the \c dls-make-etc-dir.py script to create an \c etc directory.
 
 \section dir Directory structure
-- \c \<module\>/etc/makeIocs/\<iocname\>_RELEASE is an optional file that 
-specifies module dependencies that are not captured in 
-\c \<module\>/configure/RELEASE 
+- \c \<module\>/etc/makeIocs/\<iocname\>_RELEASE is an optional file that
+specifies module dependencies that are not captured in
+\c \<module\>/configure/RELEASE
 - <tt>\<module\>/etc/makeIocs/\<iocname\>.py</tt> is the script that will be run
-by make. It will be passed \c iocname as an argument, and should create 
-\c \<module\>/iocs/\<iocname\> 
+by make. It will be passed \c iocname as an argument, and should create
+\c \<module\>/iocs/\<iocname\>
 
 \section ex Example
 Following the steps below will create a simple IOC with a single instance of a
 eurotherm2k controller. If you want to try this out for yourself you can copy
-\c example_ioc.py and \c example_ioc_RELEASE from 
+\c example_ioc.py and \c example_ioc_RELEASE from
 \c \<iocbuilder\>/documentation/examples/ to \c \<module\>/etc/makeIocs/
-Typing \c make in the \c \<module\>/etc/makeIocs/ directory will create an IOC 
-\c example_ioc in \c \<module\>/iocs/example_ioc 
+Typing \c make in the \c \<module\>/etc/makeIocs/ directory will create an IOC
+\c example_ioc in \c \<module\>/iocs/example_ioc
 
 \subsection ex1 \<iocname\>_RELEASE
-The following text is from 
+The following text is from
 \c \<iocbuilder\>/documentation/examples/example_ioc_RELEASE
 \include example_ioc_RELEASE
-This is just a standard RELEASE file that lists paths to other modules. The 
-iocbuilder will walk the tree of \c \<module\>/configure/RELEASE and 
-\c \<iocname\>_RELEASE if it exists, and import the relevant builder files from 
+This is just a standard RELEASE file that lists paths to other modules. The
+iocbuilder will walk the tree of \c \<module\>/configure/RELEASE and
+\c \<iocname\>_RELEASE if it exists, and import the relevant builder files from
 these modules in depth first order (i.e. all dependencies of a module before the
 module itself).
 
 \subsection ex2 \<iocname\>.py
-The following text is from 
+The following text is from
 \c \<iocbuilder\>/documentation/examples/example_ioc.py
 \include example_ioc.py
 We will now walk through this example line by line
@@ -39,23 +39,23 @@ We will now walk through this example line by line
 \dontinclude example_ioc.py
 \skipline require
 \until iocbuilder
-First we setup the path. 
+First we setup the path.
 - If we are using a released version of the iocbuilder,
 then all we need to do is tell setuptools to pick the latest version with a
 call to \c require. We can also tell setuptools to use a particular version
-by typing: 
+by typing:
 \code
 require('iocbuilder==2.3')
 \endcode
 - If we are using the development version of iocbuilder, we need to point
-directly to it instead of the \c require call. This should only be used for 
+directly to it instead of the \c require call. This should only be used for
 testing:
 \code
 import sys
 sys.path.append('/home/mga83/epics/iocbuilder')
 \endcode
 
-\b Note that we also need to \c require('dls_dependency_tree') if we want 
+\b Note that we also need to \c require('dls_dependency_tree') if we want
 iocbuilder to walk any \c RELEASE files for us.
 \n\n
 \skipline iocbuilder
@@ -64,22 +64,22 @@ Now we do the imports. Note that the iocbuilder needs to be configured before
 much of its namespace is available, so we just import iocbuilder here.
 \n\n
 \skipline ParseEtcArgs
-This is where iocbuilder is configured. 
-- If we pass a dependency_tree module to ParseEtcArgs() then it will parse the 
+This is where iocbuilder is configured.
+- If we pass a dependency_tree module to ParseEtcArgs() then it will parse the
 RELEASE tree for us. If we don't pass it one, then we will need to do
 ModuleVersion() calls manually, e.g.:
 \code
 ModuleVersion('ipac',           '2-8dls4-3')
 ModuleVersion('Hy8515',         '3-7')
 \endcode
-- The second argument is the architecture the ioc will be built with, it 
-defaults to \c vxWorks-ppc604_long. 
+- The second argument is the architecture the ioc will be built with, it
+defaults to \c vxWorks-ppc604_long.
 
 See the ParseEtcArgs() documentation for more details of what the function does.
-If it doesn't do what you want, you can dispense with it and call 
+If it doesn't do what you want, you can dispense with it and call
 \ref iocbuilder.configure.Configure "Configure" directly.
 
-\b Note that if we run the script with a -h flag we get details of what 
+\b Note that if we run the script with a -h flag we get details of what
 arguments to pass:
 - \code
 [tmc43@pc0043 makeIocs]$$ ./example_ioc.py -h
@@ -109,9 +109,9 @@ should check the value of \c options.debug first.
 \skipline .
 \until )
 This instantiates a serial_sim instance that will be created when this script
-is run in simulation mode. This simulation is configured to run over serial or 
+is run in simulation mode. This simulation is configured to run over serial or
 IP depending on the type of asyn port (serial or IP) that it is linked to.
-\param name This is the name of the serial_sim object that will be created in 
+\param name This is the name of the serial_sim object that will be created in
 the startup script
 \param pyCls This is the serial_sim subclass that should be instantiated
 \param module This is the python module to import pyCls from
@@ -125,7 +125,7 @@ to specify one, do it here
 This instantiates an asyn IP port.
 \param name Name or the asyn port
 \param port The port to connect to in the real IOC
-\param simulation The serial_sim object to connect to when run in simulation 
+\param simulation The serial_sim object to connect to when run in simulation
 mode
 
 \n
@@ -140,12 +140,12 @@ This instantiates a eurotherm2k controller.
 
 \n
 \skipline iocbuilder
-Finally write the ioc out. At this point all work with IOC builder is complete, 
+Finally write the ioc out. At this point all work with IOC builder is complete,
 and the builder application should exit.
 
 \section Notes
 Eventually a page called builder_objects will be generated in the documentation
-for that module. This will contain information about all the arguments that 
+for that module. This will contain information about all the arguments that
 should be supplied to the relevant builder objects. For now it is recommended
 that you use the xmlbuilder module to create simple test IOCs as documented
 in: \ref using_xmlbuilder

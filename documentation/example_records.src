@@ -48,7 +48,7 @@ name is of the form
 \endcode
 Here we specify the first four components in the same order -- all records
 will then assume this "device" name -- thus in this case we will be
-generating records named <tt>TS-XX-DEV-01:\<name\></tt>, where \c \<name\> is 
+generating records named <tt>TS-XX-DEV-01:\<name\></tt>, where \c \<name\> is
 specified when we generate the record.
 
 
@@ -64,7 +64,7 @@ then generates an ai record named \c AI1 for the first channel (and so on up to
 \c AI8), and similarly waveform records named \c WF1 to \c WF8.
 
 The true record name is then generated from the device configured above to
-construct records with full names of the form <tt>TS-XX-DEV-01:AI1</tt> and so 
+construct records with full names of the form <tt>TS-XX-DEV-01:AI1</tt> and so
 on.
 
 Individual fields in each record can be specified during construction of the
@@ -94,8 +94,8 @@ records.bo('GO', FLNK = fan)
 
 The \c records object contains an attribute for each record type (automatically
 populated from dbd files), and can be used to create arbitrary records.  In
-this case we are generating a record named <tt>TS-XX-DEV-01:GO</tt> with its 
-forward link set to the previously created fanout -- thus processing \c GO will 
+this case we are generating a record named <tt>TS-XX-DEV-01:GO</tt> with its
+forward link set to the previously created fanout -- thus processing \c GO will
 trigger all the records in this example.
 
 */

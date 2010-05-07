@@ -3,13 +3,13 @@
 
 \section intro Introduction
 
-\c iocbuilder is a Python library designed to help with the generation of 
+\c iocbuilder is a Python library designed to help with the generation of
 EPICS IOCs.
 
 The module works by placing \c iocbuilder definitions (normally called
 \c builder.py) in EPICS support modules. These files are made up of one or more
 \c iocbuilder classes. Each class represents a component that can be configured,
-and should contain all the information needed to instantiate it. 
+and should contain all the information needed to instantiate it.
 This may include:
 
 - Template instantiations
@@ -18,7 +18,7 @@ This may include:
 - LIB requirements
 - Startup script requirements
 
-This manual will explore how to create \c iocbuilder classes, and how to 
+This manual will explore how to create \c iocbuilder classes, and how to
 configure and use them with python build scripts, or the xml front end.
 
 \section which_interface Which interface should I use?
@@ -29,16 +29,16 @@ python build script. You should read sections 1, 2, 3 and 4 below.
 
 If you are creating a single IOC, or simple examples in a support module, you
 can use the xml front end. You should read sections 1 and 5 below.
- 
+
 \section user_manual User Manual
 This manual is divided in the following sections:
 -# \subpage builder_files.  This is a worked example of how to add \c iocbuilder
 definitions to existing modules
 -# \subpage building_iocs.  This is a brief guide to the \c iocbuilder API for
 writing python build scripts.
--# \subpage iocbuilder_example.  This is a worked example of a python build 
+-# \subpage iocbuilder_example.  This is a worked example of a python build
 script.
--# \subpage generating_records.  This is a worked example of a python build 
+-# \subpage generating_records.  This is a worked example of a python build
 script that generates records.
 -# \subpage using_xmlbuilder.  This explains how to use the xml front end to
 \c iocbuilder and the \c xeb.py editor
@@ -47,7 +47,7 @@ script that generates records.
 */
 //-----------------------------------------------------------
 /**\page troubleshooting Troubleshooting
-If you get an odd error, first make sure that you have called 
+If you get an odd error, first make sure that you have called
 \c self.__super.__init__() in your builder class.
 */
 //-----------------------------------------------------------

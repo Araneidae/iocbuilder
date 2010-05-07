@@ -16,16 +16,16 @@ dist: setup.py $(wildcard iocbuilder/*) $(wildcard xmlbuilder/*) make_docs
 # Clean the module
 clean:
 	$(PYTHON) setup.py clean
-	-rm -rf build dist *egg-info installed.files 
+	-rm -rf build dist *egg-info installed.files
 	-find -name '*.pyc' -exec rm {} \;
-	$(MAKE) -C documentation clean	
+	$(MAKE) -C documentation clean
 
 # Install the built egg
 install: dist
 	$(PYTHON) setup.py easy_install -m \
-		--record=installed.files \
-		--install-dir=$(INSTALL_DIR) \
-		--script-dir=$(SCRIPT_DIR) dist/*.egg
+            --record=installed.files \
+            --install-dir=$(INSTALL_DIR) \
+            --script-dir=$(SCRIPT_DIR) dist/*.egg
 
 make_docs:
-	$(MAKE) -C documentation	
+	$(MAKE) -C documentation

@@ -3,30 +3,30 @@
 A typical builder definition is called \c builder.py and lives in \c \<module\>/etc.
 It contains one or more builder classes which contain information about how to
 use the module. In the sections below we will explore how to create builder
-classes for different components. There are 4 classes that you should become 
+classes for different components. There are 4 classes that you should become
 familiar with:
 - \ref iocbuilder.libversion.ModuleBase "ModuleBase". The class that all builder
 objects inherit from. If you have an object that just makes instances of other
 objects then this is all you need to inherit from. There is an example in the
 \ref arginfo section
-- \ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution" and 
+- \ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution" and
 \ref iocbuilder.recordset.Substitution "Substitution". These classes wrap
 template file usage via substitution files. There is an example in the
 \ref autosubstitution section
 - \ref iocbuilder.device.Device "Device". This class encapsulates startup script
-text, along with lib and dbd usage. There is an example in the \ref device 
+text, along with lib and dbd usage. There is an example in the \ref device
 section
 
 There are also sections on \ref dependencies and \ref libs.
 
 \section autosubstitution Simple template wrappers
-The simplest builder file to write is a subclass of 
-\ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution". This class takes 
-a \ref iocbuilder.recordset.Substitution.TemplateFile "Template file", scans it 
-for macros and \ref macro_descriptions and creates a builder class whose 
+The simplest builder file to write is a subclass of
+\ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution". This class takes
+a \ref iocbuilder.recordset.Substitution.TemplateFile "Template file", scans it
+for macros and \ref macro_descriptions and creates a builder class whose
 arguments match the macros (and defaults) of the template.
 
-Example: code from 
+Example: code from
 <tt>\<iocbuilder\>/documentation/examples/AutoSubstitution_builder.py</tt>
 \include AutoSubstitution_builder.py
 
@@ -35,10 +35,10 @@ Example: code from
 - Add a docstring to describe your new class
 - Set the \ref iocbuilder.recordset.Substitution.TemplateFile "Template file"
 
-\b Note \ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution" and 
-\ref iocbuilder.recordset.Substitution "Substitution" classes must appear first 
+\b Note \ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution" and
+\ref iocbuilder.recordset.Substitution "Substitution" classes must appear first
 in the list of subclasses for argument processing to work correctly. Also, if
-you need modules like \c calc or \c sscan for your template to work, you should 
+you need modules like \c calc or \c sscan for your template to work, you should
 read the section on \ref dependencies
 
 \subsection macro_descriptions Macro descriptions
@@ -52,7 +52,7 @@ file. For each macro you use you should add a description line:
 - \c \<description\> will continue on multiple lines until a blank line or line
 with just a number of <tt>#</tt>'s is found
 
-Example: code from 
+Example: code from
 <tt>\<iocbuilder\>/documentation/examples/AutoSubstitution_template.db</tt>
 
 \include AutoSubstitution_template.db
@@ -68,9 +68,9 @@ the startup script of the generated IOC as well as checking for the existence
 of the protocol file
 
 \section dependencies Specifying dependencies
-You can specify external dependencies with the 
+You can specify external dependencies with the
 \ref iocbuilder.libversion.ModuleBase.Dependencies "Dependencies" attribute.
-This should be a tuple or list of library dependencies. 
+This should be a tuple or list of library dependencies.
 
 E.g. for \c calc the library dependency class is called \c Calc
 \code
@@ -88,13 +88,13 @@ See the \ref libs section for more details
 
 \subsection substitution The Substitution class
 If you would prefer iocbuilder not to scan your template file, you can use the
-Substitution class. In this case, you should specify the 
+Substitution class. In this case, you should specify the
 \ref iocbuilder.recordset.Substitution.Arguments "Arguments" attribute to be a
 list of the macros that the Substitution requires. You should also specify an
 \ref arginfo object to describe the arguments to xmlbuilder.
 
 \section arginfo ArgInfo
-If you so not use the 
+If you so not use the
 \ref iocbuilder.autosubst.AutoSubstitution "AutoSubstitution" object, you should
 specify the arguments that the object should be supplied with. This makes it
 possible to create objects using xmlbuilder. This is done via an
@@ -102,20 +102,20 @@ possible to create objects using xmlbuilder. This is done via an
 Example: code from
 <tt>\<iocbuilder\>/documentation/examples/ArgInfo_builder.py</tt>
 \include ArgInfo_builder.py
-This example creates n instances of the eurotherm2k object shown in the 
+This example creates n instances of the eurotherm2k object shown in the
 \ref autosubstitution section.
 
 \ref iocbuilder.arginfo.ArgInfo "makeArgInfo" takes the __init__ method as the
 first argument, then named arguments describing each argument that should be
 passed to __init__. Each of these arguments can be one of:
 - \ref iocbuilder.arginfo.Simple "Simple": A simple type
-- \ref iocbuilder.arginfo.Ident "Ident": An identifier, lets you specify that 
+- \ref iocbuilder.arginfo.Ident "Ident": An identifier, lets you specify that
 this argument should be something of a particular type
 - \ref iocbuilder.arginfo.Choice "Choice": One of a list
 - \ref iocbuilder.arginfo.Choice "Enum": As choice, but pass the index of the
 list to the __init__ method
 
-\b Note You can also add ArgInfo objects together, and filter them using the 
+\b Note You can also add ArgInfo objects together, and filter them using the
 \ref iocbuilder.arginfo.ArgInfo.filtered() "filtered()" method. This allows more
 complicated argument structures to be built up.
 
@@ -131,16 +131,16 @@ class uses
 class uses
 - \ref iocbuilder.device.Device.InitialiseOnce() "InitialiseOnce()": this method
 is called exactly once if any instances of the class are created
-- \ref iocbuilder.device.Device.Initialise() "Initialise()": this method is 
+- \ref iocbuilder.device.Device.Initialise() "Initialise()": this method is
 called once per instance to generate normal startup script commands.
-- \ref iocbuilder.device.Device.PostIocInitialise() "PostIocInitialise()": this 
-method is called to generate startup scripts that need to be generated after 
+- \ref iocbuilder.device.Device.PostIocInitialise() "PostIocInitialise()": this
+method is called to generate startup scripts that need to be generated after
 \c iocInit has been called
 
 \section libs Wrapping library and dbd dependencies for external use
 It is a convention that any module that provides dbds and libraries for external
 use (like \c calc, \c genSub, \c sscan, etc.) should provide a library
-dependency class that can be used as a \ref dependencies "dependency" by other 
+dependency class that can be used as a \ref dependencies "dependency" by other
 modules. This should be the module name capitalised (\c Calc, \c GenSub, etc.).
 A library dependency looks something like this:
 \code
@@ -155,7 +155,7 @@ class Calc(Device):
 \endcode
 It is defined as described in \ref device section, but with 2 important details:
 - No \c __init__ method is defined
-- The \ref iocbuilder.libversion.ModuleBase.AutoInstantiate "AutoInstantiate" 
+- The \ref iocbuilder.libversion.ModuleBase.AutoInstantiate "AutoInstantiate"
 attribute set to \c True
 
 This allows iocbuilder to create an instance of this whenever someone refers to

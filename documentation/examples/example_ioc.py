@@ -17,16 +17,16 @@ iocbuilder.ParseAndConfigure(options, dependency_tree)
 from iocbuilder.modules import *
 
 # make some objects
-if options.debug: 
+if options.debug:
     print "Creating builder objects..."
 eurothermSim = pyDrv.serial_sim_instance(
-    name='eurothermSim', pyCls='eurotherm2k', module='eurotherm2k_sim', 
+    name='eurothermSim', pyCls='eurotherm2k', module='eurotherm2k_sim',
     IPPort=8100, rpc=9001)
 asyn.AsynIP(
     name='eurothermAsyn', port='172.23.111.180:7001', simulation=eurothermSim)
 eurotherm2k.eurotherm2k(
     P='EUROTHERM2K', Q='', PORT='eurothermAsyn', GAD=0, LAD=1)
-if options.debug: 
+if options.debug:
     print "Done"
 
 # write the IOC

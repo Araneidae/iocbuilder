@@ -23,11 +23,11 @@ vxWorks.
 - \ref iocbuilder.configure.ConfigureTemplate "ConfigureTemplate()" <br>
 This initialisation is appropriate the builder is being used to generate a
 template.
-- \ref iocbuilder.configure.ParseEtcArgs "ParseEtcArgs()" and 
+- \ref iocbuilder.configure.ParseEtcArgs "ParseEtcArgs()" and
 \ref iocbuilder.configure.ParseAndConfigure "ParseAndConfigure()" <br>
 This initialisation picks up ioc information from command line arguments,
 and version information from \c configure/RELEASE and related files.
-- \ref iocbuilder.configure.Configure "Configure(...)"  <br> 
+- \ref iocbuilder.configure.Configure "Configure(...)"  <br>
 All the other calls above delegate to this more general purpose call.
 
 
@@ -41,7 +41,7 @@ Calls to this function can be made inline for each support module.
 - \ref iocbuilder.configure.LoadVersionFile "LoadVersionFile()" <br>
 This is useful for packaging module definitions separately.
 - If \ref iocbuilder.configure.ParseAndConfigure "ParseAndConfigure()" was
-passed a \c dependency_tree object then it will do 
+passed a \c dependency_tree object then it will do
 \ref iocbuilder.libversion.ModuleVersion "ModuleVersion()" calls for each
 module it finds in \c configure/RELEASE
 

@@ -6,34 +6,34 @@ end to iocbuilder
 - Run the \c dls-make-etc-dir.py script to create an \c etc directory.
 
 \section dir Directory structure
-- \c \<module\>/etc/makeIocs/\<iocname\>_RELEASE is an optional file that 
-specifies module dependencies that are not captured in 
-\c \<module\>/configure/RELEASE 
+- \c \<module\>/etc/makeIocs/\<iocname\>_RELEASE is an optional file that
+specifies module dependencies that are not captured in
+\c \<module\>/configure/RELEASE
 - <tt>\<module\>/etc/makeIocs/\<iocname\>.xml</tt> is an XML file that containts
-elements representing builder objects. The xmlbuilder module can create 
+elements representing builder objects. The xmlbuilder module can create
 iocbuilder objects from this file, and the \c xeb.py application is included to
 edit this file.
 
 \section ex Example
 Following the steps below will create a simple IOC with a single instance of a
 eurotherm2k controller. If you want to try this out for yourself you can copy
-\c example_ioc.xml and \c example_ioc_RELEASE from 
+\c example_ioc.xml and \c example_ioc_RELEASE from
 \c \<iocbuilder\>/documentation/examples/ to \c \<module\>/etc/makeIocs/
-Typing \c make in the \c \<module\>/etc/makeIocs/ directory will create an IOC 
-\c example_ioc in \c \<module\>/iocs/example_ioc 
+Typing \c make in the \c \<module\>/etc/makeIocs/ directory will create an IOC
+\c example_ioc in \c \<module\>/iocs/example_ioc
 
 \subsection ex1 \<iocname\>_RELEASE
-The following text is from 
+The following text is from
 \c \<iocbuilder\>/documentation/examples/example_ioc_RELEASE
 \include example_ioc_RELEASE
-This is just a standard RELEASE file that lists paths to other modules. The 
-iocbuilder will walk the tree of \c \<module\>/configure/RELEASE and 
-\c \<iocname\>_RELEASE if it exists, and import the relevant builder files from 
+This is just a standard RELEASE file that lists paths to other modules. The
+iocbuilder will walk the tree of \c \<module\>/configure/RELEASE and
+\c \<iocname\>_RELEASE if it exists, and import the relevant builder files from
 these modules in depth first order (i.e. all dependencies of a module before the
 module itself).
 
 \subsection ex2 \<iocname\>.xml
-The following text is from 
+The following text is from
 \c \<iocbuilder\>/documentation/examples/example_ioc.xml
 \include example_ioc.xml
 - The \c \<components\> element represents the IOC and provides
@@ -44,7 +44,7 @@ and each of its attributes is a named argument
 
 \section build Building the IOC
 The make rule runs \c dls-xml-iocbuilder.py which reads the xml file. For each
-element it creates the corresponding builder element and then writes out the 
+element it creates the corresponding builder element and then writes out the
 IOC. It has a debug mode where it will write the python calls it makes to
 stdout, and a simulation mode to write a simulation output.
 
@@ -58,15 +58,15 @@ If you run the following:
 \endcode
 You will be presented with the gui:
 \image html ss1.png "Gui snapshot"
-As you can see, the main window is split into 3 sections, the \ref 
+As you can see, the main window is split into 3 sections, the \ref
 table_sec on the top left, the \ref undo_sec on
-the bottom left and the \ref object_sec on the right, with a 
+the bottom left and the \ref object_sec on the right, with a
 \ref menu_sec along the top.
 
 \subsection table_sec Table selector
 The table selector shows an entry for each builder class that has objects
-defined. If you click on one of them, the table is displayed in the 
-\ref object_sec. If you right click you will be presented with the 
+defined. If you click on one of them, the table is displayed in the
+\ref object_sec. If you right click you will be presented with the
 \ref component_menu
 
 \subsection undo_sec Undo stack

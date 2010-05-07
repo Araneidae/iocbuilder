@@ -4,7 +4,7 @@ from iocbuilder.modules.eurotherm2k import eurotherm2k
 
 class eurotherm2k_maker(ModuleBase):
     '''Create N eurotherm2k instances'''
-    
+
     def __init__(self, P, PORT, n = 5):
         # initialise the super class, this MUST be done
         self.__super.__init__()

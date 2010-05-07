@@ -2,8 +2,6 @@
 
 # Built documentation
 /documentation/doxygen
-/docs/*.html
-/docs/pydoc
 
 # Built distribution and egg
 /build
