@@ -1,9 +1,10 @@
 #!/bin/env python2.6
 
-from PyQt4.QtGui import QMainWindow, QMessageBox, QApplication, QTableView, \
-    QGridLayout, QListWidget, QDockWidget, QAbstractItemView, QUndoView, QMenu, \
-    QFileDialog, QInputDialog, QLineEdit, QListWidgetItem, QClipboard, QDialog, \
-    QScrollArea, QTextEdit, QFont, QPushButton
+from PyQt4.QtGui import \
+    QMainWindow, QMessageBox, QApplication, QTableView, \
+    QGridLayout, QListWidget, QDockWidget, QAbstractItemView, QUndoView, \
+    QMenu, QFileDialog, QInputDialog, QLineEdit, QListWidgetItem, \
+    QClipboard, QDialog, QScrollArea, QTextEdit, QFont, QPushButton
 from PyQt4.QtCore import Qt, SIGNAL, SLOT, QSize, QVariant, QString
 from delegates import ComboBoxDelegate
 import sys, signal, os, re, traceback
@@ -24,7 +25,8 @@ class TableView(QTableView):
             cb = app.clipboard()
             item = self.indexAt(event.pos())
             if item:
-                item.model().setData(item,QVariant(cb.text(QClipboard.Selection)))
+                item.model().setData(
+                    item,QVariant(cb.text(QClipboard.Selection)))
         else:
             QTableView.mousePressEvent(self, event)
 
@@ -40,12 +42,13 @@ class TableView(QTableView):
         ncols = max(cols) - mincols + 1
         data = []
         for _ in range(nrows):
-            data.append(["\x00"] * ncols)
+            data.append(['\x00'] * ncols)
         for cell in selRange:
-            data[cell.row() - minrows][cell.column() - mincols] = str(cell.data().toString())
-        rows = ["\t".join(row) for row in data]
+            data[cell.row() - minrows][cell.column() - mincols] = \
+                str(cell.data().toString())
+        rows = ['\t'.join(row) for row in data]
         cb = app.clipboard()
-        cb.setText(QString("\n".join(rows)))
+        cb.setText(QString('\n'.join(rows)))
 
     def fillCells(self):
         selRange = self.selectedIndexes()
@@ -57,12 +60,19 @@ class TableView(QTableView):
         mincols = min(cols)
         nrows = max(rows) - minrows + 1
         ncols = max(cols) - mincols + 1
-        self.model().stack.beginMacro("Fill Cells")
+        self.model().stack.beginMacro('Fill Cells')
         if nrows == 1:
-            source = [ x for x in selRange if x.column() == mincols and x.row() == minrows ][0]
-            cells = [ x for x in selRange if x != source ]
+            source = [x
+                for x in selRange
+                if x.column() == mincols and x.row() == minrows][0]
+            # Surely should be this:?
+#             for x in selRange:
+#                 if x.column() == mincols and x.row() == minrows:
+#                      source = x
+#                      break
+            cells = [x for x in selRange if x != source]
             srcText = str(source.data().toString())
-            srcInt = ""
+            srcInt = ''
             while srcText and srcText[-1].isdigit():
                 srcInt = srcText[-1] + srcInt
                 srcText = srcText[:-1]
@@ -70,7 +80,10 @@ class TableView(QTableView):
             for cell in cells:
                 text = srcText
                 if srcInt:
-                    text += ("%0"+str(len(srcInt))+"d")%(int(srcInt) + cell.column() - mincols)
+                    # Surely should be this?  In fact, wtf is going on here?
+#                     text += ('%%0%dd' % len(srcInt)) % (
+                    text += ('%0'+str(len(srcInt))+'d') % (
+                        int(srcInt) + cell.column() - mincols)
                 self.__setCell(self.model(), cell.row(), cell.column(), text)
         else:
             # Treat as a group of columns
@@ -80,7 +93,7 @@ class TableView(QTableView):
                 source = [ x for x in cells if x.row() == minrows ][0]
                 cells = [ x for x in cells if x != source ]
                 srcText = str(source.data().toString())
-                srcInt = ""
+                srcInt = ''
                 while srcText and srcText[-1].isdigit():
                     srcInt = srcText[-1] + srcInt
                     srcText = srcText[:-1]
@@ -88,8 +101,10 @@ class TableView(QTableView):
                 for cell in cells:
                     text = srcText
                     if srcInt:
-                        text += ("%0"+str(len(srcInt))+"d")%(int(srcInt) + cell.row() - minrows)
-                    self.__setCell(self.model(), cell.row(), cell.column(), text)
+                        text += ('%0'+str(len(srcInt))+'d')%(
+                            int(srcInt) + cell.row() - minrows)
+                    self.__setCell(
+                        self.model(), cell.row(), cell.column(), text)
         self.model().stack.endMacro()
 
     def cut(self):
@@ -109,7 +124,7 @@ class TableView(QTableView):
 
     def paste(self):
         cb = app.clipboard()
-        clipText = str(cb.text()).rstrip("\n")
+        clipText = str(cb.text()).rstrip('\n')
         selRange = self.selectedIndexes()
         if not selRange:
             return
@@ -117,9 +132,9 @@ class TableView(QTableView):
         cols = [ x.column() for x in selRange ]
         minrows = min(rows)
         mincols = min(cols)
-        if "\t" in clipText or "\n" in clipText:
+        if '\t' in clipText or '\n' in clipText:
             # many cells in clipboard
-            data = [row.split("\t") for row in clipText.split("\n")]
+            data = [row.split('\t') for row in clipText.split('\n')]
             nrows = len(data)
             ncols = max([len(x) for x in data])
         else:
@@ -127,7 +142,7 @@ class TableView(QTableView):
             nrows = max(rows) - minrows + 1
             ncols = max(cols) - mincols + 1
             data = [ [clipText] * ncols ] * nrows
-        selRange[0].model().stack.beginMacro("Paste from clipboard")
+        selRange[0].model().stack.beginMacro('Paste from clipboard')
         if len(selRange) == 1:
             # single cell selected, so write the size of the clipboard
             model = selRange[0].model()
@@ -196,7 +211,9 @@ class ListView(QListWidget):
 
     def removeTable(self):
         sel = self.selectedItems()
-        texts = [ self.item(i).text() for i in range(self.count()) if self.item(i) not in sel ]
+        texts = [self.item(i).text()
+            for i in range(self.count())
+            if self.item(i) not in sel ]
         self.clear()
         for text in texts:
             self.addItem(text)
@@ -235,7 +252,8 @@ class GUI(QMainWindow):
         self.listView.setDragDropMode(QAbstractItemView.InternalMove)
         self.listView.setDropIndicatorShown(True);
         self.dock1.setWidget(self.listView)
-        self.dock1.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable)
+        self.dock1.setFeatures(
+            QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock1)
         # connect it to the populate method
 #        self.listView.setModel(self.store)
@@ -247,48 +265,49 @@ class GUI(QMainWindow):
         self.dock2 = QDockWidget(self)
         self.undoView = QUndoView(self.store.stack)
         self.dock2.setWidget(self.undoView)
-        self.dock2.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable)
-        self.dock2.setWindowTitle("Undo Stack")
+        self.dock2.setFeatures(
+            QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable)
+        self.dock2.setWindowTitle('Undo Stack')
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock2)
         # create a menubar
         self.menu = self.menuBar()
         # create file menu headings
-        self.menuFile = self.menu.addMenu("File")
-        self.menuFile.addAction("New", self.New).setShortcut("CTRL+N")
-        self.menuFile.addAction("Open...", self.Open).setShortcut("CTRL+O")
-        self.menuFile.addAction("Reload", self.Reload)
-        self.menuFile.addAction("Save", self.Save).setShortcut("CTRL+S")
-        self.menuFile.addAction("Save As...", self.SaveAs)
+        self.menuFile = self.menu.addMenu('File')
+        self.menuFile.addAction('New', self.New).setShortcut('CTRL+N')
+        self.menuFile.addAction('Open...', self.Open).setShortcut('CTRL+O')
+        self.menuFile.addAction('Reload', self.Reload)
+        self.menuFile.addAction('Save', self.Save).setShortcut('CTRL+S')
+        self.menuFile.addAction('Save As...', self.SaveAs)
         self.menuFile.addSeparator()
-        self.menuFile.addAction("Set Architecture...", self.setArch)
+        self.menuFile.addAction('Set Architecture...', self.setArch)
         self.menuFile.addSeparator()
-        self.menuFile.addAction("Quit", self.closeEvent).setShortcut("ALT+F4")
+        self.menuFile.addAction('Quit', self.closeEvent).setShortcut('ALT+F4')
         # create edit menu headings
-        self.menuEdit = self.menu.addMenu("Edit")
-        self.menuEdit.addAction("Insert Row",
-            self.tableView.insertRow).setShortcut("CTRL+I")
-        self.menuEdit.addAction("Insert Row Under",
-            self.tableView.insertRowUnder).setShortcut("CTRL+U")
-        self.menuEdit.addAction("Remove Row", self.tableView.removeRow)
+        self.menuEdit = self.menu.addMenu('Edit')
+        self.menuEdit.addAction('Insert Row',
+            self.tableView.insertRow).setShortcut('CTRL+I')
+        self.menuEdit.addAction('Insert Row Under',
+            self.tableView.insertRowUnder).setShortcut('CTRL+U')
+        self.menuEdit.addAction('Remove Row', self.tableView.removeRow)
         self.menuEdit.addSeparator()
-        self.menuEdit.addAction("Cut",
-            self.tableView.cut).setShortcut("CTRL+X")
-        self.menuEdit.addAction("Copy",
-            self.tableView.copy).setShortcuts(["CTRL+C", "CTRL+INS"])
-        self.menuEdit.addAction("Paste",
-            self.tableView.paste).setShortcuts(["CTRL+V", "SHIFT+INS"])
-        self.menuEdit.addAction("Clear",
-            self.tableView.menuClear).setShortcut("CTRL+D")
+        self.menuEdit.addAction('Cut',
+            self.tableView.cut).setShortcut('CTRL+X')
+        self.menuEdit.addAction('Copy',
+            self.tableView.copy).setShortcuts(['CTRL+C', 'CTRL+INS'])
+        self.menuEdit.addAction('Paste',
+            self.tableView.paste).setShortcuts(['CTRL+V', 'SHIFT+INS'])
+        self.menuEdit.addAction('Clear',
+            self.tableView.menuClear).setShortcut('CTRL+D')
         self.menuEdit.addSeparator()
-        self.menuEdit.addAction("Fill Cells",
-            self.tableView.fillCells).setShortcut("CTRL+R")
+        self.menuEdit.addAction('Fill Cells',
+            self.tableView.fillCells).setShortcut('CTRL+R')
         self.menuEdit.addSeparator()
-        self.menuEdit.addAction("Undo",
-            self.store.stack, SLOT("undo()")).setShortcut("CTRL+Z")
-        self.menuEdit.addAction("Redo",
-            self.store.stack, SLOT("redo()")).setShortcut("CTRL+SHIFT+Z")
+        self.menuEdit.addAction('Undo',
+            self.store.stack, SLOT('undo()')).setShortcut('CTRL+Z')
+        self.menuEdit.addAction('Redo',
+            self.store.stack, SLOT('redo()')).setShortcut('CTRL+SHIFT+Z')
         # create component menu
-        self.menuComponents = self.menu.addMenu("Components")
+        self.menuComponents = self.menu.addMenu('Components')
         self.resize(QSize(1000,500))
 
     def Save(self):
@@ -297,8 +316,8 @@ class GUI(QMainWindow):
 
     def setArch(self):
         arch = self.store.getArch()
-        arch, ok = QInputDialog.getText(self, "Architecture Dialog",
-             "Enter Architecture", QLineEdit.Normal, arch)
+        arch, ok = QInputDialog.getText(self, 'Architecture Dialog',
+             'Enter Architecture', QLineEdit.Normal, arch)
         arch = str(arch)
         if ok:
             self.store.setArch(arch)
@@ -331,19 +350,21 @@ class GUI(QMainWindow):
         try:
             problems, warnings = self.store.Open(filename)
             if problems:
-                errorstr = "Can't load all object types: "+", ".join(problems)
-                QMessageBox.warning(self,"Open Error",errorstr)
+                errorstr = 'Can\'t load all object types: '+', '.join(problems)
+                QMessageBox.warning(self,'Open Error',errorstr)
             if warnings:
-                errorstr = "The following warnings were generated:\n"+"\n".join(warnings)
-                QMessageBox.warning(self,"Open Warnings",errorstr)
+                errorstr = \
+                    'The following warnings were generated:\n' + \
+                    '\n'.join(warnings)
+                QMessageBox.warning(self,'Open Warnings',errorstr)
         except Exception, e:
-            x = formLog("An error ocurred. Make sure all the modules listed "
-                "in RELEASE files are built. Check the text below for "
-                "details:\n\n" + traceback.format_exc(), self)
+            x = formLog('An error ocurred. Make sure all the modules listed '
+                'in RELEASE files are built. Check the text below for '
+                'details:\n\n' + traceback.format_exc(), self)
             x.show()
             return
         # populate
-        self.setWindowTitle("XEB - %s[*]"%filename)
+        self.setWindowTitle('XEB - %s[*]'%filename)
         self.listView.clear()
         for t in self.store.getTableNames():
             self.__insertListViewItem(t)
@@ -355,9 +376,9 @@ class GUI(QMainWindow):
         ob = self.store._tables[name].ob
         item = QListWidgetItem(QString(name))
         doc = str(ob.__doc__)
-        search = re.search(r"\n[ \t]*", doc)
+        search = re.search(r'\n[ \t]*', doc)
         if search:
-            doc = re.sub(search.group(), "\n", doc)
+            doc = re.sub(search.group(), '\n', doc)
         item.setToolTip(QString(str(doc)))
         if row is None:
             self.listView.addItem(item)
@@ -374,13 +395,13 @@ class GUI(QMainWindow):
         try:
             self.store.New()
         except Exception, e:
-            x = formLog("An error ocurred. Make sure all the modules listed "
-                "in RELEASE files are built. Check the text below for "
-                "details:\n\n" + traceback.format_exc(), self)
+            x = formLog('An error ocurred. Make sure all the modules listed '
+                'in RELEASE files are built. Check the text below for '
+                'details:\n\n' + traceback.format_exc(), self)
             x.show()
             return
         self.filename = ''
-        self.setWindowTitle("XEB - <untitled>[*]")
+        self.setWindowTitle('XEB - <untitled>[*]')
         self.listView.clear()
         self.__populateMenu()
         self.populate()
@@ -402,15 +423,15 @@ class GUI(QMainWindow):
     def __prompt_unsaved(self):
         ret = QMessageBox.Yes
         if self.isWindowModified():
-            ret = QMessageBox.question(self, "Unsaved Changes",
-                "All unsaved changes will be lost, continue?",
+            ret = QMessageBox.question(self, 'Unsaved Changes',
+                'All unsaved changes will be lost, continue?',
                 (QMessageBox.Yes | QMessageBox.No))
         return ret
 
     def __populateMenu(self):
         # populate the component menu with menus
         self.menuComponents.clear()
-        self.menuComponents.addAction("Remove Table", self.listView.removeTable)
+        self.menuComponents.addAction('Remove Table', self.listView.removeTable)
         self.menuComponents.addSeparator()
         modules = {}
         self.functions = []
@@ -446,10 +467,10 @@ class GUI(QMainWindow):
             self.listView.setCurrentRow(row)
             self.listView.writeNames()
         self.tablename = name
-        self.dock1.setWindowTitle("Table: "+name)
+        self.dock1.setWindowTitle('Table: '+name)
         self.tableView.setModel(table)
         self.tableView.resizeColumnsToContents()
-        self.connect(table.stack, SIGNAL("cleanChanged(bool)"),
+        self.connect(table.stack, SIGNAL('cleanChanged(bool)'),
                      self._setClean)
 
     def _isClean(self):
@@ -462,11 +483,11 @@ class GUI(QMainWindow):
         self.setWindowModified(not self._isClean())
 
 class formLog(QDialog):
-    """Error log form"""
+    '''Error log form'''
     def __init__(self,text,*args):
-        """text = text to display in a readonly QTextEdit"""
+        '''text = text to display in a readonly QTextEdit'''
         QDialog.__init__(self,*args)
-        formLayout = QGridLayout(self)#,1,1,11,6,"formLayout")
+        formLayout = QGridLayout(self)#,1,1,11,6,'formLayout')
         self.scroll = QScrollArea(self)
         self.lab = QTextEdit()
         self.lab.setFont(QFont('monospace', 10))
@@ -477,14 +498,16 @@ class formLog(QDialog):
         self.scroll.setMinimumWidth(700)
         self.scroll.setMinimumHeight(700)
         formLayout.addWidget(self.scroll,1,1)
-        self.btnClose = QPushButton("btnClose", self)
+        self.btnClose = QPushButton('btnClose', self)
         formLayout.addWidget(self.btnClose,2,1)
         self.connect(self.btnClose, SIGNAL('clicked ()'),self.close)
-        self.btnClose.setText("Close")
+        self.btnClose.setText('Close')
 
 def main():
-    parser = OptionParser("usage: %prog [options] [<xml-file>]")
-    parser.add_option("-d", action="store_true", dest="debug", help="Print lots of debug information")
+    parser = OptionParser('usage: %prog [options] [<xml-file>]')
+    parser.add_option(
+        '-d', action='store_true', dest='debug',
+        help='Print lots of debug information')
     (options, args) = parser.parse_args()
     if options.debug:
         debug = True
@@ -498,7 +521,7 @@ def main():
         if os.path.isfile(args[0]):
             g.Open(args[0])
         else:
-            QMessageBox.warning(g,"Open Error","No such file '%s'"%args[0])
+            QMessageBox.warning(g,'Open Error','No such file "%s"'%args[0])
             g.New()
     else:
         g.New()
@@ -506,10 +529,10 @@ def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     sys.exit(app.exec_())
 
-if __name__=="__main__":
+if __name__ == '__main__':
     sys.path.append(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
     print sys.path
     from pkg_resources import require
-    require("dls_dependency_tree")
+    require('dls_dependency_tree')
     main()

@@ -14,18 +14,23 @@ class Table(QAbstractTableModel):
         self._parent = parent
         # Make sure we have Name information first
         # _header contains the row headers
-        self._header = [QVariant("#"), QVariant(getattr(self.ob, "UniqueName", "name"))]
+        self._header = [
+            QVariant('#'), QVariant(getattr(self.ob, 'UniqueName', 'name'))]
         # _tooltips contains the tooltips
-        self._tooltips = [QVariant("Row is commented out %s"%bool), QVariant("Object name %s"%str)]
+        self._tooltips = [
+            QVariant('Row is commented out %s'%bool),
+            QVariant('Object name %s'%str)]
         # _required is a list of required columns
         self._required = []
         # _defaults is a dict of column -> default values
         self._defaults = {0: QVariant(False)}
         # _optional is a list of optional columns
         self._optional = [1]
-        # _cItems is a dict of column -> QVariant QStringList items, returned to combo box
+        # _cItems is a dict of column -> QVariant QStringList items, returned
+        # to combo box
         self._cItems = {}
-        # _cValues is a dict of column -> list of QVariant values, stored when corresponding label stored by combobox
+        # _cValues is a dict of column -> list of QVariant values, stored when
+        # corresponding label stored by combobox
         self._cValues = {}
         # _idents is a list of identifier lookup fields
         self._idents = []
@@ -53,10 +58,10 @@ class Table(QAbstractTableModel):
     def __processArgType(self, name, ob, **args):
         # First check to see if we've got a list of ArgType objects
         if isinstance(ob, list):
-            if "default" in args:
-                default = args.pop("default")[:]
+            if 'default' in args:
+                default = args.pop('default')[:]
                 assert isinstance(default, list), \
-                    "Default %s must be instance of list" % default
+                    'Default %s must be instance of list' % default
                 # make sure the list of defaults is at least as long as
                 # the list of ArgType objects
                 if len(default) > 0:
@@ -64,19 +69,19 @@ class Table(QAbstractTableModel):
                 else:
                     default += [None] * len(ob)
                 for i, (o, d) in enumerate(zip(ob, default)):
-                    self.__processArgType("%s.%d" % (name, i), o, default = d,
+                    self.__processArgType('%s.%d' % (name, i), o, default = d,
                         **args)
             else:
                 for i, o in enumerate(ob):
-                    self.__processArgType("%s.%d" % (name, i), o, **args)
+                    self.__processArgType('%s.%d' % (name, i), o, **args)
         else:
             # we have a single ArgType object
             # this is the column index
             col = len(self._header)
             # If it's a name then be careful not to add it twice
-            if name == getattr(self.ob, "UniqueName", "name"):
+            if name == getattr(self.ob, 'UniqueName', 'name'):
                 self._needsname = True
-                assert ob.typ == str, "Object name must be a string"
+                assert ob.typ == str, 'Object name must be a string'
                 self._tooltips[1] = QVariant(ob.desc)
             else:
                 # add the header, type and tooltip
@@ -84,20 +89,21 @@ class Table(QAbstractTableModel):
                 self._types.append(ob.typ)
                 self._tooltips.append(QVariant(ob.desc))
             # if we have a default value, set it
-            if "default" in args:
-                if args["default"] is None:
-                    self._defaults[col] = QVariant("None")
+            if 'default' in args:
+                if args['default'] is None:
+                    self._defaults[col] = QVariant('None')
                 else:
-                    self._defaults[col] = QVariant(args["default"])
+                    self._defaults[col] = QVariant(args['default'])
             # if this is optional
-            elif "optional" in args:
+            elif 'optional' in args:
                 self._optional.append(col)
             # it must be required
             else:
                 self._required.append(col)
             # if we have combo box items
             if hasattr(ob, 'labels'):
-                self._cItems[col] = QVariant(QStringList([QString(str(x)) for x in ob.labels]))
+                self._cItems[col] = QVariant(
+                    QStringList([QString(str(x)) for x in ob.labels]))
             # if we have combo box values
             if hasattr(ob, 'values'):
                 self._cValues[col] = [QVariant(x) for x in ob.values]
@@ -131,10 +137,11 @@ class Table(QAbstractTableModel):
         if i in self._idents:
             val = str(val.toString())
             if obs is not None:
-                if val == "None":
+                if val == 'None':
                     val = None
                 else:
-                    assert val in obs, "Ident lookup failed on %s in obs %s" % (val, obs)
+                    assert val in obs, \
+                        'Ident lookup failed on %s in obs %s' % (val, obs)
                     val = obs[val]
         else:
             val = self.__convert(val, self._types[i], py=True)[0]
@@ -147,7 +154,7 @@ class Table(QAbstractTableModel):
         lists = dict((k, v) for k, v in self.ob.ArgInfo.descriptions.items() \
             if type(v) == list)
         header = [ str(x.toString()) for x in self._header ]
-        debug = self._parent._objectName(self.ob) + "("
+        debug = self._parent._objectName(self.ob) + '('
         if self._needsname or (obs is None):
             i = 1
         else:
@@ -157,20 +164,22 @@ class Table(QAbstractTableModel):
                 i += 1
                 continue
             attr = header[i]
-            if attr.split(".")[0] in lists and obs is not None:
-                attr = attr.split(".")[0]
-                i = [i for i, x in enumerate(header) if x.split(".")[0] == attr][0]
+            if attr.split('.')[0] in lists and obs is not None:
+                attr = attr.split('.')[0]
+                i = [i
+                    for i, x in enumerate(header)
+                    if x.split('.')[0] == attr][0]
                 val = []
-                debug += attr + " = ["
-                while i < len(row) and header[i].split(".")[0] == attr:
+                debug += attr + ' = ['
+                while i < len(row) and header[i].split('.')[0] == attr:
                     val.append(self.__lookup(i, row[i], obs))
                     if i in self._idents:
-                        debug += self.__lookup(i, row[i], None) + ", "
+                        debug += self.__lookup(i, row[i], None) + ', '
                     else:
-                        debug += val[-1].__repr__() + ", "
+                        debug += val[-1].__repr__() + ', '
                     i += 1
                 if obs is not None and self._parent.debug:
-                    debug = debug[:-2] + "], "
+                    debug = debug[:-2] + '], '
             else:
                 val =  self.__lookup(i, row[i], obs)
                 if obs is not None and self._parent.debug:
@@ -178,11 +187,11 @@ class Table(QAbstractTableModel):
                         debugval = self.__lookup(i, row[i], None)
                     else:
                         debugval = val.__repr__()
-                    debug += attr + "=" + debugval  + ", "
+                    debug += attr + '=' + debugval  + ', '
                 i += 1
             args[attr] = val
         if obs is not None and self._parent.debug:
-            print debug[:-2] + ")"
+            print debug[:-2] + ')'
         return args
 
     def createElements(self, doc, name):
@@ -204,7 +213,7 @@ class Table(QAbstractTableModel):
                 continue
             if self._parent.debug:
                 if not row[1].isNull():
-                    print str(row[1].toString()), "=",
+                    print str(row[1].toString()), '=',
             args = self.__createArgDict(row, obs)
             ob = self.ob(**args)
             # if we have a name, store it in ret
@@ -228,16 +237,18 @@ class Table(QAbstractTableModel):
                     index = i
                     break
             if index == -1:
-                w.append("%s doesn't have attr %s" % (node.nodeName, attr))
+                w.append('%s doesn\'t have attr %s' % (node.nodeName, attr))
                 continue
             typ = self._types[index]
             try:
                 if typ == int:
                     value = int(value)
                 elif typ == bool:
-                    value = (value == "True")
+                    value = (value == 'True')
             except:
-                w.append("%s.%s = %s, can't convert to %s" % (node.nodeName, attr, value.__repr__(), typ))
+                w.append(
+                    '%s.%s = %s, can\'t convert to %s' %
+                    (node.nodeName, attr, value.__repr__(), typ))
             row[index] = QVariant(value)
         # add the row to the table
         self.rows.append(row)
@@ -256,10 +267,11 @@ class Table(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 return self._header[section]
-            elif self.rows and self.rows[section] and not self.rows[section][1].isNull():
+            elif self.rows and self.rows[section] and \
+                    not self.rows[section][1].isNull():
                 return self.rows[section][1]
             else:
-                return QVariant("[row %s]" % (section+1))
+                return QVariant('[row %s]' % (section+1))
         elif role == Qt.ToolTipRole and orientation == Qt.Horizontal:
             return self._tooltips[section]
         else:
@@ -276,14 +288,15 @@ class Table(QAbstractTableModel):
                 for i, v in enumerate(self._cItems[col].toStringList()):
                     if v.toLower() == val.toString().toLower():
                         val = QVariant(i)
-            self.stack.push(ChangeValueCommand(index.row(), index.column(), val, self))
+            self.stack.push(
+                ChangeValueCommand(index.row(), index.column(), val, self))
             return True
         else:
             return False
 
     def insertRows(self, row, count, parent = QModelIndex()):
         if count > 1:
-            self.stack.beginMacro("Insert rows %d..%d"%(row+1, row+count))
+            self.stack.beginMacro('Insert rows %d..%d'%(row+1, row+count))
         for row in range(row, row+count):
             self.stack.push(RowCommand(row, self, parent))
         if count > 1:
@@ -291,7 +304,7 @@ class Table(QAbstractTableModel):
 
     def removeRows(self, row, count, parent = QModelIndex()):
         if count > 1:
-            self.stack.beginMacro("Remove rows %d..%d"%(row+1, row+count))
+            self.stack.beginMacro('Remove rows %d..%d'%(row+1, row+count))
         for row in reversed(range(row, row+count)):
             self.stack.push(RowCommand(row, self, parent, False))
         if count > 1:
@@ -340,7 +353,7 @@ class Table(QAbstractTableModel):
         # check that required rows are filled in
         if value.isNull():
             if col in self._required:
-                return "Required argument not filled in"
+                return 'Required argument not filled in'
             else:
                 return False
         # check that names are unique
@@ -348,28 +361,30 @@ class Table(QAbstractTableModel):
             name = value.toString()
             index = self._nameList(without = row).indexOf(name)
             if index != -1:
-                return "Object with name '%s' already exists" % name
+                return 'Object with name "%s" already exists' % name
         # check that idents are valid
         elif col in self._idents:
             name = value.toString()
             ob = self._types[col]
             index = self._nameList(filt = ob, upto = row).indexOf(name)
             if index == -1:
-                return "Can't perform identifier lookup on '%s'" % name
+                return 'Can\'t perform identifier lookup on "%s"' % name
         # check that enums are valid
         elif col in self._cValues:
             if not max([value == x for x in self._cValues[col]]):
-                return "'%s' is not a supported enum" % value.toString()
+                return '"%s" is not a supported enum' % value.toString()
         # check that choices are valid
         elif col in self._cItems:
-            if not max([value == QVariant(x) for x in self._cItems[col].toStringList()]):
-                return "'%s' is not a supported choice" % value.toString()
+            if not max(
+                [value == QVariant(x)
+                 for x in self._cItems[col].toStringList()]):
+                return '"%s" is not a supported choice' % value.toString()
         # check the type of basetypes
         else:
             typ = self._types[col]
             v, ret = self.__convert(value, typ)
             if ret != True:
-                return "Cannot convert '%s' to %s" % (value.toString(), typ)
+                return 'Cannot convert "%s" to %s' % (value.toString(), typ)
         return False
 
     def _isDefault(self, value, col):
@@ -390,10 +405,11 @@ class Table(QAbstractTableModel):
                         return QVariant(self._cItems[col].toStringList()[i])
             elif col == 0:
                 if value.toBool():
-                    return QVariant(QString("#"))
+                    return QVariant(QString('#'))
                 else:
-                    return QVariant(QString(""))
-            elif not value.isNull() and self._types[col] == str and str(value.toString()) == '':
+                    return QVariant(QString(''))
+            elif not value.isNull() and self._types[col] == str and \
+                    str(value.toString()) == '':
                 value = QVariant(QString('""'))
             return value
         elif role == Qt.EditRole:
@@ -414,14 +430,14 @@ class Table(QAbstractTableModel):
             error = self._isInvalid(value, row, col)
             text = str(self._tooltips[col].toString())
             if error:
-                text = "***Error: %s\n%s"%(error, text)
+                text = '***Error: %s\n%s'%(error, text)
             if col in self._idents:
-                lines = ["\nPossible Values: "]
+                lines = ['\nPossible Values: ']
                 for name in self._nameList(filt = self._types[col], upto = row):
                     if len(lines[-1]) > 80:
-                        lines.append("")
-                    lines[-1] += str(name) + ", "
-                text += "\n".join(lines).rstrip(" ,")
+                        lines.append('')
+                    lines[-1] += str(name) + ', '
+                text += '\n'.join(lines).rstrip(' ,')
             return QVariant(text)
         elif role == Qt.ForegroundRole:
             # cell foreground
@@ -457,7 +473,8 @@ class Table(QAbstractTableModel):
         elif role == Qt.UserRole:
             # combo box asking for list of items
             if col in self._idents:
-                return QVariant(self._nameList(filt = self._types[col], upto = row))
+                return QVariant(
+                    self._nameList(filt = self._types[col], upto = row))
             elif col in self._cItems:
                 return self._cItems[col]
             elif self._types[col] == bool:
@@ -474,10 +491,10 @@ class Table(QAbstractTableModel):
             if not self.rows[item.row()][item.column()].isNull():
                 if not begun:
                     begun = True
-                    celltexts = [ "(%s, %d)" %
+                    celltexts = [ '(%s, %d)' %
                         (self._header[c.column()].toString(), c.row() + 1) \
                         for c in indexes ]
-                    self.stack.beginMacro("Cleared Cells: "+" ".join(celltexts))
+                    self.stack.beginMacro('Cleared Cells: '+' '.join(celltexts))
                 self.setData(item, QVariant(), Qt.EditRole)
         if begun:
             self.stack.endMacro()

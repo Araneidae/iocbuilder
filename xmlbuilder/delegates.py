@@ -1,24 +1,26 @@
-from PyQt4.QtGui import QItemDelegate, QComboBox, QPushButton, QCompleter, QLineEdit, QBrush, QStyle, QColor, QPalette
+from PyQt4.QtGui import \
+    QItemDelegate, QComboBox, QPushButton, QCompleter, QLineEdit, \
+    QBrush, QStyle, QColor, QPalette
 from PyQt4.QtCore import Qt, QVariant, SIGNAL
 
 class ComboBoxDelegate(QItemDelegate):
 
     def createEditor(self, parent, option, index):
-        print "createEditor"
+        print 'createEditor'
         values = index.data(Qt.UserRole)
         if values.isNull():
             return QItemDelegate.createEditor(self, parent, option, index)
         elif values.type() == QVariant.Bool:
             if index.column() == 0:
-                return BoolButton("#", "", parent)
+                return BoolButton('#', '', parent)
             else:
-                return BoolButton("true", "false", parent)
+                return BoolButton('true', 'false', parent)
         else:
             editor = ComboLineEdit(values.toStringList(), parent)
             return editor
 
     def setEditorData(self, editor, index):
-        print "setEditorData"
+        print 'setEditorData'
         if isinstance(editor, BoolButton):
             editor.setChecked(index.data(Qt.EditRole).toBool())
         elif isinstance(editor, ComboLineEdit):
@@ -27,7 +29,7 @@ class ComboBoxDelegate(QItemDelegate):
             return QItemDelegate.setEditorData(self, editor, index)
 
     def setModelData(self, editor, model, index):
-        print "setModelData"
+        print 'setModelData'
         if isinstance(editor, ComboLineEdit):
             model.setData(index, QVariant(editor.text()), Qt.EditRole)
         elif isinstance(editor, BoolButton):
@@ -36,19 +38,25 @@ class ComboBoxDelegate(QItemDelegate):
             return QItemDelegate.setModelData(self, editor, model, index)
 
     def updateEditorGeometry(self, editor, option, index):
-        print "updateEditorGeometry"
+        print 'updateEditorGeometry'
         if isinstance(editor, QComboBox):
             editor.setGeometry(option.rect)
         elif isinstance(editor, ComboLineEdit):
             editor.setGeometry(option.rect)
         else:
-            return QItemDelegate.updateEditorGeometry(self, editor, option, index)
+            return QItemDelegate.updateEditorGeometry(
+                self, editor, option, index)
 
     def paint(self, painter, option, index):
-        option.palette.setColor(QPalette.Highlight,QColor(index.data(Qt.BackgroundRole)).darker(107))
-        option.palette.setColor(QPalette.HighlightedText,QColor(index.data(Qt.ForegroundRole)).darker(115))
+        option.palette.setColor(
+            QPalette.Highlight,QColor(
+                index.data(Qt.BackgroundRole)).darker(107))
+        option.palette.setColor(
+            QPalette.HighlightedText,QColor(
+                index.data(Qt.ForegroundRole)).darker(115))
         QItemDelegate.paint(self, painter, option, index)
-        if (option.showDecorationSelected and (option.state & QStyle.State_Selected)):
+        if option.showDecorationSelected and \
+                (option.state & QStyle.State_Selected):
             painter.drawRect(option.rect)
 
 
