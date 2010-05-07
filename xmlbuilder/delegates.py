@@ -1,7 +1,7 @@
 from PyQt4.QtGui import \
     QItemDelegate, QComboBox, QPushButton, QCompleter, QLineEdit, \
     QBrush, QStyle, QColor, QPalette
-from PyQt4.QtCore import Qt, QVariant, SIGNAL
+from PyQt4.QtCore import Qt, QVariant, SIGNAL, SLOT
 
 class ComboBoxDelegate(QItemDelegate):
 
@@ -16,32 +16,32 @@ class ComboBoxDelegate(QItemDelegate):
             else:
                 return BoolButton('true', 'false', parent)
         else:
-            editor = ComboLineEdit(values.toStringList(), parent)
+            editor = QComboBox(parent)
+            editor.setEditable(True)
+            editor.addItems(values.toStringList())
+            editor.connect(editor, SIGNAL('activated(int)'), editor, SLOT("close()"))
             return editor
 
     def setEditorData(self, editor, index):
-        print 'setEditorData'
-        if isinstance(editor, BoolButton):
+        if isinstance(editor, QComboBox):
+            editor.setEditText(index.data(Qt.EditRole).toString())        
+            editor.lineEdit().selectAll()
+        elif isinstance(editor, BoolButton):
             editor.setChecked(index.data(Qt.EditRole).toBool())
-        elif isinstance(editor, ComboLineEdit):
-            editor.setText(index.data(Qt.EditRole).toString())
         else:
             return QItemDelegate.setEditorData(self, editor, index)
 
     def setModelData(self, editor, model, index):
-        print 'setModelData'
-        if isinstance(editor, ComboLineEdit):
-            model.setData(index, QVariant(editor.text()), Qt.EditRole)
+        if isinstance(editor, QComboBox):
+            model.setData(index, QVariant(editor.currentText()), Qt.EditRole)
         elif isinstance(editor, BoolButton):
             model.setData(index, QVariant(editor.isChecked()), Qt.EditRole)
         else:
             return QItemDelegate.setModelData(self, editor, model, index)
 
     def updateEditorGeometry(self, editor, option, index):
-        print 'updateEditorGeometry'
+        option.rect.setSize(editor.minimumSizeHint().expandedTo(option.rect.size()))        
         if isinstance(editor, QComboBox):
-            editor.setGeometry(option.rect)
-        elif isinstance(editor, ComboLineEdit):
             editor.setGeometry(option.rect)
         else:
             return QItemDelegate.updateEditorGeometry(

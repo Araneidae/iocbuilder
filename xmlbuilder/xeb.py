@@ -530,9 +530,10 @@ def main():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
+#    from PyQt4.QtCore import QT_VERSION
+#    print hex(QT_VERSION)
     sys.path.append(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-    print sys.path
     from pkg_resources import require
     require('dls_dependency_tree')
     main()
