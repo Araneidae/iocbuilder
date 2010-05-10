@@ -248,6 +248,19 @@ class autosuper_meta(type):
 class autosuper_object(object):
     __metaclass__ = autosuper_meta
 
+    # In Python 2.6 the API was broken in quite an uncharacteristic (though
+    # relatively harmless) fashion: object.__new__() no longer takes any
+    # arguments.  This is harmless because it merely generates a single
+    # "deprecation" warning, however this is annoying.
+    #   So long as autosuper_object is at the root of the inheritance hierarchy
+    # (which it should be) the trick below will work, we simply discard the
+    # unwanted arguments.
+    if sys.version[0] > 2 or sys.version[1] >= 6:
+        def __new__(cls, *args, **kargs):
+            assert super(autosuper_object, cls).__init__ == object.__init__, \
+                'Broken inheritance hierarchy?'
+            return object.__new__(cls)
+
 
 # This returns a meta-class which will call the given register function each
 # time a sub-class instance is created.  If ignoreParent is True then the
