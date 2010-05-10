@@ -6,7 +6,6 @@ from PyQt4.QtCore import Qt, QVariant, SIGNAL, SLOT
 class ComboBoxDelegate(QItemDelegate):
 
     def createEditor(self, parent, option, index):
-        print 'createEditor'
         values = index.data(Qt.UserRole)
         if values.isNull():
             return QItemDelegate.createEditor(self, parent, option, index)

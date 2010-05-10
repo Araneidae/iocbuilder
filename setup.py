@@ -15,6 +15,6 @@ setup(
     package_data = { 'iocbuilder': ['defaults/*.py', 'defaults/*/*.py'] },  
     entry_points = {
         'console_scripts': 
-            ['xeb.py = xmlbuilder.gui:main',
+            ['xeb = xmlbuilder.xeb:main',
              'dls-xml-iocbuilder.py = xmlbuilder.xmlbuilder:main']},
     zip_safe = False)

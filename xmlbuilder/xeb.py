@@ -10,6 +10,7 @@ from delegates import ComboBoxDelegate
 import sys, signal, os, re, traceback
 from optparse import OptionParser
 
+## /todo A toggle button for showing and hiding optional values 
 class TableView(QTableView):
 
     def keyPressEvent(self, event):
