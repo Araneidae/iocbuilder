@@ -42,7 +42,7 @@ class RecordSet(support.Singleton):
 
 
 
-class SubstitutionSet(support.autosuper_object):
+class SubstitutionSet(support.autosuper):
     def __init__(self):
         # Dictionary indexed by substitution sub-classes.  For each sub-class
         # the entry consists of a list of substitution instances.

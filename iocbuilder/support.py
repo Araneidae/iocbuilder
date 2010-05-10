@@ -172,7 +172,7 @@ class Singleton(object):
 # define the metaclass of the appropriate base class to be autosuper thus:
 #
 #     class A:
-#         __metaclass__ = autosuper_meta
+#         __metaclass__ = _autosuper_meta
 #
 # Then in any sub-class of A the __super attribute can be used instead of
 # writing super(cls,name) thus:
@@ -199,7 +199,7 @@ class Singleton(object):
 # present in the dictionary of the class it will be called after completing
 # initialisation of the class.
 #
-# For any class with autosuper_meta as metaclass if a method
+# For any class with _autosuper_meta as metaclass if a method
 #     __init_meta__(cls, subclass)
 # is defined then it will be called when the class is declared (with subclass
 # set to False) and will be called every time the class is subclassed with
@@ -207,9 +207,9 @@ class Singleton(object):
 #
 # This class definition is taken from
 #   http://www.python.org/2.2.3/descrintro.html#metaclass_examples
-class autosuper_meta(type):
+class _autosuper_meta(type):
 
-    __super = property(lambda subcls: super(autosuper_meta, subcls))
+    __super = property(lambda subcls: super(_autosuper_meta, subcls))
 
     def __init__(cls, name, bases, dict):
         # Support renaming.
@@ -245,19 +245,19 @@ class autosuper_meta(type):
 #
 # All subclasses of this class share an attribute \c __super which allows
 # self.__super to be used rather than super(Class, self).
-class autosuper_object(object):
-    __metaclass__ = autosuper_meta
+class autosuper(object):
+    __metaclass__ = _autosuper_meta
 
     # In Python 2.6 the API was broken in quite an uncharacteristic (though
     # relatively harmless) fashion: object.__new__() no longer takes any
     # arguments.  This is harmless because it merely generates a single
     # "deprecation" warning, however this is annoying.
-    #   So long as autosuper_object is at the root of the inheritance hierarchy
+    #   So long as autosuper is at the root of the inheritance hierarchy
     # (which it should be) the trick below will work, we simply discard the
     # unwanted arguments.
     if sys.version[0] > 2 or sys.version[1] >= 6:
         def __new__(cls, *args, **kargs):
-            assert super(autosuper_object, cls).__init__ == object.__init__, \
+            assert super(autosuper, cls).__init__ == object.__init__, \
                 'Broken inheritance hierarchy?'
             return object.__new__(cls)
 

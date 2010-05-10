@@ -280,7 +280,7 @@ class ModuleVersion:
 # \endcode
 #
 # Note that this class is not normally subclassed outside of the IOC builder.
-class ModuleBase(support.autosuper_object):
+class ModuleBase(support.autosuper):
 
     # Class initialisation.
 

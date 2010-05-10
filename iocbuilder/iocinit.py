@@ -28,7 +28,7 @@ import os
 import shutil
 
 import support
-from support import autosuper_object, quote_c_string
+from support import autosuper, quote_c_string
 from liblist import Hardware
 from libversion import ModuleVersion
 from configure import TargetOS, Get_TargetOS, Call_TargetOS, Architecture
@@ -289,7 +289,7 @@ class IocDataSet(support.Singleton):
                 'File %s already added to IOC with different path' % name
 
 
-class _IocDataBase(autosuper_object):
+class _IocDataBase(autosuper):
     # Ensure that when this class is used as a database field it isn't
     # validated on assignment: this can be too early for path resolution!
     ValidateLater = True
