@@ -6,6 +6,7 @@ import subprocess
 import recordnames
 import libversion
 import support
+import paths
 
 
 __all__ = ['LookupRecord', 'Substitution']
@@ -60,10 +61,10 @@ class SubstitutionSet(support.autosuper):
 
     # Expand all the substitutions inline.  The path to locate the msi
     # application used for expanding must be passed in.
-    def ExpandSubstitutions(self, msiPath):
+    def ExpandSubstitutions(self):
         for subList in self.__Substitutions.values():
             for substitution in subList:
-                substitution.ExpandSubstitution(msiPath)
+                substitution.ExpandSubstitution()
 
     # Prints out a substitutions file.
     def Print(self, macro_name = True):
@@ -185,7 +186,7 @@ class Substitution(libversion.ModuleBase):
             print '    { _ }'
 
     # Directly expand the substitution inline.
-    def ExpandSubstitution(self, msiPath):
+    def ExpandSubstitution(self):
         argList = ['%s=%s' % (arg, QuoteArgument(self.args[arg]))
                    for arg in self.Arguments]
         template = self.TemplateName(False)
@@ -198,8 +199,11 @@ class Substitution(libversion.ModuleBase):
         print '#', 75 * '-'
         print
 
-        msi = [os.path.join(msiPath, 'msi')] + \
-              ['-M%s' % arg for arg in argList] + [template]
+        if paths.msiPath:
+            runMsi = os.path.join(msiPath, 'msi')
+        else:
+            runMsi = 'msi'
+        msi = [runMsi] + ['-M%s' % arg for arg in argList] + [template]
         p = subprocess.Popen(msi, stdout=subprocess.PIPE)
         for line in p.stdout:
             print line,

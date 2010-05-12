@@ -109,10 +109,9 @@ class Configure(Singleton):
         assert hasattr(paths, 'EPICS_BASE'), \
             'Must specify EPICS_BASE in environment or in Configure call'
 
-        # Configure where ModuleVersion looks for modules.
-        if module_path is None:
-            module_path = paths.module_path
-        libversion.SetModulePath(module_path)
+        if module_path is not None:
+            # Override computed paths.module_path if a value is configured.
+            paths.module_path = module_path
 
         # Unfortunately we can't initialise iocinit until the iocbuilder
         # module is complete, in particular this can't be called from within

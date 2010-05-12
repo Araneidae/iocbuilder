@@ -9,19 +9,13 @@ import types
 
 import support
 import hardware
+import paths
 
 
 __all__ = [
     'ModuleVersion', 'ModuleBase', 'modules', 'autodepends',
     'SetSimulation', 'DummySimulation']
 
-
-
-# Define the directory path for locating modules.  This works with the Diamond
-# directory conventions.
-def SetModulePath(prod):
-    global prodSupport
-    prodSupport = prod
 
 
 # Checks for a Python module or package at path/module, returns the path to
@@ -114,10 +108,12 @@ class ModuleVersion:
         if home is None:
             # By default pick up each module from the prod support directory.
             # It might be quite nice to extend this with a path search.
-            home = prodSupport
+            home = paths.module_path
         else:
             # Normalise the path for safety.
             home = os.path.realpath(home)
+        assert home and os.path.isdir(home), \
+            'Invalid module home directory %s' % home
 
         self.__name = libname
         self.__module_name = PythonIdentifier(libname)

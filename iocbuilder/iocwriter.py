@@ -261,7 +261,7 @@ class SimpleIocWriter(IocWriter):
 
     def PrintAndExpandRecords(self):
         self.PrintRecords()
-        self.ExpandSubstitutions(paths.msiPath)
+        self.ExpandSubstitutions()
 
     ## Writes out the IOC startup command file.  The entire internal state
     # (apart from configuration) is reset: this allows a new IOC application
@@ -606,7 +606,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         expanded = self.ioc_name + '_expanded.db'
         makefile = self.makefile_db
 
-        makefile.AddLine('PATH := $(PATH):%s' % paths.msiPath)
+        if paths.msiPath:
+            makefile.AddLine('PATH := $(PATH):%s' % paths.msiPath)
 
         # Generate the .db and substitutions files and compute the
         # appropriate makefile targets.
@@ -683,7 +684,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.makefile_boot.AddLine(
             '%s += st%s.boot' % (scripts, self.ioc_name))
         if self.substitute_boot:
-            self.makefile_boot.AddLine('PATH := $(PATH):%s' % paths.msiPath)
+            if paths.msiPath:
+                self.makefile_boot.AddLine('PATH := $(PATH):%s' % paths.msiPath)
         else:
             self.makefile_boot.AddRule(
                 'envPaths cdCommands:\n'
