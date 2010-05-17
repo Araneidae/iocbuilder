@@ -17,14 +17,14 @@ class epicsBase(Device):
     def Initialise_vxWorks(self):
         print 'ld < bin/%s/%s.munch' % (
             configure.Architecture(), self.ioc_init.ioc_name)
-        
+
     def Initialise(self):
         self.ioc_init.cd_home()
         configure.Call_TargetOS(self, 'Initialise')
-        print 
+        print
         print 'dbLoadDatabase "dbd/%s.dbd"' % self.ioc_init.ioc_name
         print '%s_registerRecordDeviceDriver(pdbbase)'% \
-            self.ioc_init.ioc_name.replace('-', '_')        
+            self.ioc_init.ioc_name.replace('-', '_')
 
 
 class StartupCommand(ModuleBase):
@@ -32,7 +32,7 @@ class StartupCommand(ModuleBase):
     def __init__(self, command, post_init=False):
         IocCommand(command, post_init)
         self.__super.__init__()
-        
+
     ArgInfo = makeArgInfo(__init__,
         command   = Simple('Startup command', str),
         post_init = Simple('If True, do this after iocInit', bool))
@@ -43,7 +43,7 @@ class EpicsEnvSet(ModuleBase):
     def __init__(self, key, value):
         self._EpicsEnvSet(key, value)
         self.__super.__init__()
-        
+
     ArgInfo = makeArgInfo(__init__,
         key   = Simple('Variable to set', str),
         value = Simple('Value to set it to', str))
