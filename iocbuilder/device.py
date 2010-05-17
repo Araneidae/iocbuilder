@@ -8,6 +8,7 @@ All such entries in the startup script should be implemented by subclassing
 the Device class defined here.'''
 
 import os.path
+import re
 
 from liblist import Hardware
 import libversion
@@ -35,6 +36,7 @@ def _DbdPath(file):
     return os.path.join('dbd', '%s.dbd' % file)
 
 
+# A helper object which sorts before all other objects.
 class _FIRST:
     def __hash__(self):     return id(self)
     def __cmp__(self, other):
@@ -42,6 +44,18 @@ class _FIRST:
             return 0
         else:
             return -1
+_FIRST = _FIRST()
+
+
+# A helper class for printing a header just the once.
+class _header:
+    def __init__(self, header):
+        self.header = header
+        self.printed = False
+    def doprint(self):
+        if not self.printed:
+            print self.header
+            self.printed = True
 
 
 ## This class should be subclassed to implement devices.  Each instance of
@@ -86,10 +100,15 @@ class Device(libversion.ModuleBase):
         # the record definitions to be available even before the class is
         # instantiated.
         cls._LoadDbdFiles()
+        # Compute which initialisation phases are present.
+        cls._ComputeInitialisePhases()
+        # Per class set of flags used to ensure that InitialiseOnce really is
+        # called only the once per class.
+        cls._OncePhases = set()
 
     BaseClass = True
 
-    FIRST = _FIRST()
+    FIRST = _FIRST      # To be withdrawn at first opportunity!
 
     def __init__(self):
         # Constructing a Device subclass instance adds the class to the list
@@ -116,17 +135,8 @@ class Device(libversion.ModuleBase):
     ## List of binary files to be loaded dynamically.
     BinFileList = []
 
-    ## This function is called for each instance of this device.
-    Initialise = None
-
-    ## Define this method to be called once before all other initialisation
-    # calls if this device is instantiated.
-    InitialiseOnce = None
     ## Define this method to be called after \c iocInit in the startup script.
     PostIocInitialise = None
-
-    # Initialisation phase: controls when initialisation will occur.
-    InitialisationPhase = 0
 
 
     # This routine generates all the library instance loading code and is
@@ -134,9 +144,7 @@ class Device(libversion.ModuleBase):
     # mode the library and dbd files are loaded, but in static mode all we do
     # is load the binary files.
     @classmethod
-    def LoadLibraries(cls):
-        cls.__Once = False
-
+    def _LoadLibraries(cls):
         if cls.BinFileList or Configure.dynamic_load and (
                 cls.LibFileList or cls.DbdFileList):
             print
@@ -160,21 +168,68 @@ class Device(libversion.ModuleBase):
                     print '%s_registerRecordDeviceDriver pdbbase' % dbd
 
 
-    # Calls the initialisation method if present.
-    def CallInitialise(self):
-        if (self.InitialiseOnce and not self.__Once) or \
-                self.Initialise or self.__Commands:
-            print
-        if self.InitialiseOnce and not self.__Once:
-            self.InitialiseOnce()
-            self.__class__.__Once = True
-        if self.Initialise:
-            self.Initialise()
-        for command in self.__Commands:
-            print command
+    # The list of initialisation phases controls when initialisation will occur
+    # and is computed automatically from the occurrences of the following
+    # Initialise or InitialiseOnce routines:
+    #   Initialise__n, InitialiseOnce__n           For phase == -n
+    #   Initialise,    InitialiseOnce              For phase == 0
+    #   Initialise_n,  InitialiseOnce_n            For phase == n
+    # Smaller phases are called before larger phases.
+    _MatchInitialise = re.compile('Initialise(Once)?(__?[0-9]+|_FIRST|)$')
+    @classmethod
+    def _ComputeInitialisePhases(cls):
+        # We always include phase 0 because any commands in __Commands are
+        # invoked at phase 0.
+        phases = set([0])
+        for name in dir(cls):
+            match = cls._MatchInitialise.match(name)
+            if match and match.group(2):
+                phase = match.group(2)[1:]
+                if phase == 'FIRST':
+                    phases.add(_FIRST)
+                elif phase[0] == '_':
+                    # Negative phase
+                    phases.add(-int(phase[1:]))
+                else:
+                    phases.add(int(phase))
+        cls._InitialisationPhases = phases
+
+
+    # Calls the initialisation methods for the selected phase if present.
+    def _CallInitialise(self, phase):
+        # The phase suffix is computed from the phase: __n for negative phases,
+        # _n for positive phases, empty for (default) phase 0.
+        if phase == _FIRST:
+            suffix = '_FIRST'
+        elif phase < 0:
+            suffix = '__%d' % phase
+        elif phase > 0:
+            suffix = '_%d' % phase
+        else:
+            suffix = ''
+        InitialiseOnce = 'InitialiseOnce%s' % suffix
+        Initialise = 'Initialise%s' % suffix
+
+        header = _header('')
+        if hasattr(self, InitialiseOnce):
+            # An InitialiseOnce for this device at this phase.  Ensure we call
+            # this once per class.
+            if phase not in self._OncePhases:
+                self._OncePhases.add(phase)
+                header.doprint()
+                getattr(self, InitialiseOnce)()
+
+        if hasattr(self, Initialise):
+            header.doprint()
+            getattr(self, Initialise)()
+
+        if phase == 0 and self.__Commands:
+            header.doprint()
+            for command in self.__Commands:
+                print command
 
     # Similarly, call any post-iocInit initialisation
-    def CallPostIocInitialise(self):
+    def _CallPostIocInitialise(self):
         if self.PostIocInitialise or self.__CommandsPostInit:
             print
         if self.PostIocInitialise:

@@ -60,7 +60,7 @@ class Hardware(Singleton):
         print '# -----------------'
         for l in self.__LibraryList:
             # Generate the code to load the library.
-            l.LoadLibraries()
+            l._LoadLibraries()
 
         # Now write the individual device initialisations.
         # Initialisation is normally done in order of creation, but an
@@ -68,15 +68,14 @@ class Hardware(Singleton):
         print
         print '# Device initialisation'
         print '# ---------------------'
-        phases = {}
+        device_phases = {}
         for device in self.__HardwareList:
-            phase = device.InitialisationPhase
-            if phase not in phases:  phases[phase] = []
-            phases[phase].append(device)
+            for phase in device._InitialisationPhases:
+                device_phases.setdefault(phase, []).append(device)
 
-        for phase in sorted(phases.keys()):
-            for device in phases[phase]:
-                device.CallInitialise()
+        for phase in sorted(device_phases.keys()):
+            for device in device_phases[phase]:
+                device._CallInitialise(phase)
 
 
     # Returns a list of all .dbd files.
@@ -102,7 +101,7 @@ class Hardware(Singleton):
     # code generation here
     def PrintPostIocInit(self):
         for device in self.__HardwareList:
-            device.CallPostIocInitialise()
+            device._CallPostIocInitialise()
 
 
     # Add device library to list of libraries to be loaded.  Called from

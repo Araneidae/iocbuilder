@@ -18,7 +18,7 @@ class epicsBase(Device):
         print 'ld < bin/%s/%s.munch' % (
             configure.Architecture(), self.ioc_init.ioc_name)
 
-    def Initialise(self):
+    def Initialise_FIRST(self):
         self.ioc_init.cd_home()
         configure.Call_TargetOS(self, 'Initialise')
         print
