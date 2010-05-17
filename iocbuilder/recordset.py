@@ -55,9 +55,20 @@ class SubstitutionSet(support.autosuper):
     def Reset(self):
         self.__Substitutions.clear()
 
+    # Ensures that templates which are marked as being overwritten by this
+    # template are generated first.  Unfortunately multiple templates which
+    # update the same records really are used.
+    def __AddOverwrites(self, substitution):
+        for cls in substitution.SubstitutionOverwrites:
+            self.__AddOverwrites(cls)
+        # Note that we index the list by template name rather than class.
+        # This allows substitutions to be subclassed without breaking their
+        # dependencies.
+        return self.__Substitutions.setdefault(
+            substitution.TemplateName(True), [])
+
     def AddSubstitution(self, substitution):
-        self.__Substitutions.setdefault(
-            substitution.TemplateName(True), []).append(substitution)
+        self.__AddOverwrites(substitution.__class__).append(substitution)
 
     # Expand all the substitutions inline.  The path to locate the msi
     # application used for expanding must be passed in.
@@ -71,6 +82,8 @@ class SubstitutionSet(support.autosuper):
         # Print out the list in canonical order to help with comparison
         # across minor changes.
         for template, subList in self.__Substitutions.items():
+            if not subList:
+                continue
             print
             if hasattr(subList[0], "ArgInfo"):
                 lines = []
@@ -104,6 +117,11 @@ class SubstitutionSet(support.autosuper):
 # \param TemplateFile
 #   Name of template file to be loaded.  By default this will be
 #   looked for in the db subdirectory of the library.
+# \param SubstitutionOverwrites
+#   Where definitions from one template override an earlier template it is
+#   necessary to ensure that templates are loaded in a particular sequence.
+#   This is done by setting this varible to a list of all templates which need
+#   to be loaded before this one.
 class Substitution(libversion.ModuleBase):
     def __init_meta__(cls, subclass):
         if cls.TemplateFile:
@@ -119,20 +137,24 @@ class Substitution(libversion.ModuleBase):
     ## These are the arguments that any instance of the class will expect
     Arguments = None
 
+    # Dependencies between substitutions.
+    SubstitutionOverwrites = []
+
     TemplateDir = None
     SubstitutionSet = SubstitutionSet()
     TemplateDir = 'db'
 
     # Computes the template file name.  If macro_name is true then a form
     # suitable for msi macro expansion is returned.
-    def TemplateName(self, macro_name):
-        assert self.TemplateFile is not None, 'No template file specified'
-        if self.TemplateDir is None:
-            return self.TemplateFile
+    @classmethod
+    def TemplateName(cls, macro_name):
+        assert cls.TemplateFile is not None, 'No template file specified'
+        if cls.TemplateDir is None:
+            return cls.TemplateFile
         else:
             return os.path.join(
-                self.LibPath(macro_name = macro_name),
-                self.TemplateDir, self.TemplateFile)
+                cls.LibPath(macro_name = macro_name),
+                cls.TemplateDir, cls.TemplateFile)
 
     # Outputs the substitution pattern line associated with this Substitution.
     # This is output in a format suitable for inclusion within a substitutions
