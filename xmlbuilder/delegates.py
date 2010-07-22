@@ -8,12 +8,14 @@ class ComboBoxDelegate(QItemDelegate):
     def createEditor(self, parent, option, index):
         values = index.data(Qt.UserRole)
         if values.isNull():
-            return QItemDelegate.createEditor(self, parent, option, index)
-        elif values.type() == QVariant.Bool:
-            if index.column() == 0:
-                return BoolButton('#', '', parent)
-            else:
-                return BoolButton('true', 'false', parent)
+            editor = QItemDelegate.createEditor(self, parent, option, index)
+            editor.connect(editor, SIGNAL('returnPressed()'), editor, SLOT("close()"))
+            editor.connect(editor, SIGNAL('editingFinished()'), editor, SLOT("close()"))
+            return editor
+        elif index.column() == 0:
+            editor = BoolButton('#', '', parent)
+            editor.connect(editor, SIGNAL('toggled(bool)'), editor, SLOT("close()"))     
+            return editor           
         else:
             editor = QComboBox(parent)
             editor.setEditable(True)
@@ -23,8 +25,12 @@ class ComboBoxDelegate(QItemDelegate):
 
     def setEditorData(self, editor, index):
         if isinstance(editor, QComboBox):
-            editor.setEditText(index.data(Qt.EditRole).toString())        
-            editor.lineEdit().selectAll()
+            i = editor.findText(index.data(Qt.EditRole).toString())
+            if i > -1:
+                editor.setCurrentIndex(i)
+            else:                
+                editor.setEditText(index.data(Qt.EditRole).toString())        
+            editor.lineEdit().selectAll()     
         elif isinstance(editor, BoolButton):
             editor.setChecked(index.data(Qt.EditRole).toBool())
         else:
@@ -39,6 +45,8 @@ class ComboBoxDelegate(QItemDelegate):
             return QItemDelegate.setModelData(self, editor, model, index)
 
     def updateEditorGeometry(self, editor, option, index):
+        if isinstance(editor, BoolButton):            
+            return editor.setGeometry(option.rect)    
         option.rect.setSize(editor.minimumSizeHint().expandedTo(option.rect.size()))        
         if isinstance(editor, QComboBox):
             editor.setGeometry(option.rect)
@@ -59,15 +67,6 @@ class ComboBoxDelegate(QItemDelegate):
             painter.drawRect(option.rect)
 
 
-class ComboLineEdit(QLineEdit):
-    def __init__(self, l, parent):
-        QLineEdit.__init__(self, parent)
-        self.c = QCompleter(l, parent)
-        self.c.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
-        self.c.setCaseSensitivity(Qt.CaseInsensitive)
-        self.setCompleter(self.c)
-
-
 class BoolButton(QPushButton):
 
     def __init__(self, onstr, offstr, parent):
@@ -76,6 +75,7 @@ class BoolButton(QPushButton):
         self.onstr = onstr
         self.offstr = offstr
         self.setCheckable(True)
+        self.setMinimumSize(10,10)
 
     def relabel(self, on):
         if on:

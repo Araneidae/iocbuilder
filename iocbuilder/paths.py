@@ -68,7 +68,6 @@ def SetEpicsBase(epics_base):
     if epics_version:
         module_path = _GetModulePath(epics_version)
         msiPath = _GetMsiPath(epics_version)
-    print 'SetEpicsBase', EPICS_BASE, module_path, msiPath
 
 
 

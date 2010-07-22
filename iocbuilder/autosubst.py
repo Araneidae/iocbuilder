@@ -88,6 +88,9 @@ def populate_class(cls, template_file):
                     if mtext not in required_names:
                         required_names.append(mtext)
 
+    # Find # % gui tags and store them in cls.guiTags.
+    cls.guiTags = gui_re.findall(text)
+
     # find all the descriptions for ArgInfo objects
     def add_ob(name, ob):
         Obs[name] = ob
@@ -199,6 +202,9 @@ bracket_open = re.compile(r'(\([^\(\)]*)')
 
 # This re matches a ) until the next ) or (
 bracket_close = re.compile(r'(\)[^\(\)]*)')
+
+# This re matches and gui tags
+gui_re = re.compile(r'#[ \t]*%[ \t]*gui[ \t]*,[ \t]*(.*)')
 
 # This re matches a macro description line like #% macro, P, Pv Prefix.
 # It will also match multiline descriptions like:

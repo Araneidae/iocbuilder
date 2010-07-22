@@ -522,7 +522,8 @@ def SetSimulation(real, sim):
         ModuleBase.ModuleBaseClasses[index] = new_sim
         # now in iocbuilder.modules
         for attr in [
-                '__name__', 'ModuleName', 'ArgInfo', 'Defaults', 'Arguments']:
+                '__name__', 'ModuleName', 'ArgInfo', 'Defaults', 'Arguments',
+                'UniqueName']:
             if hasattr(real, attr):
                 setattr(new_sim, attr, getattr(real, attr))
         modulename = real.ModuleVersion.ModuleName()

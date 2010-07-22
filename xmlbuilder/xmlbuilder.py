@@ -8,13 +8,14 @@ from optparse import OptionParser
 
 class Store(object):
     def __init__(self, debug = False, DbOnly = False, doc = False,
-            arch = 'vxWorks-ppc604_long'):
+            arch = 'vxWorks-ppc604_long', edm_screen = False):
         # This is a default architecture
         self.architecture = arch
         self.simarch = False
         self.epics_base = None
         self.build_root = '.'
         self.iocname = 'example'
+        self.edm_screen = edm_screen
         # This the group of undo stacks for each table
         self.stack = QUndoGroup()
         # this is a dict of tables
@@ -225,7 +226,7 @@ class Store(object):
             # make builder objects
             table.createObjects(obs)
         self.iocbuilder.WriteNamedIoc(iocpath, iocname, check_release = True,
-            substitute_boot = True)
+            substitute_boot = True, edm_screen = self.edm_screen)
 
     def getTable(self, name):
         # return the table
@@ -263,6 +264,9 @@ def main():
     parser.add_option(
         '--sim', dest='simarch',
         help='Create an ioc with arch=SIMARCH in simulation mode')
+    parser.add_option(
+        '-e', action='store_true', dest='edm_screen',
+        help='Try to create a set of edm screens for this module')        
 
     # parse arguments
     (options, args) = parser.parse_args()
@@ -284,7 +288,8 @@ def main():
     # setup the store
     xml_file = args[0]
     iocname = os.path.basename(xml_file).replace('.xml','')
-    store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc)
+    store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc, 
+        edm_screen = options.edm_screen)
     problems, warnings = store.Open(xml_file, sim = options.simarch)
     for prob in problems:
         print '***Error:', prob
@@ -314,4 +319,5 @@ if __name__=='__main__':
         os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
     from pkg_resources import require
     require('dls_dependency_tree')
+    require('dls_edm')    
     main()

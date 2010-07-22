@@ -4,7 +4,7 @@ from PyQt4.QtGui import \
     QMainWindow, QMessageBox, QApplication, QTableView, \
     QGridLayout, QListWidget, QDockWidget, QAbstractItemView, QUndoView, \
     QMenu, QFileDialog, QInputDialog, QLineEdit, QListWidgetItem, \
-    QClipboard, QDialog, QScrollArea, QTextEdit, QFont, QPushButton
+    QClipboard, QDialog, QScrollArea, QTextEdit, QFont, QPushButton, QLabel
 from PyQt4.QtCore import Qt, SIGNAL, SLOT, QSize, QVariant, QString
 from delegates import ComboBoxDelegate
 import sys, signal, os, re, traceback
@@ -51,6 +51,10 @@ class TableView(QTableView):
         cb = app.clipboard()
         cb.setText(QString('\n'.join(rows)))
 
+    def pythonCode(self):
+        self.codeBox.selRange = self.selectedIndexes()
+        self.codeBox.show()
+
     def fillCells(self):
         selRange = self.selectedIndexes()
         if not selRange:
@@ -63,14 +67,11 @@ class TableView(QTableView):
         ncols = max(cols) - mincols + 1
         self.model().stack.beginMacro('Fill Cells')
         if nrows == 1:
-            source = [x
-                for x in selRange
-                if x.column() == mincols and x.row() == minrows][0]
             # Surely should be this:?
-#             for x in selRange:
-#                 if x.column() == mincols and x.row() == minrows:
-#                      source = x
-#                      break
+            for x in selRange:
+                if x.column() == mincols and x.row() == minrows:
+                     source = x
+                     break
             cells = [x for x in selRange if x != source]
             srcText = str(source.data().toString())
             srcInt = ''
@@ -82,8 +83,7 @@ class TableView(QTableView):
                 text = srcText
                 if srcInt:
                     # Surely should be this?  In fact, wtf is going on here?
-#                     text += ('%%0%dd' % len(srcInt)) % (
-                    text += ('%0'+str(len(srcInt))+'d') % (
+                     text += ('%%0%dd' % len(srcInt)) % (
                         int(srcInt) + cell.column() - mincols)
                 self.__setCell(self.model(), cell.row(), cell.column(), text)
         else:
@@ -152,9 +152,10 @@ class TableView(QTableView):
                     val = data[row - minrows][col - mincols]
                     self.__setCell(model, row, col, val)
         else:
+            # many cells selected
             for cell in selRange:
                 try:
-                    val = data[cell.row() - minrows][cell.column() - mincols]
+                    val = data[(cell.row() - minrows) % nrows][(cell.column() - mincols) % ncols]
                 except IndexError:
                     pass
                 else:
@@ -302,6 +303,9 @@ class GUI(QMainWindow):
         self.menuEdit.addSeparator()
         self.menuEdit.addAction('Fill Cells',
             self.tableView.fillCells).setShortcut('CTRL+R')
+        self.menuEdit.addAction('Python Code...',
+            self.tableView.pythonCode).setShortcut('CTRL+P') 
+        self.tableView.codeBox = pythonCode()                       
         self.menuEdit.addSeparator()
         self.menuEdit.addAction('Undo',
             self.store.stack, SLOT('undo()')).setShortcut('CTRL+Z')
@@ -489,6 +493,7 @@ class formLog(QDialog):
         '''text = text to display in a readonly QTextEdit'''
         QDialog.__init__(self,*args)
         formLayout = QGridLayout(self)#,1,1,11,6,'formLayout')
+        self.formLayout = formLayout
         self.scroll = QScrollArea(self)
         self.lab = QTextEdit()
         self.lab.setFont(QFont('monospace', 10))
@@ -498,12 +503,39 @@ class formLog(QDialog):
         self.scroll.setWidgetResizable(True)
         self.scroll.setMinimumWidth(700)
         self.scroll.setMinimumHeight(700)
-        formLayout.addWidget(self.scroll,1,1)
-        self.btnClose = QPushButton('btnClose', self)
-        formLayout.addWidget(self.btnClose,2,1)
+        formLayout.addWidget(self.scroll,1,1,1,2)
+        self.btnClose = QPushButton('Close', self)
+        formLayout.addWidget(self.btnClose,3,2,1,1)
         self.connect(self.btnClose, SIGNAL('clicked ()'),self.close)
-        self.btnClose.setText('Close')
 
+class pythonCode(formLog):
+    def __init__(self,*args):
+        formLog.__init__(self,"text = text.replace('.', '-')",*args)
+        self.btnRun = QPushButton('Run', self)        
+        self.scroll.setMinimumHeight(100)        
+        self.connect(self.btnRun, SIGNAL('clicked ()'),self.runCode)
+        self.formLayout.addWidget(self.btnRun,3,1,1,1)
+        self.lab.setReadOnly(False)
+        self.help = QLabel("Variables:\n\ttext: cell text\n\tcell: cell object\n")
+        self.formLayout.addWidget(self.help,2,1,1,2)        
+
+    def runCode(self):
+        code = str(self.lab.toPlainText())
+        model = self.selRange[0].model()
+        model.stack.beginMacro('Run python code')        
+        for cell in self.selRange:
+            text = str(cell.data().toString())
+            env = dict(cell = cell, text = text)
+            try:
+                exec(code, env)
+            except:
+                print "Failed"
+            else:                
+                if env["text"] != text:
+                    index = model.index(cell.row(), cell.column())
+                    model.setData(index, QVariant(env["text"]), Qt.EditRole)
+        model.stack.endMacro()
+        
 def main():
     parser = OptionParser('usage: %prog [options] [<xml-file>]')
     parser.add_option(

@@ -105,6 +105,11 @@ class SubstitutionSet(support.autosuper):
     def CountSubstitutions(self):
         return len(self.__Substitutions)
 
+    def AllSubstitutions(self):
+        l = []
+        for template, subList in self.__Substitutions.items():
+            l += subList
+        return l
 
 ## Each sub-class of this class defines a Substitution.
 #
@@ -233,6 +238,7 @@ class Substitution(libversion.ModuleBase):
 
 
 RecordsSubstitutionSet = Substitution.SubstitutionSet
+AllSubstitutions = RecordsSubstitutionSet.AllSubstitutions
 
 
 # Converts a string into a form suitable for passing to the database expansion
