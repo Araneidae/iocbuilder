@@ -52,7 +52,7 @@ class TableView(QTableView):
         cb.setText(QString('\n'.join(rows)))
 
     def pythonCode(self):
-        self.codeBox.selRange = self.selectedIndexes()
+        self.codeBox.parent = self
         self.codeBox.show()
 
     def fillCells(self):
@@ -521,6 +521,7 @@ class pythonCode(formLog):
 
     def runCode(self):
         code = str(self.lab.toPlainText())
+        self.selRange = self.parent.selectedIndexes()
         model = self.selRange[0].model()
         model.stack.beginMacro('Run python code')        
         for cell in self.selRange:

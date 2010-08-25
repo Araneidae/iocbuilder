@@ -301,7 +301,9 @@ class DocumentationIocWriter(IocWriter):
         IocWriter.__init__(self, path)  # Sets up iocRoot
         self.ioc_name = ioc_name
         self.page_name = fname
-        self.SetIocName(self.ioc_name, False)
+        self.SetIocName(self.ioc_name, False)     
+        for func in _DbMakefileHooks:
+            func(Makefile("", "", ""), self.ioc_name, "", "")
         self.WriteFile(fname, self.CreateBuildInstructions)
 
     def CreateBuildInstructions(self):
@@ -317,7 +319,7 @@ class DocumentationIocWriter(IocWriter):
         for path,name in gen_paths:
             if name != "EPICS_BASE":
                 print name+"="+path
-        print "\\endverbatim"
+        print "\\endverbatim"       
         print
         print "<li> Add the DBD dependencies to src/Makefile"
         print "\\verbatim"
