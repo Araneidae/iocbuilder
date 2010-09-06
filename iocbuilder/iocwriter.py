@@ -336,7 +336,7 @@ class DocumentationIocWriter(IocWriter):
         print "\\endverbatim"
         print
         print "<li> Use the template files to add records to the database."
-        print "\\verbatim",
+        print "\\verbatim"
         recordset.RecordsSubstitutionSet.Print()
         print "\\endverbatim"
         print
