@@ -299,10 +299,9 @@ def main():
     if options.doc:
         store.CreateIoc(options.doc, iocname)
     elif DbOnly:
+        iocpath = os.path.abspath(".")
         if options.simarch:
-            iocname = iocname.replace('-IOC-','-SIM-')
-            store.iocbuilder.SetEpicsPort(6064)
-        iocpath = os.path.abspath(os.path.dirname(os.path.abspath(xml_file)))
+            iocname += '_sim'        
         store.CreateIoc(iocpath, iocname)
     else:
         # write the iocs

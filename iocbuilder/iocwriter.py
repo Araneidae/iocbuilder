@@ -18,7 +18,7 @@ from liblist import Hardware
 
 
 __all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter', 'SetSource',
-    'DocumentationIocWriter']
+    'DocumentationIocWriter', 'DbOnlyWriter']
 
 _Source = os.path.realpath(sys.argv[0])
 
@@ -301,7 +301,7 @@ class DocumentationIocWriter(IocWriter):
         IocWriter.__init__(self, path)  # Sets up iocRoot
         self.ioc_name = ioc_name
         self.page_name = fname
-        self.SetIocName(self.ioc_name, False)     
+        self.SetIocName(self.ioc_name, False)
         for func in _DbMakefileHooks:
             func(Makefile("", "", ""), self.ioc_name, "", "")
         self.WriteFile(fname, self.CreateBuildInstructions)
@@ -319,7 +319,7 @@ class DocumentationIocWriter(IocWriter):
         for path,name in gen_paths:
             if name != "EPICS_BASE":
                 print name+"="+path
-        print "\\endverbatim"       
+        print "\\endverbatim"
         print
         print "<li> Add the DBD dependencies to src/Makefile"
         print "\\verbatim"
@@ -347,6 +347,46 @@ class DocumentationIocWriter(IocWriter):
         print "\\endverbatim"
         print "</ol>"
         print "**/"
+
+
+## This IOC Writer creates a db file and a substitution file for this IOC
+class DbOnlyWriter(IocWriter):
+    __all__ = ['WriteNamedIoc']
+
+    ## Creates build instructions page in path.
+    # Simply wraps \ref DbOnlyWriter.__init__
+    @classmethod
+    def WriteNamedIoc(cls, *args, **kargs):
+        cls(*args, **kargs)
+
+    ## Creates build instructions page in path. The file is written to \c path
+    # using doxygen syntax so that it can appear in the documentation.
+    # \param path
+    #   Full path of the substitution file
+    # \param ioc_name
+    #   Name of IOC used in instructions
+    # \param *args
+    #   Discarded
+    # \param **kwargs
+    #   Discarded
+    def __init__(self, path, ioc_name, *args, **kwargs):
+        # Remember parameters
+        IocWriter.__init__(self, path)  # Sets up iocRoot
+        self.ioc_name = ioc_name
+        self.SetIocName(self.ioc_name, False)
+        for func in _DbMakefileHooks:
+            func(Makefile('', '', ''), self.ioc_name, '', '')
+
+        db = self.ioc_name + '.db'
+        substitutions = self.ioc_name + '_expanded.substitutions'
+        if self.CountRecords():
+            self.WriteFile(db, self.PrintRecords)
+        if self.CountSubstitutions():
+            self.WriteFile(substitutions, self.PrintSubstitutions)
+        else:
+            self.WriteFile(substitutions, '')
+
+
 
 ## This IOC writer generates a complete IOC application tree in the Diamond
 # style.
