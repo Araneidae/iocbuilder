@@ -896,17 +896,17 @@ Supplied meta tag:
             for pre in prefixes:
                 obs = gb.get('%s.*' % pre)
                 ignores += obs
-                gb.component(pre, '%s Top' % pre, '', obs, d = d)
+                gb.object(pre, '%s Top' % pre, '', obs, d = d)
         # Now make a top level screen containing anything not in a sub screen
         obs = [x for x in gb.get('*') if x not in ignores]
-        c = gb.component('%sTop' % self.ioc_name, '%s Top' % self.ioc_name, '',
+        c = gb.object('%sTop' % self.ioc_name, '%s Top' % self.ioc_name, '',
             obs, preferEmbed = False, d = d)
         # Add a rule for installing edm screens
         self.makefile_edl.AddLine(
             'DATA += $(patsubst ../%, %, $(wildcard ../*.edl))')
         # And a startup script for the screens
         gb.startupScript(filename = '%s/st%s-gui' % (d,self.ioc_name),
-            edl = c['FILE'], setPort = False)
+            edl = c.macrodict['FILE'], setPort = False)
         self.makefile_edl.AddLine('SCRIPTS += ../st%s-gui' % self.ioc_name)
 
 # functions to be called when generating Db/Makefile
