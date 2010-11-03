@@ -219,8 +219,11 @@ class ArgType(object):
 def Simple(desc, typ=str):
     assert typ in _simpleTypes, \
         '%s is not a supported simple type %s' % (typ, _simpleTypes)
-    desc = '%s\n%s' % (desc, typ)
-    return ArgType(desc, typ)
+    if typ==bool:
+        return Choice(desc, [False, True])
+    else:
+    	desc = '%s\n%s' % (desc, typ)    
+        return ArgType(desc, typ)
 
 ## A choice of different values, with optional different labels
 # \param desc Description of the argument

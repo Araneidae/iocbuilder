@@ -1,27 +1,39 @@
 from PyQt4.QtGui import \
     QItemDelegate, QComboBox, QPushButton, QCompleter, QLineEdit, \
-    QBrush, QStyle, QColor, QPalette
-from PyQt4.QtCore import Qt, QVariant, SIGNAL, SLOT
+    QBrush, QStyle, QColor, QPalette, QKeyEvent, QAbstractItemDelegate
+from PyQt4.QtCore import Qt, QVariant, SIGNAL, SLOT, QEvent
 
 class ComboBoxDelegate(QItemDelegate):
 
     def createEditor(self, parent, option, index):
         values = index.data(Qt.UserRole)
+        self.lastcolumn = index.column() == index.model().columnCount()-1
         if values.isNull():
-            editor = QItemDelegate.createEditor(self, parent, option, index)
-            editor.connect(editor, SIGNAL('returnPressed()'), editor, SLOT("close()"))
-            editor.connect(editor, SIGNAL('editingFinished()'), editor, SLOT("close()"))
+            editor = QLineEdit(parent)
             return editor
-        elif index.column() == 0:
-            editor = BoolButton('#', '', parent)
-            editor.connect(editor, SIGNAL('toggled(bool)'), editor, SLOT("close()"))     
-            return editor           
+        elif index.column() == 0:            
+            index.model().setData(index, QVariant(not index.data(Qt.EditRole).toBool()), Qt.EditRole)
+            return None
         else:
-            editor = QComboBox(parent)
+            editor = SpecialComboBox(parent)
+            editor.delegate = self
             editor.setEditable(True)
-            editor.addItems(values.toStringList())
-            editor.connect(editor, SIGNAL('activated(int)'), editor, SLOT("close()"))
+            editor.addItems(values.toStringList())          
             return editor
+
+    def eventFilter(self, editor, event):
+        # check some key presses
+        if event.type() == QEvent.KeyPress:
+            # if we pressed return and aren't at the last column send a tab
+#            if event.key() == Qt.Key_Return and not self.lastcolumn:
+#                event.accept()                   
+#                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Tab, Qt.NoModifier)
+            # if we pressed tab and are in the last column send a return
+            if event.key() == Qt.Key_Tab and self.lastcolumn:
+                event.accept()                   
+                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier)
+        # just pass the event up
+        return QItemDelegate.eventFilter(self, editor, event)    
 
     def setEditorData(self, editor, index):
         if isinstance(editor, QComboBox):
@@ -31,22 +43,16 @@ class ComboBoxDelegate(QItemDelegate):
             else:                
                 editor.setEditText(index.data(Qt.EditRole).toString())        
             editor.lineEdit().selectAll()     
-        elif isinstance(editor, BoolButton):
-            editor.setChecked(index.data(Qt.EditRole).toBool())
         else:
             return QItemDelegate.setEditorData(self, editor, index)
 
     def setModelData(self, editor, model, index):
         if isinstance(editor, QComboBox):
             model.setData(index, QVariant(editor.currentText()), Qt.EditRole)
-        elif isinstance(editor, BoolButton):
-            model.setData(index, QVariant(editor.isChecked()), Qt.EditRole)
         else:
             return QItemDelegate.setModelData(self, editor, model, index)
 
     def updateEditorGeometry(self, editor, option, index):
-        if isinstance(editor, BoolButton):            
-            return editor.setGeometry(option.rect)    
         option.rect.setSize(editor.minimumSizeHint().expandedTo(option.rect.size()))        
         if isinstance(editor, QComboBox):
             editor.setGeometry(option.rect)
@@ -66,19 +72,14 @@ class ComboBoxDelegate(QItemDelegate):
                 (option.state & QStyle.State_Selected):
             painter.drawRect(option.rect)
 
-
-class BoolButton(QPushButton):
-
-    def __init__(self, onstr, offstr, parent):
-        QPushButton.__init__(self, parent)
-        self.connect(self, SIGNAL('toggled(bool)'), self.relabel)
-        self.onstr = onstr
-        self.offstr = offstr
-        self.setCheckable(True)
-        self.setMinimumSize(10,10)
-
-    def relabel(self, on):
-        if on:
-            self.setText(self.onstr)
-        else:
-            self.setText(self.offstr)
+class SpecialComboBox(QComboBox):
+    # Qt outputs an activated signal if you start typing then mouse click on the
+    # down arrow. By delaying the activated event until after the mouse click
+    # we avoid this problem
+    def closeEvent(self, i):
+        self.delegate.commitData.emit(self)
+        self.delegate.closeEditor.emit(self, QAbstractItemDelegate.SubmitModelCache)    
+    
+    def mousePressEvent(self, event):
+        QComboBox.mousePressEvent(self, event)
+        self.activated.connect(self.closeEvent)  

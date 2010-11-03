@@ -282,7 +282,7 @@ class Table(QAbstractTableModel):
         # upto means only look at objects up to "upto" row in the current table
         if (filt, without, upto) in self._cachedNameList:
             timestamp, sl = self._cachedNameList[(filt, without, upto)]
-            if self._parent.lastModified() <= timestamp:
+            if self._parent.lastModified() < timestamp:
                 return sl
         sl = QStringList()
         for name in self._parent.getTableNames():

@@ -829,7 +829,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
     def CreateEdlFiles(self):
         # First we make a GuiBuilder object that knows how to make edm screens
         from dls_edm import GuiBuilder, SILENT
-        gb = GuiBuilder(self.ioc_name, errors = SILENT, cl = False)
+        gb = GuiBuilder(errors = SILENT)
         # Tell it what its paths are
         gb.RELEASE = os.path.join(self.iocRoot, 'configure/RELEASE')
         for m in sorted(libversion.ModuleBase.ListModules()):
