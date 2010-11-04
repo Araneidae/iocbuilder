@@ -52,7 +52,7 @@ ValidateIoc()
         [ -e "$1"/$d ] ||
             Error "File $d missing: are you sure $1 is an IOC?"
     done
-    
+
     # Simply refuse to process IOCs which have already been put under
     # subversion: clearly a sign of confusion.
     [ -n "$(find "$1" -name .svn -print -quit)" ]  &&
@@ -70,70 +70,13 @@ CheckChanged()
 }
 
 
-# Merge changes into svn
-#
-# This function performs the surprisingly difficult job of replacing an
-# existing SVN repository with files from another directory.
-#
-#   MergeSVN <working-svn-dir> <replacement-dir>
-#
-function MergeSVN()
-{
-    diff -r --brief --exclude='*.svn*' "$1" "$2" |
-    while read -r; do
-        # For each file diff will report either that it only exists in one of
-        # the two directories, or else that two corresponding files in the
-        # two directories differ.  The responses are of the form:
-        #
-        #   Only in $1/<subdirectory>: <filename>
-        #   Only in $2/<subdirectory>: <filename>
-        #   Files <svn-file> and <new-file> differ
-        #
-        # Careful use of sed is required to prise out desired filenames!
-        case "$REPLY" in
-        "Only in $1"*)
-            # If the file is only in the SVN directory then we can simply
-            # delete it from the subversion directory.
-            svn rm $QUIET "$(sed <<<"$REPLY" 's/^Only in //; s.: ./.')"  ||
-                return
-            ;;
-        "Only in $2"*)
-            # If the file is only in the new directory then we can copy it
-            # into the svn directory and inform svn.  Fortunately, if we use
-            # `cp -r`, we can treat files and directories identically.
-            NEW_FILE="$(sed <<<"$REPLY" "s:^Only in $2::; s.: ./.")"  &&
-            cp -r "$2/$NEW_FILE" "$1/$NEW_FILE"  &&
-            svn add $QUIET "$1/$NEW_FILE"  ||
-                return
-            ;;
-        "Files "*)
-            # This is the simplest case: just copy the file over.  It's a
-            # little harder to prise out the filenames, though.
-            # (Note that if any part of the filename contains the string 
-            # ' and ' then all bets are off: this just won't work.)
-            sed -r <<<"$REPLY" 's:^Files (.*) and (.*) differ$:\1\n\2:' |
-            (
-                IFS=$'\n'
-                read -r TARGET  &&
-                read -r SOURCE  &&
-                cp "$SOURCE" "$TARGET"
-            )  ||
-                return
-            ;;
-        *)  Error "Oops: don't understand response from diff:"$'\n' "$REPLY"
-            ;;
-        esac
-    done
-}
-
-
 # This is the function called in the loop below which performs all the real
 # work of merging an IOC from the given directory into the checked out
 # subversion tree.
 #   Called with the path to the IOC to merge and the IOC name split into its
 # two components, location and name:
 #
-#   MergeOneIoc <ioc_path> <location> <ioc_name> 
+#   MergeOneIoc <ioc_path> <location> <ioc_name>
 #
 MergeOneIoc()
 {
@@ -147,20 +90,23 @@ MergeOneIoc()
     [ "$location" = "${ioc_name%%-*}" -o "$ioc_name" = "${ioc_name%%-*}" ]  ||
         Error "IOC $ioc_name doesn't match location $location"
 
+    SVN_DOM_DIR="$TEMP_ROOT/$location"
     SVN_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
     ioc_dir="$IOCS_DIR/$ioc_path"
 
     # Ensure the IOC we're about to merge is a proper ioc!
     ValidateIoc "$ioc_dir"
-    
+
     # Create the location skeleton
     svn update $QUIET -N "$TEMP_ROOT/$location"  &&
-    
+
     # Check out the current IOC state, or create from new if necessary.
     $ECHO "Checking out IOC $location/$ioc_name"  &&
     svn update -q "$SVN_IOC_DIR"  &&
     if ! [ -d "$SVN_IOC_DIR" ]; then
         if ((AUTO_ADD)); then
+            [ -d "$SVN_DOM_DIR" ]  ||
+                svn mkdir $QUIET "$SVN_DOM_DIR"
             svn mkdir $QUIET "$SVN_IOC_DIR"
         else
             Error "IOC $location/$ioc_name not in subversion"
@@ -168,11 +114,11 @@ MergeOneIoc()
     fi  ||
         Error "Error checking out $location/$ioc_name"
 
-    # Merge the newly generated IOC into the SVN tree.    
+    # Merge the newly generated IOC into the SVN tree.
     if ((FORCE_UPDATE))  ||
             CheckChanged  "$SVN_IOC_DIR" "$ioc_dir"; then
         $ECHO "Merging IOC $location/$ioc_name"
-        MergeSVN "$SVN_IOC_DIR" "$ioc_dir"  ||
+        "$HERE/merge-svn" $QUIET "$SVN_IOC_DIR" "$ioc_dir"  ||
             Error "Something failed merging ioc $ioc_name"
         MERGED_IOCS=("${MERGED_IOCS[@]}" "$location/$ioc_name")
     else
@@ -189,7 +135,8 @@ AUTO_ADD=0
 FORCE_UPDATE=0
 ECHO=:
 QUIET=-q
-while getopts 'dcm:akfvh' option; do
+RELEASE_NUM=
+while getopts 'dcm:akfr:vh' option; do
     case $option in
     d)  SHOW_DIFFS=1 ;;
     c)  COMMIT_SVN=1 ;;
@@ -197,6 +144,7 @@ while getopts 'dcm:akfvh' option; do
     k)  KEEP_DIR=1 ;;
     a)  AUTO_ADD=1 ;;
     f)  FORCE_UPDATE=1 ;;
+    r)  RELEASE_NUM="$OPTARG" ;;
     v)  ECHO=echo
         [ -z "$QUIET" ] && set -x
         QUIET= ;;
@@ -214,6 +162,7 @@ The following options are supported:
     -m:     Commit message to use for SVN commit
     -a      Add IOCs which don't already exist.  Note that the IOC location
             must already exist.
+    -r:     Release all updated iocs with specified release number
     -k      Keep the updated SVN directory tree, otherwise it is deleted.
     -f      Don't check for changes, force update anyway
     -v      Verbose: show details, -vv is super verbose (debug only)
@@ -261,7 +210,7 @@ MERGED_IOCS=()
 for ioc in "${IOC_LIST[@]}"; do
     # At this point the ioc can be in one of three formats:
     #   1. A full IOC name
-    #   2. A location 
+    #   2. A location
     #   3. A two part name location/ioc
     # All three forms must name a directory in $IOCS_DIR, but we have to
     # handle these cases differently to cope with the following use cases:
@@ -314,10 +263,21 @@ Automatically merged IOCs from $IOCS_DIR:
     ${MERGED_IOCS[*]}
 "
         svn commit -m"$COMMIT_MESSAGE" "$TEMP_ROOT"
-    else
-        echo The following IOCs were merged:
-        echo "    ${MERGED_IOCS[*]}"
+
+        if [ -n "$RELEASE_NUM" ]; then
+            RELEASE_PROBLEMS=()
+            for ioc in "${MERGED_IOCS[@]}"; do
+                dls-release.py -i "$ioc" "$RELEASE_NUM" ||
+                    RELEASE_PROBLEMS=("${RELEASE_PROBLEMS[@]}" "$ioc")
+            done
+            for ioc in "${RELEASE_PROBLEMS[@]}"; do
+                echo "# Problem running:"
+                echo "dls-release.py -i $ioc $RELEASE_NUM"
+            done
+        fi
     fi
+    echo The following IOCs were merged:
+    echo "    ${MERGED_IOCS[*]}"
 else
     echo No IOCs changed
 fi
