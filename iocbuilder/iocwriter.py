@@ -6,6 +6,7 @@ import os, os.path
 import shutil
 import types
 import fnmatch
+import subprocess
 
 import iocinit
 import recordset
@@ -817,7 +818,6 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.CopyDataFiles(self.iocRoot, True)
 
     def __replace_macros(self, d, t):
-        import subprocess
         if '$(' in t:
             args = ['msi'] + ['-M%s=%s' % x for x in d.items()]
             p = subprocess.Popen(args, stdout = subprocess.PIPE,
@@ -829,13 +829,17 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
     def CreateEdlFiles(self):
         # First we make a GuiBuilder object that knows how to make edm screens
         from dls_edm import GuiBuilder, SILENT
-        gb = GuiBuilder("dom", errors = SILENT)
+        gb = GuiBuilder(self.ioc_name, errors = SILENT)
         # Tell it what its paths are
         gb.RELEASE = os.path.join(self.iocRoot, 'configure/RELEASE')
         for m in sorted(libversion.ModuleBase.ListModules()):
             p = os.path.join(m.LibPath(), 'data')
             if os.path.isdir(p) and p not in gb.paths:
                 gb.paths.append(p)
+            for s in os.listdir(m.LibPath()):
+                p = os.path.join(m.LibPath(), s, 'opi', 'edl')
+                if os.path.isdir(p) and p not in gb.devpaths:
+                    gb.devpaths.append(p)                
         # This is a list of prefixes, e.g. if our gui objects look like
         # CAM1.ARR, CAM1.CAM, ...
         # then prefixes will contain CAM1
