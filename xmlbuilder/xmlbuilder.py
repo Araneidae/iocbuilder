@@ -8,7 +8,8 @@ from optparse import OptionParser
 
 class Store(object):
     def __init__(self, debug = False, DbOnly = False, doc = False,
-            arch = 'vxWorks-ppc604_long', edm_screen = False):
+            arch = 'vxWorks-ppc604_long', edm_screen = False, 
+            substitute_boot = True):
         # This is a default architecture
         self.architecture = arch
         self.simarch = False
@@ -16,6 +17,7 @@ class Store(object):
         self.build_root = '.'
         self.iocname = 'example'
         self.edm_screen = edm_screen
+        self.substitute_boot = substitute_boot
         # This the group of undo stacks for each table
         self.stack = QUndoGroup()
         # this is a dict of tables
@@ -225,8 +227,11 @@ class Store(object):
             table = self._tables[name]
             # make builder objects
             table.createObjects(obs)
+        substitute_boot = self.substitute_boot
+        if self.architecture == "win32-x86":
+            substitute_boot = False
         self.iocbuilder.WriteNamedIoc(iocpath, iocname, check_release = True,
-            substitute_boot = True, edm_screen = self.edm_screen)
+            substitute_boot = substitute_boot, edm_screen = self.edm_screen)
 
     def getTable(self, name):
         # return the table
@@ -267,7 +272,11 @@ def main():
     parser.add_option(
         '-e', action='store_true', dest='edm_screen',
         help='Try to create a set of edm screens for this module')        
-
+    parser.add_option(
+        '-b', action='store_true', dest='no_substitute_boot',
+        help='Don\'t substitute .src file to make a .boot file, copy it and '\
+        ' create an envPaths file to load')  
+        
     # parse arguments
     (options, args) = parser.parse_args()
     if len(args) != 1:
@@ -289,7 +298,7 @@ def main():
     xml_file = args[0]
     iocname = os.path.basename(xml_file).replace('.xml','')
     store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc, 
-        edm_screen = options.edm_screen)
+        edm_screen = options.edm_screen, substitute_boot = not options.no_substitute_boot)
     problems, warnings = store.Open(xml_file, sim = options.simarch)
     for prob in problems:
         print '***Error:', prob
