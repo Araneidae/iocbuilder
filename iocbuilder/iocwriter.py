@@ -415,9 +415,7 @@ int main(int argc,char *argv[])
     # Startup shell script for linux IOC
     LINUX_CMD = '''\
 cd "$(dirname "$0")"
-#    export HOME_DIR="$(cd "$(dirname "$0")"/../..; pwd)"
-# cd "$HOME_DIR"
-./%(ioc)s st%(ioc)s.boot'''
+./%(ioc)s st%(ioc)s.%(ext)s'''
 
     # Configuration.  Unfortunately we need different configurations for old
     # and newer versions of EPICS: we can't write CHECK_RELEASE to CONFIG, so
@@ -739,21 +737,23 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         else:
             scripts = 'SCRIPTS'
         configure.Call_TargetOS(self, 'CreateBootFiles', scripts)
-        self.makefile_boot.AddLine(
-            '%s += st%s.boot' % (scripts, self.ioc_name))
         if self.substitute_boot:
+            self.makefile_boot.AddLine(
+                    '%s += st%s.boot' % (scripts, self.ioc_name))
             if paths.msiPath:
                 self.makefile_boot.AddLine('PATH := $(PATH):%s' % paths.msiPath)
         else:
+            self.makefile_boot.AddLine(
+                    '%s += ../st%s.cmd' % (scripts, self.ioc_name))
             self.makefile_boot.AddRule(
                 'envPaths cdCommands:\n'
                 '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(T_A) $@')
-            self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
 
     def CreateBootFiles_linux(self, scripts):
         ioc = self.ioc_name
+        ext = self.substitute_boot and 'boot' or 'cmd'
         self.WriteFile((self.iocBootDir, 'st%s.sh' % ioc),
-            self.LINUX_CMD % dict(ioc = ioc),
+            self.LINUX_CMD % dict(ioc = ioc, ext = ext),
             header = PrintDisclaimerCommand('/bin/sh'))
         if not self.substitute_boot:
             self.makefile_boot.AddLine('%s += envPaths' % scripts)
@@ -839,7 +839,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             for s in os.listdir(m.LibPath()):
                 p = os.path.join(m.LibPath(), s, 'opi', 'edl')
                 if os.path.isdir(p) and p not in gb.devpaths:
-                    gb.devpaths.append(p)                
+                    gb.devpaths.append(p)
         # This is a list of prefixes, e.g. if our gui objects look like
         # CAM1.ARR, CAM1.CAM, ...
         # then prefixes will contain CAM1
@@ -910,7 +910,7 @@ Supplied meta tag:
             'DATA += $(patsubst ../%, %, $(wildcard ../*.edl))')
         # And a startup script for the screens
         gb.startupScript(filename = '%s/st%s-gui' % (d,self.ioc_name),
-            edl = c.macrodict['FILE'], setPort = False, 
+            edl = c.macrodict['FILE'], setPort = False,
             macros = c.macrodict['EDM_MACROS'])
         self.makefile_edl.AddLine('SCRIPTS += ../st%s-gui' % self.ioc_name)
 

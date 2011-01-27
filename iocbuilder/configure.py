@@ -248,7 +248,7 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
     parser.add_option("--doc", dest="doc",
         help="Write out information in format for doxygen build instructions")
     parser.add_option('-D', action='store_true', dest='DbOnly',
-        help='Only output files destined for the Db dir')        
+        help='Only output files destined for the Db dir')
     parser.add_option('--sim', dest='simarch',
         help='Create an ioc with arch=SIMARCH in simulation mode')
     parser.add_option('--arch', dest='architecture', default = architecture,
@@ -272,7 +272,7 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
     elif options.DbOnly:
         options.iocpath = os.path.abspath(".")
         import iocwriter
-        options.ioc_writer = iocwriter.DbOnlyWriter        
+        options.ioc_writer = iocwriter.DbOnlyWriter
     else:
         options.ioc_writer = None
     options.epics_base = epics_base

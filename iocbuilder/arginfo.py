@@ -222,7 +222,7 @@ def Simple(desc, typ=str):
     if typ==bool:
         return Choice(desc, [False, True])
     else:
-    	desc = '%s\n%s' % (desc, typ)    
+        desc = '%s\n%s' % (desc, typ)
         return ArgType(desc, typ)
 
 ## A choice of different values, with optional different labels
