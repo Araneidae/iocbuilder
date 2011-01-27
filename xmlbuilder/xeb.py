@@ -10,7 +10,7 @@ from delegates import ComboBoxDelegate
 import sys, signal, os, re, traceback
 from optparse import OptionParser
 
-## /todo A toggle button for showing and hiding optional values 
+## /todo A toggle button for showing and hiding optional values
 class TableView(QTableView):
 
     def keyPressEvent(self, event):
@@ -304,8 +304,8 @@ class GUI(QMainWindow):
         self.menuEdit.addAction('Fill Cells',
             self.tableView.fillCells).setShortcut('CTRL+R')
         self.menuEdit.addAction('Python Code...',
-            self.tableView.pythonCode).setShortcut('CTRL+P') 
-        self.tableView.codeBox = pythonCode()                       
+            self.tableView.pythonCode).setShortcut('CTRL+P')
+        self.tableView.codeBox = pythonCode()
         self.menuEdit.addSeparator()
         self.menuEdit.addAction('Undo',
             self.store.stack, SLOT('undo()')).setShortcut('CTRL+Z')
@@ -511,19 +511,19 @@ class formLog(QDialog):
 class pythonCode(formLog):
     def __init__(self,*args):
         formLog.__init__(self,"text = text.replace('.', '-')",*args)
-        self.btnRun = QPushButton('Run', self)        
-        self.scroll.setMinimumHeight(100)        
+        self.btnRun = QPushButton('Run', self)
+        self.scroll.setMinimumHeight(100)
         self.connect(self.btnRun, SIGNAL('clicked ()'),self.runCode)
         self.formLayout.addWidget(self.btnRun,3,1,1,1)
         self.lab.setReadOnly(False)
         self.help = QLabel("Variables:\n\ttext: cell text\n\tcell: cell object\n")
-        self.formLayout.addWidget(self.help,2,1,1,2)        
+        self.formLayout.addWidget(self.help,2,1,1,2)
 
     def runCode(self):
         code = str(self.lab.toPlainText())
         self.selRange = self.parent.selectedIndexes()
         model = self.selRange[0].model()
-        model.stack.beginMacro('Run python code')        
+        model.stack.beginMacro('Run python code')
         for cell in self.selRange:
             text = str(cell.data().toString())
             env = dict(cell = cell, text = text)
@@ -531,12 +531,12 @@ class pythonCode(formLog):
                 exec(code, env)
             except:
                 print "Failed"
-            else:                
+            else:
                 if env["text"] != text:
                     index = model.index(cell.row(), cell.column())
                     model.setData(index, QVariant(env["text"]), Qt.EditRole)
         model.stack.endMacro()
-        
+
 def main():
     parser = OptionParser('usage: %prog [options] [<xml-file>]')
     parser.add_option(

@@ -65,16 +65,16 @@ class RowCommand(QUndoCommand):
             self.model.rows[:self.row] + [self.rowdata] + \
             self.model.rows[self.row:]
         self.model.endInsertRows()
-        self.emitDataChanged()            
-            
+        self.emitDataChanged()
+
     def removeRow(self):
         self.model.beginRemoveRows(self._parent, self.row, self.row)
         self.model.rows = \
             self.model.rows[:self.row] + self.model.rows[self.row + 1:]
         self.model.endRemoveRows()
-        self.emitDataChanged()        
-        
-    def emitDataChanged(self):        
+        self.emitDataChanged()
+
+    def emitDataChanged(self):
         # say which rows we've changed
         index1 = self.model.index(self.row, 0)
         index2 = self.model.index(
@@ -82,7 +82,7 @@ class RowCommand(QUndoCommand):
         self.model.emit(
             SIGNAL('dataChanged(const QModelIndex &, const QModelIndex &)'),
             index1, index2)
-        
+
     def redo(self):
         if self.add == True:
             self.addRow()

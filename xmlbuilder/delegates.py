@@ -11,14 +11,14 @@ class ComboBoxDelegate(QItemDelegate):
         if values.isNull():
             editor = QLineEdit(parent)
             return editor
-        elif index.column() == 0:            
+        elif index.column() == 0:
             index.model().setData(index, QVariant(not index.data(Qt.EditRole).toBool()), Qt.EditRole)
             return None
         else:
             editor = SpecialComboBox(parent)
             editor.delegate = self
             editor.setEditable(True)
-            editor.addItems(values.toStringList())          
+            editor.addItems(values.toStringList())
             return editor
 
     def eventFilter(self, editor, event):
@@ -26,23 +26,23 @@ class ComboBoxDelegate(QItemDelegate):
         if event.type() == QEvent.KeyPress:
             # if we pressed return and aren't at the last column send a tab
 #            if event.key() == Qt.Key_Return and not self.lastcolumn:
-#                event.accept()                   
+#                event.accept()
 #                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Tab, Qt.NoModifier)
             # if we pressed tab and are in the last column send a return
             if event.key() == Qt.Key_Tab and self.lastcolumn:
-                event.accept()                   
+                event.accept()
                 event = QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier)
         # just pass the event up
-        return QItemDelegate.eventFilter(self, editor, event)    
+        return QItemDelegate.eventFilter(self, editor, event)
 
     def setEditorData(self, editor, index):
         if isinstance(editor, QComboBox):
             i = editor.findText(index.data(Qt.EditRole).toString())
             if i > -1:
                 editor.setCurrentIndex(i)
-            else:                
-                editor.setEditText(index.data(Qt.EditRole).toString())        
-            editor.lineEdit().selectAll()     
+            else:
+                editor.setEditText(index.data(Qt.EditRole).toString())
+            editor.lineEdit().selectAll()
         else:
             return QItemDelegate.setEditorData(self, editor, index)
 
@@ -53,7 +53,7 @@ class ComboBoxDelegate(QItemDelegate):
             return QItemDelegate.setModelData(self, editor, model, index)
 
     def updateEditorGeometry(self, editor, option, index):
-        option.rect.setSize(editor.minimumSizeHint().expandedTo(option.rect.size()))        
+        option.rect.setSize(editor.minimumSizeHint().expandedTo(option.rect.size()))
         if isinstance(editor, QComboBox):
             editor.setGeometry(option.rect)
         else:
@@ -78,8 +78,8 @@ class SpecialComboBox(QComboBox):
     # we avoid this problem
     def closeEvent(self, i):
         self.delegate.commitData.emit(self)
-        self.delegate.closeEditor.emit(self, QAbstractItemDelegate.SubmitModelCache)    
-    
+        self.delegate.closeEditor.emit(self, QAbstractItemDelegate.SubmitModelCache)
+
     def mousePressEvent(self, event):
         QComboBox.mousePressEvent(self, event)
-        self.activated.connect(self.closeEvent)  
+        self.activated.connect(self.closeEvent)

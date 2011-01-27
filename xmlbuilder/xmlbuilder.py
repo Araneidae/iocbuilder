@@ -8,7 +8,7 @@ from optparse import OptionParser
 
 class Store(object):
     def __init__(self, debug = False, DbOnly = False, doc = False,
-            arch = 'vxWorks-ppc604_long', edm_screen = False, 
+            arch = 'vxWorks-ppc604_long', edm_screen = False,
             substitute_boot = True):
         # This is a default architecture
         self.architecture = arch
@@ -89,7 +89,7 @@ class Store(object):
             self.ioc_writer = iocbuilder.iocwriter.DocumentationIocWriter
         self.iocbuilder = iocbuilder
         # do the moduleversion calls
-        from dls_dependency_tree import dependency_tree        
+        from dls_dependency_tree import dependency_tree
         vs = self.iocbuilder.ParseAndConfigure(self, dependency_tree)
         # create AutoSubstitutions and moduleObjects
         for v in vs:
@@ -271,12 +271,12 @@ def main():
         help='Create an ioc with arch=SIMARCH in simulation mode')
     parser.add_option(
         '-e', action='store_true', dest='edm_screen',
-        help='Try to create a set of edm screens for this module')        
+        help='Try to create a set of edm screens for this module')
     parser.add_option(
         '-b', action='store_true', dest='no_substitute_boot',
         help='Don\'t substitute .src file to make a .boot file, copy it and '\
-        ' create an envPaths file to load')  
-        
+        ' create an envPaths file to load')
+
     # parse arguments
     (options, args) = parser.parse_args()
     if len(args) != 1:
@@ -297,7 +297,7 @@ def main():
     # setup the store
     xml_file = args[0]
     iocname = os.path.basename(xml_file).replace('.xml','')
-    store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc, 
+    store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc,
         edm_screen = options.edm_screen, substitute_boot = not options.no_substitute_boot)
     problems, warnings = store.Open(xml_file, sim = options.simarch)
     for prob in problems:
@@ -310,7 +310,7 @@ def main():
     elif DbOnly:
         iocpath = os.path.abspath(".")
         if options.simarch:
-            iocname += '_sim'        
+            iocname += '_sim'
         store.CreateIoc(iocpath, iocname)
     else:
         # write the iocs
@@ -328,5 +328,5 @@ if __name__=='__main__':
     from pkg_resources import require
     sys.path.append("/dls_sw/work/common/python/dls_edm")
     require('dls_dependency_tree')
-#    require('dls_edm')    
+#    require('dls_edm')
     main()
