@@ -248,7 +248,7 @@ class Table(QAbstractTableModel):
                 # lookup the display in the list of _cItems
                 for i, v in enumerate(self._cItems[col].toStringList()):
                     if v.toLower() == val.toString().toLower():
-                        val = QVariant(i)
+                        val = self._cValues[col][i]
             self.stack.push(
                 ChangeValueCommand(index.row(), index.column(), val, self))
             return True
