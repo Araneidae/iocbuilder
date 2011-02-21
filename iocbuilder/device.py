@@ -265,9 +265,10 @@ class Device(libversion.ModuleBase):
                 ('object',  cls.BinFileList, _BinPath),
                 ('dbd',     cls.DbdFileList, _DbdPath)):
             for fileName in fileList:
-                filePath = os.path.join(cls.LibPath(), makePath(fileName))
-                assert os.access(filePath, os.R_OK), \
-                    'Can\'t find %s file "%s"' % (entity, filePath)
+                if not (Architecture() == 'win32-x86' and entity == 'library'):
+                    filePath = os.path.join(cls.LibPath(), makePath(fileName))
+                    assert os.access(filePath, os.R_OK), \
+                        'Can\'t find %s file "%s"' % (entity, filePath)
 
 
     # Informs the DBD layer of the presence of this library and any new

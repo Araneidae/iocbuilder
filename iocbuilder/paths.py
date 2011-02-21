@@ -52,6 +52,10 @@ def _GetModulePath(epics_version):
     '''Very DLS specific computation of module path from EPICS_BASE.'''
     return '/dls_sw/prod/%s/support' % epics_version
 
+def _GetModuleWorkPath(epics_version):
+    '''Very DLS specific computation of module path from EPICS_BASE.'''
+    return '/dls_sw/work/%s/support' % epics_version
+
 def _GetMsiPath(epics_version):
     '''Very DLS specific computation of path to msi.'''
     return '/dls_sw/epics/%s/extensions/bin/%s' % (
@@ -61,12 +65,13 @@ def _GetMsiPath(epics_version):
 # Can be called to override the computed EPICS_BASE and other settings.
 # If called late then must be called before any of the paths are used!
 def SetEpicsBase(epics_base):
-    global EPICS_BASE, msiPath, module_path
+    global EPICS_BASE, msiPath, module_path, module_work_path
 
     EPICS_BASE = epics_base
     epics_version = _GetEpicsVersion(epics_base)
     if epics_version:
         module_path = _GetModulePath(epics_version)
+        module_work_path = _GetModuleWorkPath(epics_version)
         msiPath = _GetMsiPath(epics_version)
 
 

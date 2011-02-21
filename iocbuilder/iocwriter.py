@@ -189,6 +189,7 @@ class IocWriter:
     # Some target specific maximum line lengths for the IOC shell
     IOCmaxLineLength_vxWorks = 126      # Oops
     IOCmaxLineLength_linux = 0          # EPICS shell is better behaved
+    IOCmaxLineLength_win32 = 0          # EPICS shell is better behaved
 
     def __init__(self, iocRoot=''):
         self.iocRoot = iocRoot
@@ -304,50 +305,50 @@ class DocumentationIocWriter(IocWriter):
         self.page_name = fname
         self.SetIocName(self.ioc_name, False)
         for func in _DbMakefileHooks:
-            func(Makefile("", "", ""), self.ioc_name, "", "")
+            func(Makefile('', '', ''), self.ioc_name, '', '')
         self.WriteFile(fname, self.CreateBuildInstructions)
 
     def CreateBuildInstructions(self):
-        print "/**"
-        print "\page %s Build Instructions for %s" % \
+        print '/**'
+        print '\page %s Build Instructions for %s' % \
             (self.page_name, self.ioc_name)
-        print "Build Instructions for %s" %self.ioc_name
-        print "<ol>"
-        print "<li> Add the dependencies to configure/RELEASE."
-        print "\\verbatim"
+        print 'Build Instructions for %s' %self.ioc_name
+        print '<ol>'
+        print '<li> Add the dependencies to configure/RELEASE.'
+        print '\\verbatim'
         gen_paths = [(m.LibPath(), m.MacroName())
             for m in libversion.ModuleBase.ListModules()]
         for path,name in gen_paths:
-            if name != "EPICS_BASE":
-                print name+"="+path
-        print "\\endverbatim"
+            if name != 'EPICS_BASE':
+                print name+'='+path
+        print '\\endverbatim'
         print
-        print "<li> Add the DBD dependencies to src/Makefile"
-        print "\\verbatim"
+        print '<li> Add the DBD dependencies to src/Makefile'
+        print '\\verbatim'
         for dbd in Hardware.GetDbdList():
-            print "%s_DBD += %s.dbd" % (self.ioc_name, dbd)
-        print "\\endverbatim"
+            print '%s_DBD += %s.dbd' % (self.ioc_name, dbd)
+        print '\\endverbatim'
         print
-        print "<li> Add the LIBS dependencies to src/Makefile"
-        print "\\verbatim"
+        print '<li> Add the LIBS dependencies to src/Makefile'
+        print '\\verbatim'
         for lib in reversed(Hardware.GetLibList()):
-            print "%s_LIBS += %s" % (self.ioc_name, lib)
+            print '%s_LIBS += %s' % (self.ioc_name, lib)
         for lib in reversed(Hardware.GetSysLibList()):
             print '%s_SYS_LIBS += %s' % (self.ioc_name, lib)
-        print "\\endverbatim"
+        print '\\endverbatim'
         print
-        print "<li> Use the template files to add records to the database."
-        print "\\verbatim"
+        print '<li> Use the template files to add records to the database.'
+        print '\\verbatim'
         recordset.RecordsSubstitutionSet.Print()
-        print "\\endverbatim"
+        print '\\endverbatim'
         print
-        print "<li> Add the startup commands to st.cmd"
-        print "\\verbatim"
+        print '<li> Add the startup commands to st.cmd'
+        print '\\verbatim'
         Hardware.PrintBody()
         Hardware.PrintPostIocInit()
-        print "\\endverbatim"
-        print "</ol>"
-        print "**/"
+        print '\\endverbatim'
+        print '</ol>'
+        print '**/'
 
 
 ## This IOC Writer creates a db file and a substitution file for this IOC
@@ -564,12 +565,15 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             keep_files = [], makefile_name = 'Makefile'):
         # Remember parameters
         IocWriter.__init__(self, path)  # Sets up iocRoot
+        self.CreateBootFiles_win32 = self.CreateBootFiles_linux
         self.check_release = check_release
         self.substitute_boot = substitute_boot
         self.keep_files = keep_files
         self.edm_screen = edm_screen
 
         self.cross_build = configure.Architecture() != paths.EPICS_HOST_ARCH
+        if configure.Architecture() == 'win32-x86':
+            self.cross_build = False
 
         # Create the working skeleton
         self.CreateIocNames(ioc_name)
@@ -710,7 +714,6 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         for lib in reversed(Hardware.GetSysLibList()):
             makefile.AddLine('%s_SYS_LIBS += %s' % (ioc, lib))
         makefile.AddLine('%s_LIBS += $(EPICS_BASE_IOC_LIBS)' % ioc)
-
         # Finally add the target specific files.
         configure.Call_TargetOS(self, 'CreateSourceFiles')
 
@@ -720,6 +723,20 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             (self.iocSrcDir, '%sMain.cpp' % ioc), self.MAIN_CPP,
             header = PrintDisclaimerC)
         self.makefile_src.AddLine('%s_SRCS += %sMain.cpp' % (ioc, ioc))
+
+    def CreateSourceFiles_win32(self):
+        self.CreateSourceFiles_linux()
+        # If there are any bin installs on a windows system, add them
+        for module in sorted(libversion.ModuleBase.ListModules()):
+            # if there are any dlls, add them
+            binDir = os.path.join('bin', configure.Architecture())
+            if os.path.isdir(os.path.join(module.LibPath(), binDir)):
+                for x in os.listdir(os.path.join(module.LibPath(), binDir)):
+                    if x.endswith('.dll'):
+                        self.makefile_src.AddLine(
+                            'BIN_INSTALLS_WIN32 += $(wildcard $(%s)/%s/*.dll)' \
+                                % (module.MacroName(), binDir))
+                        break;
 
     def CreateSourceFiles_vxWorks(self):
         self.makefile_src.AddLine(
@@ -781,15 +798,35 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.WriteConfigFile('CONFIG_SITE' in template_files)
 
         # Write out configure/RELEASE
-        releases = []
+        releases = ['# DLS specific macros for the work and prod areas']
+        releases.append('SUPPORT = %s' % paths.module_path)
+        releases.append('WORK = %s' % paths.module_work_path)
+        releases.append('# Module paths')
         for module in sorted(libversion.ModuleBase.ListModules()):
             ## \todo Do something sensible on check_release
             # Something like this might be a good idea --
             #             if self.check_release:
             #                 module.CheckDependencies()
-            releases.append(
-                '%s = %s' % (module.MacroName(), module.LibPath()))
+            if module.MacroName() != 'EPICS_BASE':
+                path = module.LibPath()
+                path = path.replace(paths.module_path, '$(SUPPORT)')
+                path = path.replace(paths.module_work_path, '$(WORK)')
+                releases.append(
+                    '%s = %s' % (module.MacroName(), path))
+        releases.append('# EPICS Base appears last')
+        releases.append('EPICS_BASE = %s' % paths.EPICS_BASE)
         self.WriteFile('configure/RELEASE', '\n'.join(releases))
+
+        if configure.Architecture() == 'win32-x86':
+            lines = ['# Windows specific prefixes']
+            lines.append('SUPPORT = %s' %
+                paths.module_path.replace('/dls_sw/', r'W:\\'))
+            lines.append('WORK = %s' % 
+                paths.module_work_path.replace('/dls_sw/', r'W:\\'))
+            lines.append('EPICS_BASE = %s' %
+                paths.EPICS_BASE.replace('/dls_sw/', r'W:\\'))
+            self.WriteFile(
+                'configure/RELEASE.win32-x86.Common', '\n'.join(lines))
 
     def WriteConfigFile(self, config_site):
         # If CONFIG_SITE exists add our configuration to that, otherwise add
