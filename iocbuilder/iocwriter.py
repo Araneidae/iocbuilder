@@ -880,7 +880,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         # This is a list of prefixes, e.g. if our gui objects look like
         # CAM1.ARR, CAM1.CAM, ...
         # then prefixes will contain CAM1
-        prefixes = []
+        prefixes = set()
         err = '''\
 Meta tag should be one of the folowing:
 # % gui, <name>, edm, <screen_filename>[, <macros>]
@@ -921,9 +921,11 @@ Supplied meta tag:
                     elif switch == 'edmtab':
                         data['tab'] = True
                     # If there's a dot in the name, add the first bit to
-                    # the list of prefixes
-                    if '.' in name and name.split('.')[0] not in prefixes:
-                        prefixes.append(name.split('.')[0])
+                    # the list of prefixes   
+                    if '.' in name:
+                    	split = name.split('.')
+                    	for i in range(1, len(split)):
+                    		prefixes.add(".".join(split[:i]))
                     # If there isn't an object of this name, make one
                     if not gb.get(name):
                         gb.object(name)
