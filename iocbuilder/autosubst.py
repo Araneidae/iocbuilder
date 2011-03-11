@@ -1,6 +1,6 @@
 '''AutoSubstitution for scanning template files.'''
 
-from libversion import ModuleBase, modules
+from libversion import ModuleBase, modules, PythonIdentifier
 import os, re, sys
 import recordset
 from arginfo import *
@@ -181,15 +181,16 @@ class AutoSubstitution(recordset.Substitution):
                     continue
                 # make sure we haven't already made a custom builder object
                 # for it
-                if db in recordset.Substitution.TemplateFiles:
+                if os.path.join(path, db) in cls.TemplateFiles:
                     continue
                 # make an autoSubstitution for it
-                clsname = 'auto_' + db.split('.')[0].replace('-','_')
+                clsname = PythonIdentifier('auto_' + db.split('.')[0])
                 class temp(AutoSubstitution):
                     WarnMacros = False
                     ModuleName = moduleVersion.Name()
                     TemplateFile = db
                     TrueName = clsname
+                setattr(moduleVersion.module, clsname, temp)
 
 # This re matches an line like #% autosave 1 or # % gda_tag, template, ...
 epics_parser_re = re.compile(r'^#[ \t]*%')
