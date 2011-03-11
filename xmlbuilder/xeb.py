@@ -67,7 +67,6 @@ class TableView(QTableView):
         ncols = max(cols) - mincols + 1
         self.model().stack.beginMacro('Fill Cells')
         if nrows == 1:
-            # Surely should be this:?
             for x in selRange:
                 if x.column() == mincols and x.row() == minrows:
                      source = x
@@ -236,7 +235,7 @@ class GUI(QMainWindow):
         # initialise filename
         self.filename = None
         # make the data store
-        from xmlbuilder import Store
+        from xmlstore import Store
         self.store = Store(debug = debug)
         # view the current table
         self.tableView = TableView(self)
@@ -258,7 +257,6 @@ class GUI(QMainWindow):
             QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.dock1)
         # connect it to the populate method
-#        self.listView.setModel(self.store)
         self.connect(self.listView, SIGNAL('activated ( const QModelIndex & )'),
                      self.populate)
         self.connect(self.listView, SIGNAL('clicked ( const QModelIndex & )'),
@@ -440,6 +438,8 @@ class GUI(QMainWindow):
         self.menuComponents.addSeparator()
         modules = {}
         self.functions = []
+        autos = []
+        normals = []
         for name in self.store.allTableNames():
             ob = self.store._tables[name].ob
             if ob.ModuleName not in modules:
@@ -448,6 +448,17 @@ class GUI(QMainWindow):
             def f(name = name):
                 self.populate(name = name)
             self.functions.append(f)
+            if ob.__name__.startswith("auto_"):
+                autos.append((ob, f))
+            else:
+                normals.append((ob, f))
+        for ob, f in normals:
+            modules[ob.ModuleName].addAction(ob.__name__, f)
+        sep_done = []
+        for ob, f in autos:
+            if ob.ModuleName not in sep_done:
+                sep_done.append(ob.ModuleName)
+                modules[ob.ModuleName].addSeparator()
             modules[ob.ModuleName].addAction(ob.__name__, f)
 
     def populate(self, index = None, name = None):
@@ -564,8 +575,6 @@ def main():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-#    from PyQt4.QtCore import QT_VERSION
-#    print hex(QT_VERSION)
     sys.path.append(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
     from pkg_resources import require

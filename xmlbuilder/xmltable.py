@@ -111,48 +111,20 @@ class Table(QAbstractTableModel):
         else:
             return (variant, False)
 
-    def __lookup(self, i, val, obs):
-        if val.isNull():
-            val = self._defaults[i]
-        if i in self._idents:
-            val = str(val.toString())
-            if obs is not None:
-                if val == 'None':
-                    val = None
-                else:
-                    assert val in obs, \
-                        'Ident lookup failed on %s in obs %s' % (val, obs)
-                    val = obs[val]
-        else:
-            val = self.__convert(val, self._types[i], py=True)[0]
-        return val
-
-    def __createArgDict(self, row, obs = None):
+    def __createArgDict(self, row):
         # create an arg dictionary
         args = {}
         # lookup and add attributes
         header = [ str(x.toString()) for x in self._header ]
-        debug = self._parent._objectName(self.ob) + '('
-        if self._needsname or (obs is None):
-            i = 1
-        else:
-            i = 2
-        while i < len(row):
+        for i in range(1, len(row)):
             if row[i].isNull():
-                i += 1
                 continue
             attr = header[i]
-            val =  self.__lookup(i, row[i], obs)
-            if obs is not None and self._parent.debug:
-                if i in self._idents:
-                    debugval = self.__lookup(i, row[i], None)
-                else:
-                    debugval = val.__repr__()
-                debug += attr + '=' + debugval  + ', '
-            i += 1
+            if i in self._idents:
+                val = str(row[i].toString())
+            else:
+                val = self.__convert(row[i], self._types[i], py=True)[0]
             args[attr] = val
-        if obs is not None and self._parent.debug:
-            print debug[:-2] + ')'
         return args
 
     def createElements(self, doc, name):
@@ -166,20 +138,6 @@ class Table(QAbstractTableModel):
             if row[0].toBool() == True:
                 el = doc.createComment(el.toxml())
             doc.documentElement.appendChild(el)
-
-    def createObjects(self, obs):
-        for row in self.rows:
-            # ignore commented rows
-            if row[0].toBool() == True:
-                continue
-            if self._parent.debug:
-                if not row[1].isNull():
-                    print str(row[1].toString()), '=',
-            args = self.__createArgDict(row, obs)
-            ob = self.ob(**args)
-            # if we have a name, store it in ret
-            if not row[1].isNull():
-                obs[str(row[1].toString())] = ob
 
     def addNode(self, node, commented = False):
         # add xml nodes as rows in the table
