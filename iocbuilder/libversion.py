@@ -46,6 +46,9 @@ def PythonIdentifier(name):
     return name
 
 
+# Enable debugging
+Debug = False
+
 
 
 ## Specifies module version and imports definitions.
@@ -105,6 +108,10 @@ class ModuleVersion:
             version=None, home=None, use_name=True,
             suppress_import=False, load_path=None, override=False,
             auto_instantiate=False):
+        if Debug:
+            print 'ModuleVersion(%s, version=%s, home=%s, ...) =>' % \
+                tuple(map(repr, [libname, version, home])),
+
         if home is None:
             # By default pick up each module from the prod support directory.
             # It might be quite nice to extend this with a path search.
@@ -120,6 +127,9 @@ class ModuleVersion:
         self.version = version
         self.home = home
         self.use_name = use_name
+
+        if Debug:
+            print repr(self.LibPath())
 
         self.__macroname = PythonIdentifier(libname.upper())
         assert self.__macroname not in self.__MacroNames, \
@@ -250,9 +260,8 @@ class ModuleVersion:
                         'Value %s.%s already in hardware module' % (
                             self.__name, name)
                     setattr(hardware, name, getattr(self.module, name))
-        else:
-            print >>sys.stderr, \
-                'Module definitions for', self.__name, 'not found'
+        elif Debug:
+            print 'Module definitions for', self.__name, 'not found'
 
 
 
@@ -291,6 +300,10 @@ class ModuleBase(support.autosuper):
         cls.ModuleBaseClasses.append(cls)
         # Finally mark this instance as not yet instantiated.
         cls._Instantiated = False
+
+        if Debug:
+            print 'ModuleBase subclass %s.%s' % (
+                getattr(cls, 'ModuleName', 'iocbuilder'), cls.__name__)
 
     @classmethod
     def __BindModule(cls, name, dict):
@@ -403,6 +416,12 @@ class ModuleBase(support.autosuper):
             return True
 
     def __new__(cls, *args, **kargs):
+        if Debug:
+            print 'Instantiating %s.%s(%s)' % (
+                cls.ModuleName, cls.__name__, ', '.join(
+                    map(repr, args) +
+                    ['%s=%s' % (k, repr(v)) for k,v in kargs.items()]))
+
         if cls.__mark_instantiated():
             cls.UseModule()
         self = super(ModuleBase, cls).__new__(cls, *args, **kargs)

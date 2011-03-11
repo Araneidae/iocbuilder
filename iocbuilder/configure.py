@@ -346,6 +346,10 @@ def ParseAndConfigure(options, dependency_tree=None):
         simulation   = options.simarch,
         epics_base   = options.epics_base)
 
+    # set debugging
+    import libversion
+    libversion.Debug = getattr(options, "debug", True)
+
     # do the ModuleVersion calls on a dependency tree
     vs = []
     if dependency_tree is not None:
@@ -377,11 +381,6 @@ def ParseAndConfigure(options, dependency_tree=None):
             # iocs need to be treated more like support modules
             if '/' in name:
                 name = name.split('/')[-1]
-            # print out the ModuleVersion call if asked
-            if options.debug:
-                print 'ModuleVersion(%s, %s, use_name=%s, home=%s)' % (
-                    repr(name), repr(version), repr(use_name),
-                    repr(home))
             # add the ModuleVersion object to the list
             vs.append(ModuleVersion(name, version, use_name=use_name,
                     home=home))
