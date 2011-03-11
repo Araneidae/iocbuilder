@@ -131,18 +131,13 @@ class Store(object):
         self.setLastModified()
 
 
-    def Open(self, filename, sim = None, substitutions = None):
+    def Open(self, filename, sim = None):
         if self.debug:
             print '--- Parsing %s ---'%filename
         self.iocname = os.path.basename(filename).replace('.xml','')
         self.build_root = os.path.dirname(os.path.abspath(filename))
         # read the tables
-        if substitutions:
-            text = open(filename).read()
-            text = self.iocbuilder.support.msi_replace_macros(substitutions, text)
-            xml_root = xml.dom.minidom.parseString(text)
-        else:
-            xml_root = xml.dom.minidom.parse(filename)
+        xml_root = xml.dom.minidom.parse(filename)
         # find the root node
         components = self._elements(xml_root)[0]
         if sim is not None:

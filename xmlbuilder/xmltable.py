@@ -38,9 +38,6 @@ class Table(QAbstractTableModel):
         self._types = [bool, str]
         # rows is a list of rows. each row is a list of QVariants
         self.rows = []
-        # _needsname tells use whether to pass the name to the object, or just
-        # use it as the objects identifier
-        self._needsname = False
         # work out the header and descriptions from the ArgInfo object
         a = ob.ArgInfo
         # for required names just process the ArgType object
@@ -60,7 +57,6 @@ class Table(QAbstractTableModel):
         col = len(self._header)
         # If it's a name then be careful not to add it twice
         if name == getattr(self.ob, 'UniqueName', 'name'):
-            self._needsname = True
             assert ob.typ == str, 'Object name must be a string'
             self._tooltips[1] = QVariant(ob.desc)
         else:
