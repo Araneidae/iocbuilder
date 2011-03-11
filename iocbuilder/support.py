@@ -6,6 +6,7 @@ import sys
 import fnmatch
 import types
 import re
+import subprocess
 
 __all__ = ['Singleton', 'AutoRegisterClass', 'SameDirFile', 'quote_c_string']
 
@@ -276,6 +277,21 @@ def AutoRegisterClass(register, ignoreParent=True, superclass=type):
                 register(cls, name)
 
     return DoRegister
+
+# Call msi on a piece of text with a dictionary of macros, expensive but needed
+# because of the stupidly complex syntax...
+def msi_replace_macros(d, text):
+    if '$(' in text:
+        args = ['msi'] + ['-M%s=%s' % x for x in d.items()]
+        p = subprocess.Popen(args, stdout = subprocess.PIPE,
+            stdin = subprocess.PIPE)
+        return p.communicate(text)[0]
+    else:
+        return text
+
+# Return the element child nodes of an element
+def elements(node):
+    return [n for n in node.childNodes if n.nodeType == n.ELEMENT_NODE]
 
 # At end for doxygen!
 unsafe_chars = re.compile(r'[\\"\1-\37]')
