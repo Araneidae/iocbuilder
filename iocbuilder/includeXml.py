@@ -4,6 +4,8 @@ from libversion import ModuleBase
 import libversion
 from autosubst import populate_class
 import support
+import dbd
+import arginfo
 import os
 import xml.dom.minidom
 
@@ -93,15 +95,15 @@ class Xml(ModuleBase):
             print "</ Loading objects from %s >" % self.TemplateFile
 
 
-def constructArgDict(el, objects, ident_lookup=True):
+def constructArgDict(el, objects, classes, ident_lookup=True):
     # dict of args to return
     d = {}
     # name of object represented by this element
     name = None
     # get the object class
-    module, obname = str(el.nodeName).split('.', 1)
-    ob = getattr(libversion.modules, libversion.PythonIdentifier(module))
-    ob = getattr(ob, obname)
+    obname = str(el.nodeName)
+    assert obname in classes, "Can't find object '%s'"% obname
+    ob = classes[obname]
     # find the column representing name
     nameKey = getattr(ob, 'UniqueName', 'name')
     # see if this nameKey also needs to be passed to the object constructor
@@ -132,6 +134,36 @@ def constructArgDict(el, objects, ident_lookup=True):
         d[attr] = value
     return name, ob, d
 
+def createClassLookup():
+    classes = {}
+    # create some record classes
+    records = []
+    for recordtype in dbd.records.GetRecords():
+        cls = getattr(dbd.records, recordtype)
+        simple = arginfo.Simple
+        # construct an ArgInfo object
+        argInfo = arginfo.makeArgInfo(
+            ['record'], cls.FieldInfo().keys(),
+            record = simple('Record name', str),
+            **cls.FieldInfo())
+        class o(object):
+            r = cls
+            def __init__(self, record, **args):
+                self.r(record, **args)
+            ModuleName = 'records'
+            ArgInfo = argInfo
+        o.__name__ = recordtype
+        # add it to our list
+        records.append(o)
+    # create the class dict
+    for o in ModuleBase.ModuleBaseClasses + records:
+        # make sure we have an ArgInfo
+        if not hasattr(o, 'ArgInfo') or o.__name__.startswith('_'):
+            continue
+        # add it to our class dict
+        name = o.ModuleName + '.' + o.__name__
+        classes[name] = o
+    return classes
 
 def instantiateXml(xml_text, objects=None):
     if objects is None:
@@ -140,10 +172,12 @@ def instantiateXml(xml_text, objects=None):
     xml_root = xml.dom.minidom.parseString(xml_text)
     # find the root node
     components = support.elements(xml_root)[0]
+    # create class dict
+    classes = createClassLookup()
     # find elements under it
     for node in support.elements(components):
         # lookup arguments
-        name, ob, d = constructArgDict(node, objects)
+        name, ob, d = constructArgDict(node, objects, classes)
         # instantiate it
         inst = ob(**d)
         # store it if we are given a name

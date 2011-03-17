@@ -43,10 +43,6 @@ class Store(object):
                 return False
         return True
 
-    def _objectName(self, o):
-        # get a suitable string identifier for a ModuleBase object
-        return o.ModuleName + '.' + o.__name__
-
     def lastModified(self):
         return self._lastModified
 
@@ -90,42 +86,20 @@ class Store(object):
                 print 'Making auto objects from %s' % v.LibPath()
             iocbuilder.AutoSubstitution.fromModuleVersion(v)
             iocbuilder.Xml.fromModuleVersion(v)
+        # create our dict of classes
+        classes = iocbuilder.includeXml.createClassLookup()
         # now we can make our tables
-        for i,o in enumerate(iocbuilder.ModuleBase.ModuleBaseClasses):
-            # make sure we have an ArgInfo
-            if not hasattr(o, 'ArgInfo') or o.__name__.startswith('_'):
-                continue
+        for name, o in classes.items():
             # make a table object
             table = Table(o, self)
             # add it to our internal dict of tables
-            self._tables[self._objectName(o)] = table
+            self._tables[name] = table
             # add the undo stack
             self.stack.addStack(table.stack)
             # connect its modified signal to store a timestamp
             table.connect(table, SIGNAL(
                 'dataChanged(const QModelIndex &, const QModelIndex &)'),
                 self.setLastModified)
-        # now make the record types
-        for recordtype in iocbuilder.records.GetRecords():
-            cls = getattr(iocbuilder.records, recordtype)
-            simple = iocbuilder.arginfo.Simple
-            argInfo = iocbuilder.arginfo.makeArgInfo(
-                ['record'], cls.FieldInfo().keys(),
-                record = simple('Record name', str),
-                **cls.FieldInfo())
-            class o(object):
-                r = cls
-                def __init__(self, record, **args):
-                    self.r(record, **args)
-                ModuleName = 'records'
-                ArgInfo = argInfo
-            o.__name__ = recordtype
-            # make a table object
-            table = Table(o, self)
-            # add it to our internal dict of tables
-            self._tables[self._objectName(o)] = table
-            # add the undo stack
-            self.stack.addStack(table.stack)
         self.setStored()
         # failure if there were no callables
         self.setLastModified()
