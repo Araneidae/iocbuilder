@@ -26,6 +26,7 @@ install: dist
             --record=installed.files \
             --install-dir=$(INSTALL_DIR) \
             --script-dir=$(SCRIPT_DIR) dist/*.egg
+	ln -fs $(shell pwd)/toolkit/merge-iocs $(SCRIPT_DIR)/dls-merge-iocs        
 
 make_docs:
 	$(MAKE) -C documentation
