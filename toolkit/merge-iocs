@@ -6,7 +6,7 @@
 
 # The IOCs to be updated are found here under subversion.
 IOC_TRUNK="$SVN_ROOT/diamond/trunk/ioc"
-HERE="$(dirname "$0")"
+HERE="$(dirname "$(readlink -fn "$0")")"
 
 
 # Reports error and immediately exits.
