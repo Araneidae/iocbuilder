@@ -220,7 +220,7 @@ def Simple(desc, typ=str):
     assert typ in _simpleTypes, \
         '%s is not a supported simple type %s' % (typ, _simpleTypes)
     if typ==bool:
-        return Choice(desc, [False, True])
+        return Choice(desc, [False, True], ["False", "True"])
     else:
         desc = '%s\n%s' % (desc, typ)
         return ArgType(desc, typ)

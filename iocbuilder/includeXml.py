@@ -128,6 +128,13 @@ def constructArgDict(el, objects, classes, ident_lookup=True):
                 assert value in objects, 'Can\'t find object %s' % value
                 value = objects[value]
         # otherwise make it the right type
+        elif desc.typ == bool:
+            if value and value.lower() != "false":
+                value = True
+            else:
+                value = False
+        elif desc.typ == str:
+            value = value.decode("string_escape")
         else:
             value = desc.typ(value)
         # add it to the dict
