@@ -671,15 +671,15 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
 
         # Generate the .db and substitutions files and compute the
         # appropriate makefile targets.
-        if self.CountRecords():
-            self.WriteFile((self.iocDbDir, db), self.PrintRecords)
-            self.AddDatabase(os.path.join('db', db))
-            makefile.AddLine('DB += %s' % db)
         if self.CountSubstitutions():
             self.WriteFile(
                 (self.iocDbDir, substitutions), self.PrintSubstitutions)
             self.AddDatabase(os.path.join('db', expanded))
             makefile.AddLine('DB += %s' % expanded)
+        if self.CountRecords():
+            self.WriteFile((self.iocDbDir, db), self.PrintRecords)
+            self.AddDatabase(os.path.join('db', db))
+            makefile.AddLine('DB += %s' % db)
         for func in _DbMakefileHooks:
             db_filename = ''
             if self.CountRecords():
