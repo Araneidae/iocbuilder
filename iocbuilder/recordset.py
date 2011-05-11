@@ -227,7 +227,7 @@ class Substitution(libversion.ModuleBase):
         print
 
         if paths.msiPath:
-            runMsi = os.path.join(msiPath, 'msi')
+            runMsi = os.path.join(paths.msiPath, 'msi')
         else:
             runMsi = 'msi'
         msi = [runMsi] + ['-M%s' % arg for arg in argList] + [template]

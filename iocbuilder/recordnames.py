@@ -32,7 +32,7 @@ class BasicRecordNames(RecordNamesBase):
 #
 # Records are named "$(DEVICE):name".
 class TemplateRecordNames(RecordNamesBase):
-    __all__ = ['TemplateName']
+    __all__ = ['TemplateName', 'RecordName']
 
     def __init__(self, device='DEVICE'):
         self.__Name = device
