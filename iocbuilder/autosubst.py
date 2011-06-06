@@ -76,6 +76,9 @@ def populate_class(cls, template_file):
                     default_values.append(default)
             else:
                 # this is a required or optional macro
+                # strip off any msi ,undefined stuff
+                if mtext.endswith(',undefined'):
+                    mtext = mtext.replace(',undefined', '')            
                 assert mtext not in default_names, \
                     'Cannot define macro "%s", already defined as '\
                     'a default macro in "%s"' % (mtext, template_file)
