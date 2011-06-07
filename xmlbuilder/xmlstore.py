@@ -146,12 +146,16 @@ class Store(object):
                 # find the correct table
                 obname = str(node.nodeName)
                 if self._tables.has_key(obname):
-                    table = self.getTable(obname)
-                    if obname not in self._tableNames:
-                        self._tableNames.append(obname)
+                    pass
+                elif self._tables.has_key(obname.replace("auto_", "")):
+                    node.nodeName = obname.replace("auto_", "")
+                    obname = str(node.nodeName)
                 else:
                     problems.append(obname)
                     continue
+                table = self.getTable(obname)
+                if obname not in self._tableNames:
+                    self._tableNames.append(obname)
                 # make a new row
                 warnings += table.addNode(node, commented)
         self.setStored()
