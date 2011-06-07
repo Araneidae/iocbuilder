@@ -4,11 +4,21 @@ from PyQt4.QtGui import \
     QMainWindow, QMessageBox, QApplication, QTableView, \
     QGridLayout, QListWidget, QDockWidget, QAbstractItemView, QUndoView, \
     QMenu, QFileDialog, QInputDialog, QLineEdit, QListWidgetItem, \
-    QClipboard, QDialog, QScrollArea, QTextEdit, QFont, QPushButton, QLabel
-from PyQt4.QtCore import Qt, SIGNAL, SLOT, QSize, QVariant, QString
+    QClipboard, QDialog, QScrollArea, QTextEdit, QFont, QPushButton, QLabel, QToolTip
+from PyQt4.QtCore import Qt, SIGNAL, SLOT, QSize, QVariant, QString, QEvent
 from delegates import ComboBoxDelegate
 import sys, signal, os, re, traceback
 from optparse import OptionParser
+
+class TooltipMenu(QMenu):
+    def event(self, e):
+        if e.type() == QEvent.ToolTip:
+            # show action tooltip instead of widget tooltip
+            act = self.actionAt(e.pos());
+            if act and act.toolTip() != "None":
+                QToolTip.showText(e.globalPos(), act.toolTip(), self)
+                return True
+        return QMenu.event(self, e)
 
 ## /todo A toggle button for showing and hiding optional values
 class TableView(QTableView):
@@ -443,8 +453,8 @@ class GUI(QMainWindow):
         for name in self.store.allTableNames():
             ob = self.store._tables[name].ob
             if ob.ModuleName not in modules:
-                modules[ob.ModuleName] = \
-                    self.menuComponents.addMenu(ob.ModuleName)
+                modules[ob.ModuleName] = TooltipMenu(ob.ModuleName, self.menuComponents)
+                self.menuComponents.addMenu(modules[ob.ModuleName])
             def f(name = name):
                 self.populate(name = name)
             self.functions.append(f)
@@ -453,13 +463,15 @@ class GUI(QMainWindow):
             else:
                 normals.append((ob, f))
         for ob, f in normals:
-            modules[ob.ModuleName].addAction(ob.__name__, f)
+            a = modules[ob.ModuleName].addAction(ob.__name__, f)
+            a.setToolTip(str(ob.__doc__))
         sep_done = []
         for ob, f in autos:
             if ob.ModuleName not in sep_done:
                 sep_done.append(ob.ModuleName)
                 modules[ob.ModuleName].addSeparator()
-            modules[ob.ModuleName].addAction(ob.__name__, f)
+            a = modules[ob.ModuleName].addAction(ob.__name__, f)
+            a.setToolTip("None")
 
     def populate(self, index = None, name = None):
         if index is not None:
