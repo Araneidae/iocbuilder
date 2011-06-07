@@ -4,7 +4,8 @@ from PyQt4.QtGui import \
     QMainWindow, QMessageBox, QApplication, QTableView, \
     QGridLayout, QListWidget, QDockWidget, QAbstractItemView, QUndoView, \
     QMenu, QFileDialog, QInputDialog, QLineEdit, QListWidgetItem, \
-    QClipboard, QDialog, QScrollArea, QTextEdit, QFont, QPushButton, QLabel, QToolTip
+    QClipboard, QDialog, QScrollArea, QTextEdit, QFont, QPushButton, QLabel, \
+    QToolTip, QIcon
 from PyQt4.QtCore import Qt, SIGNAL, SLOT, QSize, QVariant, QString, QEvent
 from delegates import ComboBoxDelegate
 import sys, signal, os, re, traceback
@@ -572,6 +573,7 @@ def main():
         debug = False
     global app
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(os.path.dirname(__file__) + '/xeb.png'))
     g = GUI(debug=debug)
     g.show()
     if len(args)>0:
