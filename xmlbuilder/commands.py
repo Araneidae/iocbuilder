@@ -9,8 +9,11 @@ class ChangeValueCommand(QUndoCommand):
         self.row = row
         self.column = column
         self.model = model
+        label = value.toString()
+        if "\n" in label or len(label) > 20:
+            label = str(label).splitlines()[0].rstrip()[:18] + "..."
         self.setText('Row %s: Set %s = "%s"' %
-            (row + 1, model._header[column].toString(), value.toString()))
+            (row + 1, model._header[column].toString(), label))
 
     def _do(self, new, old):
         if new.toString() == '':

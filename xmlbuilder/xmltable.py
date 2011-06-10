@@ -15,17 +15,18 @@ class Table(QAbstractTableModel):
         # Make sure we have Name information first
         # _header contains the row headers
         self._header = [
-            QVariant('#'), QVariant(getattr(self.ob, 'UniqueName', 'name'))]
+            QVariant('--'), QVariant('#'), QVariant(getattr(self.ob, 'UniqueName', 'name'))]
         # _tooltips contains the tooltips
         self._tooltips = [
-            QVariant('Row is commented out %s'%bool),
+            QVariant('An -- indicates row is disabled %s'%bool),
+            QVariant('Comment for row'),            
             QVariant('Object name %s'%str)]
         # _required is a list of required columns
         self._required = []
         # _defaults is a dict of column -> default values
-        self._defaults = {0: QVariant(False)}
+        self._defaults = {0: QVariant(False), 1: QVariant("")}
         # _optional is a list of optional columns
-        self._optional = [1]
+        self._optional = [2]
         # _cItems is a dict of column -> QVariant QStringList items, returned
         # to combo box
         self._cItems = {}
@@ -35,7 +36,7 @@ class Table(QAbstractTableModel):
         # _idents is a list of identifier lookup fields
         self._idents = []
         # _types is a list of types for validation
-        self._types = [bool, str]
+        self._types = [bool, str, str]
         # rows is a list of rows. each row is a list of QVariants
         self.rows = []
         # work out the header and descriptions from the ArgInfo object
@@ -58,7 +59,7 @@ class Table(QAbstractTableModel):
         # If it's a name then be careful not to add it twice
         if name == getattr(self.ob, 'UniqueName', 'name'):
             assert ob.typ == str, 'Object name must be a string'
-            self._tooltips[1] = QVariant(ob.desc)
+            self._tooltips[2] = QVariant(ob.desc)
         else:
             # add the header, type and tooltip
             self._header.append(QVariant(name))
@@ -112,7 +113,7 @@ class Table(QAbstractTableModel):
         args = {}
         # lookup and add attributes
         header = [ str(x.toString()) for x in self._header ]
-        for i in range(1, len(row)):
+        for i in range(2, len(row)):
             if row[i].isNull():
                 continue
             attr = header[i]
@@ -131,11 +132,13 @@ class Table(QAbstractTableModel):
             # lookup and add attributes
             for k, v in args.items():
                 el.setAttribute(k, str(v))
+            if len(row[1].toString()) > 0:
+                doc.documentElement.appendChild(doc.createComment(str(row[1].toString())))
             if row[0].toBool() == True:
                 el = doc.createComment(el.toxml())
             doc.documentElement.appendChild(el)
 
-    def addNode(self, node, commented = False):
+    def addNode(self, node, commented = False, commentText = ""):
         # add xml nodes as rows in the table
         w = []
         row = [ QVariant() ] * len(self._header)
@@ -166,6 +169,8 @@ class Table(QAbstractTableModel):
                     (node.nodeName, attr, value.__repr__(), typ))
             row[index] = QVariant(value)
         # add the row to the table
+        if commentText:
+            row[1] = QVariant(commentText)
         self.rows.append(row)
         return w
 
@@ -183,8 +188,8 @@ class Table(QAbstractTableModel):
             if orientation == Qt.Horizontal:
                 return self._header[section]
             elif self.rows and self.rows[section] and \
-                    not self.rows[section][1].isNull():
-                return self.rows[section][1]
+                    not self.rows[section][2].isNull():
+                return self.rows[section][2]
             else:
                 return QVariant('[row %s]' % (section+1))
         elif role == Qt.ToolTipRole and orientation == Qt.Horizontal:
@@ -257,9 +262,9 @@ class Table(QAbstractTableModel):
                     if upto is not None and upto == i:
                         return sl
                 # add a non-null name, which is not commented out to the list
-                if not trow[1].isNull() and not \
+                if not trow[2].isNull() and not \
                         (not trow[0].isNull() and trow[0].toBool() == True):
-                    sl.append(trow[1].toString())
+                    sl.append(trow[2].toString())
         # store the cached value
         self._cachedNameList[(filt, without, upto)] = (time.time(), sl)
         return sl
@@ -272,7 +277,7 @@ class Table(QAbstractTableModel):
             else:
                 return False
         # check that names are unique
-        elif col == 1:
+        elif col == 2:
             name = value.toString()
             index = self._nameList(without = row).indexOf(name)
             if index != -1:
@@ -311,7 +316,12 @@ class Table(QAbstractTableModel):
         value = self.rows[row][col]
         if role == Qt.DisplayRole:
             # default view
-            if self._isDefault(value, col):
+            if col == 1:
+                if len(value.toString()) > 0:
+                    return QVariant("#..")
+                else:
+                    return QVariant()
+            elif self._isDefault(value, col):
                 value = self._defaults[col]
             if col in self._cValues:
                 # lookup the display in the list of _cItems
@@ -320,7 +330,7 @@ class Table(QAbstractTableModel):
                         return QVariant(self._cItems[col].toStringList()[i])
             elif col == 0:
                 if value.toBool():
-                    return QVariant(QString('#'))
+                    return QVariant(QString('--'))
                 else:
                     return QVariant(QString(''))
             elif not value.isNull() and self._types[col] == str and \
@@ -337,7 +347,7 @@ class Table(QAbstractTableModel):
                     if v == value:
                         return QVariant(self._cItems[col].toStringList()[i])
             v, ret = self.__convert(value, self._types[col])
-            if not value.isNull() and str(v) == '':
+            if not value.isNull() and str(v) == '' and col != 1:
                 v = '""'
             return QVariant(v)
         elif role == Qt.ToolTipRole:
@@ -353,6 +363,8 @@ class Table(QAbstractTableModel):
                         lines.append('')
                     lines[-1] += str(name) + ', '
                 text += '\n'.join(lines).rstrip(' ,')
+            if col == 1 and len(value.toString()) > 0:
+                text += ":\n\n" + value.toString()
             return QVariant(text)
         elif role == Qt.ForegroundRole:
             # cell foreground

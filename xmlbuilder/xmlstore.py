@@ -124,6 +124,7 @@ class Store(object):
         # proccess each component in turn
         problems = []
         warnings = []
+        commentText = ""
         for node in components.childNodes:
             # try to find the class of each component
             if node.nodeType == node.COMMENT_NODE:
@@ -134,7 +135,8 @@ class Store(object):
                 root = self._elements(xml.dom.minidom.parseString(text))[0]
                 nodes = self._elements(root)
                 if len(nodes) == 0:
-                    continue
+                    # treat this as a comment on the next node
+                    commentText = str(node.nodeValue)
             elif node.nodeType == node.ELEMENT_NODE:
                 # If it's an element node, then just add this node
                 commented = False
@@ -157,7 +159,8 @@ class Store(object):
                 if obname not in self._tableNames:
                     self._tableNames.append(obname)
                 # make a new row
-                warnings += table.addNode(node, commented)
+                warnings += table.addNode(node, commented, commentText)
+                commentText = ""
         self.setStored()
         self.setLastModified()
         return self._unique(problems, warnings)
