@@ -335,6 +335,8 @@ class DocumentationIocWriter(IocWriter):
             print '%s_LIBS += %s' % (self.ioc_name, lib)
         for lib in reversed(Hardware.GetSysLibList()):
             print '%s_SYS_LIBS += %s' % (self.ioc_name, lib)
+        for var, text in reversed(Hardware.GetMakefileVariableList()):
+            print '%s_%s += %s' % (self.ioc_name, var, text)
         print '\\endverbatim'
         print
         print '<li> Use the template files to add records to the database.'
@@ -416,6 +418,14 @@ int main(int argc,char *argv[])
     # Startup shell script for linux IOC
     LINUX_CMD = '''\
 cd "$(dirname "$0")"
+if [ -n "$1" ]; then
+    export EPICS_CA_SERVER_PORT="$(($1))"
+    export EPICS_CA_REPEATER_PORT="$(($1 + 1))"
+    [ $EPICS_CA_SERVER_PORT -gt 0 ] || {
+        echo "First argument '$1' should be a integer greater than 0"
+        exit 1
+    }
+fi
 ./%(ioc)s st%(ioc)s.%(ext)s'''
 
     # Configuration.  Unfortunately we need different configurations for old
@@ -713,6 +723,9 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         # Add the system libraries
         for lib in reversed(Hardware.GetSysLibList()):
             makefile.AddLine('%s_SYS_LIBS += %s' % (ioc, lib))
+        # Add makefile variables
+        for var, text in reversed(Hardware.GetMakefileVariableList()):
+            makefile.AddLine('%s_%s += %s' % (self.ioc_name, var, text))
         makefile.AddLine('%s_LIBS += $(EPICS_BASE_IOC_LIBS)' % ioc)
         # Finally add the target specific files.
         configure.Call_TargetOS(self, 'CreateSourceFiles')

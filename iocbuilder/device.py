@@ -134,6 +134,10 @@ class Device(libversion.ModuleBase):
     DbdFileList = []
     ## List of binary files to be loaded dynamically.
     BinFileList = []
+    ## List of (var, text) flags to go in the makefile
+    ## E.g. MakefileVariableList = [("LDFLAGS_WIN32", "/NOD:nafxcw.lib")]
+    ## will produce the line <iocname>_LDFLAGS_WIN32 += /NOD:nafxcw.lib
+    MakefileVariableList = []
 
     ## Define this method to be called after \c iocInit in the startup script.
     PostIocInitialise = None

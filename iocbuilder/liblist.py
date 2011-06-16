@@ -96,6 +96,11 @@ class Hardware(Singleton):
             for library in self.__LibraryList
             for lib in library.SysLibFileList]
 
+    # Returns a list of all system library files.
+    def GetMakefileVariableList(self):
+        return [(var, text)
+            for library in self.__LibraryList
+            for (var, text) in library.MakefileVariableList]
 
     # Any devices which need post iocInit() initialisation can have their
     # code generation here
