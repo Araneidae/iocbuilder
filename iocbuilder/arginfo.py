@@ -37,7 +37,7 @@ class ArgInfo(object):
 
     def __init__(self, __source=None, __optional=[], __method=True, **descs):
         self.descriptions = descs
-        for k,v in descs.items():
+        for k, v in descs.items():
             assert isinstance(v, ArgType), \
                 'ArgInfo description "%s" is not of valid type. Got:\n%s' % \
                     (k, v)
@@ -219,8 +219,8 @@ class ArgType(object):
 def Simple(desc, typ=str):
     assert typ in _simpleTypes, \
         '%s is not a supported simple type %s' % (typ, _simpleTypes)
-    if typ==bool:
-        return Choice(desc, [False, True], ["False", "True"])
+    if typ == bool:
+        return Choice(desc, [False, True], ['False', 'True'])
     else:
         desc = '%s\n%s' % (desc, typ)
         return ArgType(desc, typ)
@@ -239,7 +239,7 @@ def Choice(desc, values, labels = None):
             'Value "%s" doesn\'t have same type as "%s"' % (v, values[0])
     desc = '%s\n%s\nValues:\n ' % (desc, typ)
     if labels is None:
-        desc += '\n '.join(map(str,values))
+        desc += '\n '.join(map(str, values))
         return ArgType(desc, typ, labels = values)
     else:
         assert len(values) == len(labels), \

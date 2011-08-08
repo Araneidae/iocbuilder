@@ -318,7 +318,7 @@ class DocumentationIocWriter(IocWriter):
         print '\\verbatim'
         gen_paths = [(m.LibPath(), m.MacroName())
             for m in libversion.ModuleBase.ListModules()]
-        for path,name in gen_paths:
+        for path, name in gen_paths:
             if name != 'EPICS_BASE':
                 print name+'='+path
         print '\\endverbatim'
@@ -403,7 +403,7 @@ class DiamondIocWriter(IocWriter):
 #include "epicsThread.h"
 #include "iocsh.h"
 
-int main(int argc,char *argv[])
+int main(int argc, char *argv[])
 {
     if(argc>=2) {
         iocsh(argv[1]);
@@ -949,7 +949,7 @@ Supplied meta tag:
         self.makefile_edl.AddLine(
             'DATA += $(patsubst ../%, %, $(wildcard ../*.edl))')
         # And a startup script for the screens
-        gb.startupScript(filename = '%s/st%s-gui' % (d,self.ioc_name),
+        gb.startupScript(filename = '%s/st%s-gui' % (d, self.ioc_name),
             edl = c.macrodict['FILE'], setPort = False,
             macros = c.macrodict['EDM_MACROS'])
         self.makefile_edl.AddLine('SCRIPTS += ../st%s-gui' % self.ioc_name)

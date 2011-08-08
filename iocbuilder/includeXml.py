@@ -50,7 +50,8 @@ class Xml(ModuleBase):
                 if os.path.join(path, xml) in cls.TemplateFiles:
                     continue
                 # make an Xml for it
-                clsname = libversion.PythonIdentifier('auto_xml_' + xml.split('.')[0])
+                clsname = libversion.PythonIdentifier(
+                    'auto_xml_' + xml.split('.')[0])
                 class temp(Xml):
                     ModuleName = moduleVersion.Name()
                     TemplateFile = xml

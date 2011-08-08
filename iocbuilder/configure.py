@@ -245,8 +245,8 @@ This program will configure iocbuilder to write an ioc structure. It should
 be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
     parser.add_option('-d', action='store_true', dest='debug',
         help='Print lots of debug information')
-    parser.add_option("--doc", dest="doc",
-        help="Write out information in format for doxygen build instructions")
+    parser.add_option('--doc', dest='doc',
+        help='Write out information in format for doxygen build instructions')
     parser.add_option('-D', action='store_true', dest='DbOnly',
         help='Only output files destined for the Db dir')
     parser.add_option('--sim', dest='simarch',
@@ -270,7 +270,7 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
         import iocwriter
         options.ioc_writer = iocwriter.DocumentationIocWriter
     elif options.DbOnly:
-        options.iocpath = os.path.abspath(".")
+        options.iocpath = os.path.abspath('.')
         import iocwriter
         options.ioc_writer = iocwriter.DbOnlyWriter
     else:
@@ -348,7 +348,7 @@ def ParseAndConfigure(options, dependency_tree=None):
 
     # set debugging
     import libversion
-    libversion.Debug = getattr(options, "debug", True)
+    libversion.Debug = getattr(options, 'debug', True)
 
     # do the ModuleVersion calls on a dependency tree
     vs = []

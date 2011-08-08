@@ -141,7 +141,7 @@ class Singleton(object):
     # type is stored in the class, and no instances are created.
     class SingletonMeta(type):
         def __new__(cls, name, bases, dict):
-            for n,v in dict.items():
+            for n, v in dict.items():
                 if isinstance(v, types.FunctionType):
                     dict[n] = classmethod(v)
             singleton = type.__new__(cls, name, bases, dict)
@@ -176,7 +176,7 @@ class Singleton(object):
 #         __metaclass__ = _autosuper_meta
 #
 # Then in any sub-class of A the __super attribute can be used instead of
-# writing super(cls,name) thus:
+# writing super(cls, name) thus:
 #
 #     class B(A):
 #         def __init__(self):

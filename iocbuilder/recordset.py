@@ -130,7 +130,8 @@ class SubstitutionSet(support.autosuper):
 class Substitution(libversion.ModuleBase):
     def __init_meta__(cls, subclass):
         if cls.TemplateFile:
-            cls.TemplateFiles.append(os.path.join(cls.LibPath(), 'db', cls.TemplateFile))
+            cls.TemplateFiles.append(
+                os.path.join(cls.LibPath(), 'db', cls.TemplateFile))
 
 
     BaseClass = True

@@ -420,7 +420,7 @@ class ModuleBase(support.autosuper):
             print 'Instantiating %s.%s(%s)' % (
                 cls.ModuleName, cls.__name__, ', '.join(
                     map(repr, args) +
-                    ['%s=%s' % (k, repr(v)) for k,v in kargs.items()]))
+                    ['%s=%s' % (k, repr(v)) for k, v in kargs.items()]))
 
         if cls.__mark_instantiated():
             cls.UseModule()

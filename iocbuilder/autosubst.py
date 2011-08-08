@@ -107,9 +107,9 @@ def populate_class(cls, template_file):
 
 
     for name, desc in macro_desc_re.findall(text):
-        search = re.search(r"\n#[ \t]*", desc)
+        search = re.search(r'\n#[ \t]*', desc)
         if search:
-            desc = re.sub(search.group(), "\n", desc)
+            desc = re.sub(search.group(), '\n', desc)
         # a __doc__ macro is the docstring for the object
         if name == '__doc__':
             doc = desc
@@ -222,4 +222,3 @@ macro_desc_re = re.compile(
     r'([^\n]+' # This start the description capture and the first line
     r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # subsequent non-'blank' line
     re.MULTILINE)
-
