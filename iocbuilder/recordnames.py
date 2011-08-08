@@ -38,7 +38,14 @@ class TemplateRecordNames(RecordNamesBase):
     ## A Parameter is used to wrap a template parameter before being assigned to
     # a record field.
     class Parameter:
+        __ParameterNames = set()
+
         def __init__(self, name, description = '', default = None):
+            # Ensure names aren't accidentially removed
+            assert name not in self.__ParameterNames, \
+                'Parameter name "%s" already defined' % name
+            self.__ParameterNames.add(name)
+
             self.__name = name
             self.__default = default
 
@@ -59,11 +66,13 @@ class TemplateRecordNames(RecordNamesBase):
             return True
 
 
-    def __init__(self, device='DEVICE'):
+    def __init__(self, device=None):
+        if device is None:
+            device = self.Parameter('DEVICE', 'Device name')
         self.__Name = device
 
     def RecordName(self, name):
-        return '$(%s):%s' % (self.__Name, name)
+        return '%s:%s' % (self.__Name, name)
 
     ## Can be used to update the template name.
     def TemplateName(self, name):
