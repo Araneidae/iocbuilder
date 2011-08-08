@@ -426,7 +426,7 @@ if [ -n "$1" ]; then
         exit 1
     }
 fi
-./%(ioc)s st%(ioc)s.%(ext)s'''
+exec ./%(ioc)s st%(ioc)s.boot'''
 
     # Configuration.  Unfortunately we need different configurations for old
     # and newer versions of EPICS: we can't write CHECK_RELEASE to CONFIG, so
@@ -767,23 +767,22 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         else:
             scripts = 'SCRIPTS'
         configure.Call_TargetOS(self, 'CreateBootFiles', scripts)
+
+        self.makefile_boot.AddLine(
+            '%s += st%s.boot' % (scripts, self.ioc_name))
         if self.substitute_boot:
-            self.makefile_boot.AddLine(
-                    '%s += st%s.boot' % (scripts, self.ioc_name))
             if paths.msiPath:
                 self.makefile_boot.AddLine('PATH := $(PATH):%s' % paths.msiPath)
         else:
-            self.makefile_boot.AddLine(
-                    '%s += ../st%s.cmd' % (scripts, self.ioc_name))
             self.makefile_boot.AddRule(
                 'envPaths cdCommands:\n'
                 '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(T_A) $@')
+            self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
 
     def CreateBootFiles_linux(self, scripts):
         ioc = self.ioc_name
-        ext = self.substitute_boot and 'boot' or 'cmd'
         self.WriteFile((self.iocBootDir, 'st%s.sh' % ioc),
-            self.LINUX_CMD % dict(ioc = ioc, ext = ext),
+            self.LINUX_CMD % dict(ioc = ioc),
             header = PrintDisclaimerCommand('/bin/sh'))
         if not self.substitute_boot:
             self.makefile_boot.AddLine('%s += envPaths' % scripts)
