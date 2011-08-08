@@ -220,5 +220,5 @@ macro_desc_re = re.compile(
     r'^#[ \t]*%[ \t]*macro[ \t]*,[ \t]*' # This is the #% macro, prefix
     r'([^, \t]+)[ \t]*,[ \t]*' # Captures the macro name and discards comma
     r'([^\n]+' # This start the description capture and the first line
-    r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # subsequent non-'blank' line
+    r'(?:\n#[ \t]*[^\n%#][^\n]*)*)', # subsequent non-'blank' line
     re.MULTILINE)

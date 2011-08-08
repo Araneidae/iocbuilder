@@ -7,7 +7,7 @@ import recordnames
 import recordset
 
 
-__all__ = ['PP', 'CP', 'MS', 'NP', 'ImportRecord', 'Parameter']
+__all__ = ['PP', 'CP', 'MS', 'NP', 'ImportRecord']
 
 
 
@@ -312,19 +312,6 @@ class _Link:
     def Value(self):
         return self.record._Record__fields[self.field]
 
-
-
-## A Parameter is used to wrap a template parameter before being assigned to a
-# record field.
-class Parameter:
-    def __init__(self, name):
-        self.__name = name
-
-    def __str__(self):
-        return '$(%s)' % self.__name
-
-    def Validate(self, record, field):
-        return True
 
 
 # Some helper routines for building links

@@ -19,6 +19,7 @@ class RecordSet(support.Singleton):
 
     def Reset(self):
         self.__RecordSet = {}
+        self.__HeaderLines = []
 
     # Add a record to the list of records to be published.
     def PublishRecord(self, name, record):
@@ -32,6 +33,8 @@ class RecordSet(support.Singleton):
 
     # Output complete set of records to stdout.
     def Print(self):
+        for line in self.__HeaderLines:
+            print line
         # Print the records in alphabetical order: gives the reader a fighting
         # chance to find their way around the generated database!
         for record in sorted(self.__RecordSet.keys()):
@@ -40,6 +43,9 @@ class RecordSet(support.Singleton):
     # Returns the number of published records.
     def CountRecords(self):
         return len(self.__RecordSet)
+
+    def AddHeaderLine(self, line):
+        self.__HeaderLines.append(line)
 
 
 

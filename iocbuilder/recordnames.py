@@ -32,7 +32,32 @@ class BasicRecordNames(RecordNamesBase):
 #
 # Records are named "$(DEVICE):name".
 class TemplateRecordNames(RecordNamesBase):
-    __all__ = ['TemplateName', 'RecordName']
+    __all__ = ['TemplateName', 'RecordName', 'Parameter']
+
+
+    ## A Parameter is used to wrap a template parameter before being assigned to
+    # a record field.
+    class Parameter:
+        def __init__(self, name, description = '', default = None):
+            self.__name = name
+            self.__default = default
+
+            # Add the description as metadata to the current record set
+            from recordset import RecordSet
+            lines = description.split('\n')
+            RecordSet.AddHeaderLine('#%% macro, %s, %s' % (name, lines[0]))
+            for line in lines[1:]:
+                RecordSet.AddHeaderLine('#  %s' % line)
+
+        def __str__(self):
+            if self.__default is None:
+                return '$(%s)' % self.__name
+            else:
+                return '$(%s=%s)' % (self.__name, self.__default)
+
+        def Validate(self, record, field):
+            return True
+
 
     def __init__(self, device='DEVICE'):
         self.__Name = device
