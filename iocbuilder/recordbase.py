@@ -7,7 +7,7 @@ import recordnames
 import recordset
 
 
-__all__ = ['PP', 'CP', 'MS', 'NP', 'ImportRecord']
+__all__ = ['PP', 'CP', 'MS', 'NP', 'ImportRecord', 'ImportName']
 
 
 
@@ -286,6 +286,10 @@ class ImportRecord:
                 raise AttributeError, 'Invalid field name %s' % fieldname
         return _Link(self, fieldname)
 
+
+def ImportName(name):
+    '''Creates import of record with currently configured device name.'''
+    return ImportRecord(recordnames.RecordName(name))
 
 
 # A link is a class to encapsulate a process variable link.  It remembers

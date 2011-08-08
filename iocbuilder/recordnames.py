@@ -2,7 +2,9 @@
 
 import string
 
-__all__ = ['BasicRecordNames', 'TemplateRecordNames', 'DiamondRecordNames']
+__all__ = [
+    'BasicRecordNames', 'TemplateRecordNames', 'DiamondRecordNames',
+    'RecordName']
 
 
 # Base class for record name configuration.
@@ -32,8 +34,7 @@ class BasicRecordNames(RecordNamesBase):
 #
 # Records are named "$(DEVICE):name".
 class TemplateRecordNames(RecordNamesBase):
-    __all__ = ['TemplateName', 'RecordName', 'Parameter']
-
+    __all__ = ['TemplateName', 'Parameter']
 
     ## A Parameter is used to wrap a template parameter before being assigned to
     # a record field.
@@ -96,7 +97,7 @@ class TemplateRecordNames(RecordNamesBase):
 class DiamondRecordNames(RecordNamesBase):
     __all__ = [
         'SetDomain', 'SetTechnicalArea', 'SetDevice', 'GetDevice',
-        'UnsetDevice', 'RecordName' ]
+        'UnsetDevice']
 
     # The allowable characters in a record name are defined here: [A-Z0-9_-]
     ValidRecordNameChars = set(string.ascii_uppercase + string.digits + '_-')
@@ -203,7 +204,7 @@ class DiamondRecordNames(RecordNamesBase):
             assert set(component) <= self.ValidRecordNameChars, \
                    'Invalid character(s) in record name "%s"' % record
 
-        assert device != None, 'Must define device name first'
+        assert device is not None, 'Must define device name first'
         return '%s:%s' % (device, record)
 
 
@@ -211,3 +212,5 @@ class DiamondRecordNames(RecordNamesBase):
 # By default we use an instance of RecordNamesBase for record names, but this
 # can be rebound during configuration.
 RecordNames = RecordNamesBase()
+def RecordName(*args, **kargs):
+    return RecordNames.RecordName(*args, **kargs)
