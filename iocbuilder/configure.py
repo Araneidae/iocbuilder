@@ -205,10 +205,12 @@ def ConfigureIOC(
 # \param record_names
 #   An alternative naming convention can be specified, the default is
 #   \ref recordnames.TemplateRecordNames "TemplateRecordNames()".
-def ConfigureTemplate(record_names = None):
+def ConfigureTemplate(record_names = None, device = None):
     import recordnames
+    assert device is None or record_names is None, \
+        'Does not make sense to give device and record_names together'
     if record_names is None:
-        record_names = recordnames.TemplateRecordNames()
+        record_names = recordnames.TemplateRecordNames(device = device)
     Configure(record_names = record_names)
 
 

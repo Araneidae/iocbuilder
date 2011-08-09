@@ -58,6 +58,17 @@ class _header:
             self.printed = True
 
 
+_ResourceExclusions = {
+    'win32-x86': ['library'],
+    'none':      ['library', 'object']
+}
+# Implements a simple filter on resources against architecture: we don't check
+# all resources for all architectures.
+def _FilterResource(resource):
+    excludes = _ResourceExclusions.get(Architecture())
+    return excludes and resource in excludes
+
+
 ## This class should be subclassed to implement devices.  Each instance of
 # this class will automatically announce itself as a device to be
 # initialised during IOC startup.
@@ -269,7 +280,7 @@ class Device(libversion.ModuleBase):
                 ('object',  cls.BinFileList, _BinPath),
                 ('dbd',     cls.DbdFileList, _DbdPath)):
             for fileName in fileList:
-                if not (Architecture() == 'win32-x86' and entity == 'library'):
+                if not _FilterResource(entity):
                     filePath = os.path.join(cls.LibPath(), makePath(fileName))
                     assert os.access(filePath, os.R_OK), \
                         'Can\'t find %s file "%s"' % (entity, filePath)
