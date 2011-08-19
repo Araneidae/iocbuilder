@@ -85,6 +85,10 @@ def _FilterResource(resource):
 #         The list of library files that need to be loaded for the proper
 #         operation of this device.
 #
+# \param SysLibFileList
+#         The list of system library files that need to be loaded for the proper
+#         operation of this device.
+#
 # \param BinFileList
 #         Any library binary files that need to be statically loaded.  These
 #         will be loaded after all the files listed in LibFileList.
@@ -92,6 +96,13 @@ def _FilterResource(resource):
 # \param DbdFileList
 #         The list of DBD files to be loaded for the operation of this
 #         device.
+#
+# \param MakefileStringList
+#         List of text strings to be placed into the makefile.
+#         E.g. MakefileStringList = [
+# 'BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe']
+#         or   MakefileStringList = [
+# '%(ioc_name)s_LDFLAGS_WIN32 += /NOD:nafxcwd.lib /NOD:nafxcw.lib']
 #
 # \param InitialiseOnce()
 #         If defined, this method is called once on the first instance of
@@ -145,10 +156,8 @@ class Device(libversion.ModuleBase):
     DbdFileList = []
     ## List of binary files to be loaded dynamically.
     BinFileList = []
-    ## List of (var, text) flags to go in the makefile
-    ## E.g. MakefileVariableList = [("LDFLAGS_WIN32", "/NOD:nafxcw.lib")]
-    ## will produce the line <iocname>_LDFLAGS_WIN32 += /NOD:nafxcw.lib
-    MakefileVariableList = []
+    ## List of text strings to go in the makefile
+    MakefileStringList = []
 
     ## Define this method to be called after \c iocInit in the startup script.
     PostIocInitialise = None

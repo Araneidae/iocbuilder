@@ -335,8 +335,8 @@ class DocumentationIocWriter(IocWriter):
             print '%s_LIBS += %s' % (self.ioc_name, lib)
         for lib in reversed(Hardware.GetSysLibList()):
             print '%s_SYS_LIBS += %s' % (self.ioc_name, lib)
-        for var, text in reversed(Hardware.GetMakefileVariableList()):
-            print '%s_%s += %s' % (self.ioc_name, var, text)
+        for text in reversed(Hardware.GetMakefileStringList()):
+            print text % self.__dict__
         print '\\endverbatim'
         print
         print '<li> Use the template files to add records to the database.'
@@ -724,8 +724,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         for lib in reversed(Hardware.GetSysLibList()):
             makefile.AddLine('%s_SYS_LIBS += %s' % (ioc, lib))
         # Add makefile variables
-        for var, text in reversed(Hardware.GetMakefileVariableList()):
-            makefile.AddLine('%s_%s += %s' % (self.ioc_name, var, text))
+        for text in reversed(Hardware.GetMakefileStringList()):
+            makefile.AddLine(text % self.__dict__)
         makefile.AddLine('%s_LIBS += $(EPICS_BASE_IOC_LIBS)' % ioc)
         # Finally add the target specific files.
         configure.Call_TargetOS(self, 'CreateSourceFiles')
