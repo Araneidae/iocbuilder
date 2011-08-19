@@ -581,9 +581,12 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.keep_files = keep_files
         self.edm_screen = edm_screen
 
-        self.cross_build = configure.Architecture() != paths.EPICS_HOST_ARCH
-        if configure.Architecture() == 'win32-x86':
-            self.cross_build = False
+        # We have to fudge the win32 build as although we run the builder on
+        # Linux the IOC will have to be build on Windows.  This is a sign that
+        # something's not quite right here...
+        self.cross_build = \
+            configure.Architecture() != paths.EPICS_HOST_ARCH  and \
+            configure.TargetOS() != 'WIN32'
 
         # Create the working skeleton
         self.CreateIocNames(ioc_name)
@@ -703,7 +706,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         makefile = self.makefile_src
         ioc = self.ioc_name
 
-        if self.cross_build:
+        if self.cross_build or configure.TargetOS() == 'WIN32':
             prod_ioc = 'PROD_IOC_%s' % configure.TargetOS()
         else:
             prod_ioc = 'PROD_IOC'
@@ -829,7 +832,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         releases.append('EPICS_BASE = %s' % paths.EPICS_BASE)
         self.WriteFile('configure/RELEASE', '\n'.join(releases))
 
-        if configure.Architecture() == 'win32-x86':
+        if configure.TargetOS() == 'WIN32':
             lines = ['# Windows specific prefixes']
             lines.append('SUPPORT = %s' %
                 paths.module_path.replace('/dls_sw/', r'W:\\'))
@@ -838,7 +841,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             lines.append('EPICS_BASE = %s' %
                 paths.EPICS_BASE.replace('/dls_sw/', r'W:\\'))
             self.WriteFile(
-                'configure/RELEASE.win32-x86.Common', '\n'.join(lines))
+                'configure/RELEASE.%s.Common' % configure.Architecture(),
+                '\n'.join(lines))
 
     def WriteConfigFile(self, config_site):
         # If CONFIG_SITE exists add our configuration to that, otherwise add
