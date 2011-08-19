@@ -219,8 +219,8 @@ class IocWriter:
         self.CopyDataFiles = iocinit.IocDataSet.CopyDataFiles
         self.DataFileCount = iocinit.IocDataSet.DataFileCount
 
-        self.IOCmaxLineLength = getattr(self,
-            'IOCmaxLineLength_%s' % configure.TargetOS(), 0)
+        self.IOCmaxLineLength = \
+            configure.Get_TargetOS(self, 'IOCmaxLineLength', 0)
 
         self.SetIocName = iocinit.iocInit.SetIocName
 

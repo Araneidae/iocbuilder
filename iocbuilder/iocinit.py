@@ -31,7 +31,8 @@ import support
 from support import autosuper, quote_c_string
 from liblist import Hardware
 from libversion import ModuleVersion
-from configure import TargetOS, Get_TargetOS, Call_TargetOS, Architecture
+from configure import TargetOS, Get_TargetOS, Get_TargetOS_dict, Call_TargetOS
+from configure import Architecture
 import paths
 import mydbstatic
 
@@ -100,9 +101,9 @@ class iocInit(support.Singleton):
         # Now the architecture has been set (assuming it has), set up the
         # appropriate IOC string quoting function.
         global quote_IOC_string, print_setenv
-        quote_IOC_string = globals().get(
-            'quote_IOC_string_%s' % TargetOS(), quote_IOC_string_none)
-        print_setenv = globals().get('setenv_%s' % TargetOS())
+        quote_IOC_string = Get_TargetOS_dict(
+            globals(), 'quote_IOC_string', quote_IOC_string_none)
+        print_setenv = Get_TargetOS_dict(globals(), 'setenv')
 
 
     def SetIocName(self, ioc_name, substitute_boot = False):
@@ -130,7 +131,7 @@ class iocInit(support.Singleton):
             print 'cd %s' % quote_IOC_string(self.__TargetDir)
         elif self.substitute_boot:
             print 'cd "$(INSTALL)"'
-        elif TargetOS() == "vxWorks":
+        elif TargetOS() == 'vxWorks':
             print 'cd top'
         else:
             print 'cd "$(TOP)"'

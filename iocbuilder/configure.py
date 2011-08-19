@@ -17,12 +17,26 @@ def Architecture():
 
 
 # Returns the target OS for the configured architecture, currently either
-# linux or vxWorks.
+# WIN32, Linux or vxWorks.
+_TargetOSlookup = {
+    'linux': 'Linux',
+    'win32': 'WIN32',
+    'vxWorks': 'vxWorks'
+}
 def TargetOS():
-    return Architecture().split('-', 1)[0]
+    '''Returns the proper target OS as used in the makefiles'''
+    return _TargetOSlookup[Architecture().split('-', 1)[0]]
 
 def Get_TargetOS(self, name, *default):
-    return getattr(self, '%s_%s' % (name, TargetOS()), *default)
+    targetos = Architecture().split('-', 1)[0]
+    return getattr(self, '%s_%s' % (name, targetos), *default)
+def Get_TargetOS_dict(dict, name, *default):
+    targetos = Architecture().split('-', 1)[0]
+    key = '%s_%s' % (name, targetos)
+    if default:
+        return dict.get(key, *default)
+    else:
+        return dict[key]
 
 
 # Helper function for calling a target OS specific function.  Looks up
