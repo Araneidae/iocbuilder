@@ -90,10 +90,10 @@ class Xml(ModuleBase):
 
         # make iocbuilder objects
         if libversion.Debug:
-            print "< Loading objects from %s >" % self.TemplateFile
+            print '< Loading objects from %s >' % self.TemplateFile
         self.objects = instantiateXml(xml_text)
         if libversion.Debug:
-            print "</ Loading objects from %s >" % self.TemplateFile
+            print '</ Loading objects from %s >' % self.TemplateFile
 
 
 def constructArgDict(el, objects, classes, ident_lookup=True):
@@ -103,7 +103,7 @@ def constructArgDict(el, objects, classes, ident_lookup=True):
     name = None
     # get the object class
     obname = str(el.nodeName)
-    assert obname in classes, "Can't find object '%s'"% obname
+    assert obname in classes, 'Can\'t find object "%s"'% obname
     ob = classes[obname]
     # find the column representing name
     nameKey = getattr(ob, 'UniqueName', 'name')
@@ -130,12 +130,12 @@ def constructArgDict(el, objects, classes, ident_lookup=True):
                 value = objects[value]
         # otherwise make it the right type
         elif desc.typ == bool:
-            if value and value.lower() != "false":
+            if value and value.lower() != 'false':
                 value = True
             else:
                 value = False
         elif desc.typ == str:
-            value = value.decode("string_escape")
+            value = value.decode('string_escape')
         else:
             value = desc.typ(value)
         # add it to the dict
@@ -192,5 +192,5 @@ def instantiateXml(xml_text, objects=None):
         if name is not None:
             objects[name] = inst
             if libversion.Debug:
-                print "Setting %s = %s" %(name, inst)
+                print 'Setting %s = %s' %(name, inst)
     return objects

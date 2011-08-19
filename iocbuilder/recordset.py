@@ -91,16 +91,16 @@ class SubstitutionSet(support.autosuper):
             if not subList:
                 continue
             print
-            if hasattr(subList[0], "ArgInfo"):
+            if hasattr(subList[0], 'ArgInfo'):
                 lines = []
                 for x in subList[0].Arguments:
                     if x in subList[0].ArgInfo.descriptions:
                         a = subList[0].ArgInfo.descriptions[x]
-                        lines.append((x, a.desc.split("\n")[0]))
+                        lines.append((x, a.desc.split('\n')[0]))
                 if lines:
-                    format = "#  %%-%ds  %%s" % max([len(x[0]) for x in lines])
-                    print "# Macros:"
-                    print "\n".join([format % l for l in lines])
+                    format = '#  %%-%ds  %%s' % max([len(x[0]) for x in lines])
+                    print '# Macros:'
+                    print '\n'.join([format % l for l in lines])
             print 'file %s' % template
             print '{'
             subList[0]._PrintPattern()
@@ -184,7 +184,7 @@ class Substitution(libversion.ModuleBase):
         self.__super.__init__()
 
         # If we have Defaults, then update the argdict with them
-        if hasattr(self, "Defaults"):
+        if hasattr(self, 'Defaults'):
             args = dict(self.Defaults, **args)
 
         # Check that all the required arguments have been given: we can't do
