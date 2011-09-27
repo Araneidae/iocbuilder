@@ -44,7 +44,7 @@ def export(function):
     return function
 
 
-def quote_IOC_string_none(text):
+def _no_architecture(*args):
     assert False, 'Architecture not specified'
 
 _safe_chars = set([ord('\t')]) | set(range(ord(' '), 128))
@@ -102,8 +102,8 @@ class iocInit(support.Singleton):
         # appropriate IOC string quoting function.
         global quote_IOC_string, print_setenv
         quote_IOC_string = Get_TargetOS_dict(
-            globals(), 'quote_IOC_string', quote_IOC_string_none)
-        print_setenv = Get_TargetOS_dict(globals(), 'setenv')
+            globals(), 'quote_IOC_string', _no_architecture)
+        print_setenv = Get_TargetOS_dict(globals(), 'setenv', _no_architecture)
 
 
     def SetIocName(self, ioc_name, substitute_boot = False):
