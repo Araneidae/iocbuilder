@@ -780,7 +780,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             self.makefile_boot.AddRule(
                 'envPaths cdCommands:\n'
                 '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(T_A) $@')
-            self.makefile_boot.AddRule('%.boot: ../%.cmd\n\tcp $< $@')
+            self.makefile_boot.AddRule('%.boot: ../%.cmd\n\t$(CP) $< $@')
 
     def CreateBootFiles_linux(self, scripts):
         ioc = self.ioc_name
