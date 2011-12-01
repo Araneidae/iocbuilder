@@ -291,7 +291,13 @@ class Device(libversion.ModuleBase):
             for fileName in fileList:
                 if not _FilterResource(entity):
                     filePath = os.path.join(cls.LibPath(), makePath(fileName))
-                    assert os.access(filePath, os.R_OK), \
+                    exists = os.access(filePath, os.R_OK)
+                    # .a files only exist if we are doing a static build. If
+                    # we are doing a shared build only .so files are created
+                    if not exists and entity == 'library' and \
+                            filePath.endswith('.a'):
+                        exists = os.access(filePath[:-1] + 'so', os.R_OK)
+                    assert exists, \
                         'Can\'t find %s file "%s"' % (entity, filePath)
 
 
