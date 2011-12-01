@@ -12,6 +12,9 @@ def main():
     parser.add_option(
         '-D', action='store_true', dest='DbOnly',
         help='Only output files destined for the Db dir')
+    parser.add_option('-o', dest='out',
+        default = os.path.join('..', '..', 'iocs'),
+        help='Output directory for ioc')
     parser.add_option(
         '--doc', dest='doc',
         help='Write out information in format for doxygen build instructions')
@@ -48,13 +51,14 @@ def main():
     iocname = os.path.basename(xml_file).replace('.xml','')
     store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc)
     if options.debug:
-        print '--- Parsing %s ---'%xml_file
+        print '--- Parsing %s ---' % xml_file
     store.iocname = os.path.basename(xml_file).replace('.xml','')
     store.build_root = os.path.dirname(os.path.abspath(xml_file))
 
     xml_text = open(xml_file).read()
     xml_root = xml.dom.minidom.parseString(xml_text)
-    components = [n for n in xml_root.childNodes if n.nodeType == n.ELEMENT_NODE][0]
+    components = [n
+        for n in xml_root.childNodes if n.nodeType == n.ELEMENT_NODE][0]
     if options.simarch is not None:
         store.architecture = options.simarch
         store.simarch = store.architecture
@@ -75,8 +79,7 @@ def main():
             iocname += '_sim'
     else:
         # write the iocs
-        root = os.path.abspath(
-            os.path.dirname(os.path.abspath(xml_file))+'/../../iocs/')
+        root = os.path.abspath(options.out)
         iocpath = os.path.join(root, iocname)
         if options.simarch:
             iocpath += '_sim'

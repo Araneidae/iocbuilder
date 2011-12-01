@@ -263,6 +263,9 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
         help='Print lots of debug information')
     parser.add_option('--doc', dest='doc',
         help='Write out information in format for doxygen build instructions')
+    parser.add_option('-o', dest='out',
+        default = os.path.join('..', '..', 'iocs'),
+        help='Output directory for ioc')
     parser.add_option('-D', action='store_true', dest='DbOnly',
         help='Only output files destined for the Db dir')
     parser.add_option('--sim', dest='simarch',
@@ -276,8 +279,8 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
             '- you must the IOC name as input')
     # store the ioc name and path
     options.iocname = args[0]
-    options.iocpath = os.path.abspath(
-        os.path.join('..', '..', 'iocs', options.iocname))
+    options.iocpath = \
+        os.path.abspath(os.path.join(options.out, options.iocname))
     if options.simarch:
         options.iocpath += '_sim'
         options.architecture = options.simarch
@@ -372,8 +375,12 @@ def ParseAndConfigure(options, dependency_tree=None):
         # now flatten the leaves of the tree, and remove duplicates
         leaves = []
         for leaf in tree.flatten(include_self=True):
-            duplicates = [ l for l in leaves if l.name == leaf.name ]
-            if duplicates:
+            duplicates = [l for l in leaves if l.name == leaf.name]
+            # invalid modules don't have a configure/RELEASE, so won't have a
+            # builder object
+            if leaf.version == 'invalid':
+                continue
+            elif duplicates:
                 print '***Warning: Module "%s" defined with' % leaf.name, \
                     'multiple versions, using "%s"' % duplicates[0].version
             else:
@@ -386,10 +393,6 @@ def ParseAndConfigure(options, dependency_tree=None):
                 home = os.path.abspath(path)
                 use_name = False
                 version = None
-            # invalid modules don't have a configure/RELEASE, so won't have a
-            # builder object
-            elif version == 'invalid':
-                continue
             # prod modules need more hacking of the path to look right
             else:
                 home = os.path.abspath(os.path.join(path, '..', '..'))
