@@ -745,14 +745,11 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         # If there are any bin installs on a windows system, add them
         for module in sorted(libversion.ModuleBase.ListModules()):
             # if there are any dlls, add them
-            binDir = os.path.join('bin', configure.Architecture())
-            if os.path.isdir(os.path.join(module.LibPath(), binDir)):
-                for x in os.listdir(os.path.join(module.LibPath(), binDir)):
-                    if x.endswith('.dll'):
-                        self.makefile_src.AddLine(
-                            'BIN_INSTALLS_WIN32 += $(wildcard $(%s)/%s/*.dll)' \
-                                % (module.MacroName(), binDir))
-                        break;
+            self.makefile_src.AddLine('BIN_INSTALLS_WIN32 += '
+                '$(wildcard $(%s)/bin/$(EPICS_HOST_ARCH)/*.dll)'
+                % module.MacroName())
+        self.makefile_src.AddLine('BIN_INSTALLS_WIN32 += '
+            '$(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe')
 
     def CreateSourceFiles_vxWorks(self):
         self.makefile_src.AddLine(
@@ -904,6 +901,8 @@ Supplied meta tag:
             for meta in getattr(s, 'guiTags', []):
                 # substitute macros in meta tag
                 meta = support.msi_replace_macros(s.args, meta)
+                if libversion.Debug:
+                    print 'Processing meta tag "%s"' %meta
                 # check it's the right length
                 parts = meta.split(',')
                 assert len(parts) > 1, err + meta
@@ -934,6 +933,8 @@ Supplied meta tag:
                     if not gb.get(name):
                         gb.object(name)
                     # Add a screen to the objects
+                    if libversion.Debug:
+                        print 'Adding edm object %s to %s screen' %(data, name)
                     gb.get(name)[0].addScreen(**data)
         # Now create components out of these edm objects
         d = os.path.join(self.iocRoot, self.iocEdlDir)
@@ -943,9 +944,13 @@ Supplied meta tag:
             for pre in prefixes:
                 obs = gb.get('%s.*' % pre)
                 ignores += obs
+                if libversion.Debug:
+                    print 'Making subscreen %s from %s' %(pre, obs)
                 gb.object(pre, '%s Top' % pre, '', obs, d = d)
         # Now make a top level screen containing anything not in a sub screen
         obs = [x for x in gb.get('*') if x not in ignores]
+        if libversion.Debug:
+            print 'Making top level screen %sTop from %s' % (self.ioc_name, obs)
         c = gb.object('%sTop' % self.ioc_name, '%s Top' % self.ioc_name, '',
             obs, preferEmbed = False, d = d)
         # Add a rule for installing edm screens
