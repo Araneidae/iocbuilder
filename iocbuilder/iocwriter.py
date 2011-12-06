@@ -565,6 +565,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
     #   Whether \c msi is run over the generated boot scripts.  Defaults to
     #   False, not really recommended as can generate broken boot scripts
     #   without warning.
+    # \param edm_screen
+    #   Whether to make edm screens or not
     # \param keep_files
     #   List of files in \c path to keep, defaults to empty list.  If empty
     #   the IOC directory is completely erased.

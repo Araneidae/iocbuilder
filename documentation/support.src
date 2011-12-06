@@ -161,4 +161,41 @@ attribute set to \c True
 This allows iocbuilder to create an instance of this whenever someone refers to
 it as a dependency
 
+\section includeXml Using xml files for templating IOCs
+You can also create a templated xml file that can be instantiated to create
+iocs. This is useful if you have lots of very similar iocs that only differ
+by a couple of parameters. To do this, create an xml file that uses \c $(PARAM)
+msi syntax for each instance of a parameter template you at you wish to
+parameterise. E.g.
+
+\code
+<?xml version="1.0" ?>
+<components arch="linux-x86">
+	<EPICS_BASE.EpicsEnvSet key="EPICS_CA_MAX_ARRAY_BYTES" name="EPICS_CA_MAX_ARRAY_BYTES" value="10000000"/>
+	<areaDetector.pilatus ADDR="0" CAMSERVER="$(HOST):41234" P="$(PREFIX)" PORT="$(PORTNAME)" R=":cam1:" TIMEOUT="1" XSIZE="$(XSIZE)" YSIZE="$(YSIZE)"/>
+	<autosave.Autosave iocName="$(IOCNAME)" path="$(AUTOSAVEPATH)"/>
+	<autosave.auto_save_restoreStatus P="$(IOCNAME)"/>
+	...
+</components>
+\endcode
+
+Which looks like this in xeb:
+
+\image html templatedXml.png "Templated XML file in xeb"
+
+This will be available in xeb as an \c auto_xml_\<xmlfile\> automatically, but
+you should wrap it in an \ref iocbuilder.includeXml.Xml "Xml" object to give
+it a more friendly name:
+
+\code
+from iocbuilder import Xml
+
+class pilatusTemplate(Xml):
+   TemplateFile = "pilatusTemplate.xml"
+\endcode
+
+You can now instantiate it as you would any other builder object:
+
+\image html instantiatedXml.png "Instantiated XML file object in xeb"
+
 */
