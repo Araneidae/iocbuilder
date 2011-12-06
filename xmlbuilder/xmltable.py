@@ -19,7 +19,7 @@ class Table(QAbstractTableModel):
         # _tooltips contains the tooltips
         self._tooltips = [
             QVariant('An -- indicates row is disabled %s'%bool),
-            QVariant('Comment for row'),            
+            QVariant('Comment for row'),
             QVariant('Object name %s'%str)]
         # _required is a list of required columns
         self._required = []
@@ -88,50 +88,44 @@ class Table(QAbstractTableModel):
         if hasattr(ob, 'ident'):
             self._idents.append(col)
 
-    def __convert(self, variant, typ, py=False):
+    def __convert(self, variant, typ):
         # convert to the requested type
+        val = variant.toString()
         if typ == bool:
-            return (variant.toBool(), True)
+            if val.toLower() == QString("true"):
+                return (True, True)
+            elif val.toLower() == QString("false"):
+                return (False, True)
+            elif "$(" in val:
+                return (val, True)
+            return (val, False)
         elif typ == int:
+            if "$(" in val:
+                return (val, True)
             return variant.toInt()
         elif typ == float:
-            val, ret = variant.toDouble()
-            if py:
-                return (str(variant.toString()), ret)
-            else:
-                return (variant.toString(), ret)
+            if "$(" in val:
+                return (val, True)
+            _, ret = variant.toDouble()
+            return (val, ret)
         elif typ == str:
-            if py:
-                return (str(variant.toString()), True)
-            else:
-                return (variant.toString(), True)
+            return (variant.toString(), True)
         else:
             return (variant, False)
 
-    def __createArgDict(self, row):
-        # create an arg dictionary
-        args = {}
-        # lookup and add attributes
-        header = [ str(x.toString()) for x in self._header ]
-        for i in range(2, len(row)):
-            if row[i].isNull():
-                continue
-            attr = header[i]
-            if i in self._idents:
-                val = str(row[i].toString())
-            else:
-                val = self.__convert(row[i], self._types[i], py=True)[0]
-            args[attr] = val
-        return args
-
     def createElements(self, doc, name):
         # create xml elements from this table
+        header = [ str(x.toString()) for x in self._header ]
         for row in self.rows:
-            args = self.__createArgDict(row)
             el = doc.createElement(name)
             # lookup and add attributes
-            for k, v in args.items():
-                el.setAttribute(k, str(v))
+            for i in range(2, len(row)):
+                if not row[i].isNull():
+                    val = str(row[i].toString())
+                    # We want True and False to be capitalised in the xml file
+                    if self._types[i] == bool and val in ["true", "false"]:
+                        val = val.title()
+                    el.setAttribute(header[i], val)
             if len(row[1].toString()) > 0:
                 doc.documentElement.appendChild(doc.createComment(str(row[1].toString())))
             if row[0].toBool() == True:
@@ -142,6 +136,7 @@ class Table(QAbstractTableModel):
         # add xml nodes as rows in the table
         w = []
         row = [ QVariant() ] * len(self._header)
+        self.rows.append(row)
         if commented:
             row[0] = QVariant(True)
         else:
@@ -158,20 +153,13 @@ class Table(QAbstractTableModel):
                 w.append('%s doesn\'t have attr %s' % (node.nodeName, attr))
                 continue
             typ = self._types[index]
-            try:
-                if typ == int:
-                    value = int(value)
-                elif typ == bool:
-                    value = (value == 'True')
-            except:
-                w.append(
-                    '%s.%s = %s, can\'t convert to %s' %
-                    (node.nodeName, attr, value.__repr__(), typ))
-            row[index] = QVariant(value)
+            row[index] = QVariant(self.__convert(QVariant(value), typ)[0])
+            invalid = self._isInvalid(row[index], len(self.rows)-1, index)
+            if invalid:
+                w.append('%s.%s: %s' %(node.nodeName, attr, invalid))
         # add the row to the table
         if commentText:
             row[1] = QVariant(commentText)
-        self.rows.append(row)
         return w
 
     def flags(self, index):
@@ -314,42 +302,50 @@ class Table(QAbstractTableModel):
         col = index.column()
         row = index.row()
         value = self.rows[row][col]
+        # default view
         if role == Qt.DisplayRole:
-            # default view
+            # comment row
             if col == 1:
                 if len(value.toString()) > 0:
                     return QVariant("#..")
                 else:
                     return QVariant()
+            # if the cell is defaulted, display the default value
             elif self._isDefault(value, col):
                 value = self._defaults[col]
+            # if we've got a combo box lookup the appropriate value for the enum
             if col in self._cValues:
                 # lookup the display in the list of _cItems
                 for i, v in enumerate(self._cValues[col]):
-                    if v == value:
+                    if v.toString() == value.toString():
                         return QVariant(self._cItems[col].toStringList()[i])
+            # display commented out rows as --
             elif col == 0:
                 if value.toBool():
                     return QVariant(QString('--'))
                 else:
                     return QVariant(QString(''))
+            # empty string rows should be ""
             elif not value.isNull() and self._types[col] == str and \
-                    str(value.toString()) == '':
+                    str(value.toString()) == '' and col != 1:
                 value = QVariant(QString('""'))
             return value
+        # text editor
         elif role == Qt.EditRole:
-            # text editor
+            # if the cell is defaulted, display the default value
             if self._isDefault(value, col):
                 value = self._defaults[col]
+            # if we've got a combo box lookup the appropriate value for the enum
             if col in self._cValues:
                 # lookup the display in the list of _cItems
                 for i, v in enumerate(self._cValues[col]):
-                    if v == value:
+                    if v.toString() == value.toString():
                         return QVariant(self._cItems[col].toStringList()[i])
-            v, ret = self.__convert(value, self._types[col])
-            if not value.isNull() and str(v) == '' and col != 1:
-                v = '""'
-            return QVariant(v)
+            # empty string rows should be ""
+            elif not value.isNull() and self._types[col] == str and \
+                    str(value.toString()) == '' and col != 1:
+                value = QVariant(QString('""'))
+            return value
         elif role == Qt.ToolTipRole:
             # tooltip
             error = self._isInvalid(value, row, col)
@@ -404,8 +400,6 @@ class Table(QAbstractTableModel):
                     self._nameList(filt = self._types[col], upto = row))
             elif col in self._cItems:
                 return self._cItems[col]
-            elif self._types[col] == bool:
-                return QVariant(True)
             else:
                 return QVariant()
         else:

@@ -66,7 +66,10 @@ class TableView(QTableView):
         self.codeBox.parent = self
         self.codeBox.show()
 
-    def fillCells(self):
+    def fillCellsInc(self):
+        return self.fillCells(inc=True)
+
+    def fillCells(self, inc=False):
         selRange = self.selectedIndexes()
         if not selRange:
             return
@@ -76,7 +79,10 @@ class TableView(QTableView):
         mincols = min(cols)
         nrows = max(rows) - minrows + 1
         ncols = max(cols) - mincols + 1
-        self.model().stack.beginMacro('Fill Cells')
+        if inc:
+               self.model().stack.beginMacro('Increment Cells')
+        else:
+            self.model().stack.beginMacro('Fill Cells')
         if nrows == 1:
             for x in selRange:
                 if x.column() == mincols and x.row() == minrows:
@@ -85,14 +91,13 @@ class TableView(QTableView):
             cells = [x for x in selRange if x != source]
             srcText = str(source.data().toString())
             srcInt = ''
-            while srcText and srcText[-1].isdigit():
+            while srcText and srcText[-1].isdigit() and inc:
                 srcInt = srcText[-1] + srcInt
                 srcText = srcText[:-1]
             # Fill cells across
             for cell in cells:
                 text = srcText
                 if srcInt:
-                    # Surely should be this?  In fact, wtf is going on here?
                      text += ('%%0%dd' % len(srcInt)) % (
                         int(srcInt) + cell.column() - mincols)
                 self.__setCell(self.model(), cell.row(), cell.column(), text)
@@ -105,7 +110,7 @@ class TableView(QTableView):
                 cells = [ x for x in cells if x != source ]
                 srcText = str(source.data().toString())
                 srcInt = ''
-                while srcText and srcText[-1].isdigit():
+                while srcText and srcText[-1].isdigit() and inc:
                     srcInt = srcText[-1] + srcInt
                     srcText = srcText[:-1]
                 # Fill cells down
@@ -292,7 +297,7 @@ class GUI(QMainWindow):
         self.menuFile.addSeparator()
         self.menuFile.addAction('Set Architecture...', self.setArch)
         self.menuFile.addSeparator()
-        self.menuFile.addAction('Quit', self.closeEvent).setShortcut('ALT+F4')
+        self.menuFile.addAction('Quit', self.closeEvent).setShortcuts(['CTRL+Q', 'ALT+F4'])
         # create edit menu headings
         self.menuEdit = self.menu.addMenu('Edit')
         self.menuEdit.addAction('Insert Row',
@@ -311,7 +316,9 @@ class GUI(QMainWindow):
             self.tableView.menuClear).setShortcut('CTRL+D')
         self.menuEdit.addSeparator()
         self.menuEdit.addAction('Fill Cells',
-            self.tableView.fillCells).setShortcut('CTRL+R')
+            self.tableView.fillCells).setShortcut('CTRL+L')
+        self.menuEdit.addAction('Fill Cells and Increment',
+            self.tableView.fillCellsInc).setShortcut('CTRL+R')
         self.menuEdit.addAction('Python Code...',
             self.tableView.pythonCode).setShortcut('CTRL+P')
         self.tableView.codeBox = pythonCode()

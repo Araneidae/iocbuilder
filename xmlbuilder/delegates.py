@@ -13,8 +13,8 @@ class ComboBoxDelegate(QItemDelegate):
             return None
         elif index.column() == 1:
             editor = QTextEdit(parent)
-            editor.setFont(QFont('monospace', 10))        
-            editor.setAcceptRichText(False)        
+            editor.setFont(QFont('monospace', 10))
+            editor.setAcceptRichText(False)
             return editor
         elif values.isNull():
             editor = QLineEdit(parent)
@@ -50,7 +50,7 @@ class ComboBoxDelegate(QItemDelegate):
             editor.lineEdit().selectAll()
         elif isinstance(editor, QTextEdit):
             editor.setText(index.data(Qt.EditRole).toString())
-            editor.selectAll()                            
+            editor.selectAll()
         else:
             return QItemDelegate.setEditorData(self, editor, index)
 
