@@ -154,9 +154,10 @@ class Table(QAbstractTableModel):
                 continue
             typ = self._types[index]
             row[index] = QVariant(self.__convert(QVariant(value), typ)[0])
-            invalid = self._isInvalid(row[index], len(self.rows)-1, index)
-            if invalid:
-                w.append('%s.%s: %s' %(node.nodeName, attr, invalid))
+            if not commented:
+                invalid = self._isInvalid(row[index], len(self.rows)-1, index)
+                if invalid:
+                    w.append('%s.%s: %s' %(node.nodeName, attr, invalid))
         # add the row to the table
         if commentText:
             row[1] = QVariant(commentText)
