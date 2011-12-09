@@ -954,7 +954,7 @@ Supplied meta tag:
         if libversion.Debug:
             print 'Making top level screen %sTop from %s' % (self.ioc_name, obs)
         c = gb.object('%sTop' % self.ioc_name, '%s Top' % self.ioc_name, '',
-            obs, preferEmbed = False, d = d)
+            obs, d = d)
         # Add a rule for installing edm screens
         self.makefile_edl.AddLine(
             'DATA += $(patsubst ../%, %, $(wildcard ../*.edl))')
