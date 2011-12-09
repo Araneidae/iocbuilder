@@ -201,9 +201,8 @@ class TableView(QTableView):
         if not selRange:
             return
         rows = [ x.row() for x in selRange ]
-        minrows = min(rows)
-        nrows = max(rows) - minrows + 1
-        selRange[0].model().removeRows(minrows, nrows)
+        for row in reversed(sorted(set(rows))):
+	        selRange[0].model().removeRows(row, 1)
 
     def contextMenuEvent(self,event):
         # make a popup menu
