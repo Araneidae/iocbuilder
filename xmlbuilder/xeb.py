@@ -202,7 +202,7 @@ class TableView(QTableView):
             return
         rows = [ x.row() for x in selRange ]
         for row in reversed(sorted(set(rows))):
-	        selRange[0].model().removeRows(row, 1)
+            selRange[0].model().removeRows(row, 1)
 
     def contextMenuEvent(self,event):
         # make a popup menu

@@ -26,7 +26,7 @@ def main():
         help='Try to create a set of edm screens for this module')
     parser.add_option(
         '-c', action='store_true', dest='no_check_release',
-        help='Set CHECK_RELEASE to FALSE')        
+        help='Set CHECK_RELEASE to FALSE')
     parser.add_option(
         '-b', action='store_true', dest='no_substitute_boot',
         help='Don\'t substitute .src file to make a .boot file, copy it and '\

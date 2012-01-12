@@ -304,7 +304,7 @@ class DocumentationIocWriter(IocWriter):
         self.ioc_name = ioc_name
         self.page_name = fname
         self.SetIocName(self.ioc_name, False)
-        self.SetDataPath("%sApp/data" % self.ioc_name)        
+        self.SetDataPath("%sApp/data" % self.ioc_name)
         for func in _DbMakefileHooks:
             func(Makefile('', '', ''), self.ioc_name, '', '')
         self.WriteFile(fname, self.CreateBuildInstructions)
