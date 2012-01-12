@@ -25,6 +25,9 @@ def main():
         '-e', action='store_true', dest='edm_screen',
         help='Try to create a set of edm screens for this module')
     parser.add_option(
+        '-c', action='store_true', dest='no_check_release',
+        help='Set CHECK_RELEASE to FALSE')        
+    parser.add_option(
         '-b', action='store_true', dest='no_substitute_boot',
         help='Don\'t substitute .src file to make a .boot file, copy it and '\
         ' create an envPaths file to load')
@@ -90,7 +93,7 @@ def main():
         substitute_boot = False
     if debug:
         print "Writing ioc to %s" % iocpath
-    store.iocbuilder.WriteNamedIoc(iocpath, iocname, check_release = True,
+    store.iocbuilder.WriteNamedIoc(iocpath, iocname, check_release = not options.no_check_release,
         substitute_boot = substitute_boot, edm_screen = options.edm_screen)
     if debug:
         print "Done"
