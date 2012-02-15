@@ -942,14 +942,15 @@ Supplied meta tag:
         # Now create components out of these edm objects
         d = os.path.join(self.iocRoot, self.iocEdlDir)
         ignores = []
+        # sort prefixes by the number of dots in them
+        prefixes = sorted((len(x.split(".")), x) for x in prefixes)
         # If we've got prefixes, make sub screens for them
-        if prefixes:
-            for pre in prefixes:
-                obs = gb.get('%s.*' % pre)
-                ignores += obs
-                if libversion.Debug:
-                    print 'Making subscreen %s from %s' %(pre, obs)
-                gb.object(pre, '%s Top' % pre, '', obs, d = d)
+        for _, pre in reversed(prefixes):
+            obs = gb.get('%s.*' % pre)
+            ignores += obs
+            if libversion.Debug:
+                print 'Making subscreen %s from %s' %(pre, obs)
+            gb.object(pre, '%s Top' % pre, '', obs, d = d)
         # Now make a top level screen containing anything not in a sub screen
         obs = [x for x in gb.get('*') if x not in ignores]
         if libversion.Debug:
