@@ -378,8 +378,10 @@ def ParseAndConfigure(options, dependency_tree=None):
             duplicates = [l for l in leaves if l.name == leaf.name]
             # invalid modules don't have a configure/RELEASE, so won't have a
             # builder object
-            if leaf.version == 'invalid':
-                continue
+            if leaf.version == 'invalid' and \
+                    not os.path.isfile(os.path.join(
+                        leaf.path, "configure", "RELEASE")):
+                pass
             elif duplicates:
                 print '***Warning: Module "%s" defined with' % leaf.name, \
                     'multiple versions, using "%s"' % duplicates[0].version
@@ -389,7 +391,7 @@ def ParseAndConfigure(options, dependency_tree=None):
         for name, version, path in [
                 (l.name, l.version, l.path) for l in leaves if l.path]:
             # for work and local modules, just tell iocbuilder the path
-            if version in ['work', 'local']:
+            if version in ['work', 'local', 'invalid']:
                 home = os.path.abspath(path)
                 use_name = False
                 version = None

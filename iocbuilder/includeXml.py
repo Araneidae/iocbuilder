@@ -85,13 +85,25 @@ class Xml(ModuleBase):
         xml_text = open(xml).read()
 
         # substitute the args
+        obs = {}
         if args:
-            xml_text = support.msi_replace_macros(args, xml_text)
+            msi_args = {}
+            # mimic local variables by only passing in obs that are in args
+            for k, v in args.items():
+                if getattr(self.ArgInfo.descriptions[k], 'ident', False):
+                    # for idents, make msi sub $(CAM)=CAM and add CAM to list
+                    # of objects
+                    obs[k] = v
+                    msi_args[k] = k
+                else:
+                    # otherwise just do a straight text substitution
+                    msi_args[k] = v
+            xml_text = support.msi_replace_macros(msi_args, xml_text)
 
         # make iocbuilder objects
         if libversion.Debug:
             print '< Loading objects from %s >' % self.TemplateFile
-        self.objects = instantiateXml(xml_text)
+        self.objects = instantiateXml(xml_text, obs)
         if libversion.Debug:
             print '</ Loading objects from %s >' % self.TemplateFile
 
