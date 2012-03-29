@@ -260,8 +260,9 @@ class ModuleVersion:
                         'Value %s.%s already in hardware module' % (
                             self.__name, name)
                     setattr(hardware, name, getattr(self.module, name))
-        elif Debug:
-            print 'Module definitions for', self.__name, 'not found'
+        else:
+            print >>sys.stderr, \
+                'Module definitions for', self.__name, 'not found'
 
 
 
