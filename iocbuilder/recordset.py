@@ -71,15 +71,16 @@ class SubstitutionSet(support.autosuper):
         # This allows substitutions to be subclassed without breaking their
         # dependencies.
         return self.__Substitutions.setdefault(
-            substitution.TemplateName(True), [])
+            substitution.TemplateName(True), (substitution, []))
 
     def AddSubstitution(self, substitution):
-        self.__AddOverwrites(substitution.__class__).append(substitution)
+        subs_class, subs_list = self.__AddOverwrites(substitution.__class__)
+        subs_list.append(substitution)
 
     # Expand all the substitutions inline.  The path to locate the msi
     # application used for expanding must be passed in.
     def ExpandSubstitutions(self):
-        for subList in self.__Substitutions.values():
+        for subs_class, subList in self.__Substitutions.values():
             for substitution in subList:
                 substitution.ExpandSubstitution()
 
@@ -87,33 +88,33 @@ class SubstitutionSet(support.autosuper):
     def Print(self, macro_name = True):
         # Print out the list in canonical order to help with comparison
         # across minor changes.
-        for template, subList in self.__Substitutions.items():
-            if not subList:
-                continue
-            print
-            if hasattr(subList[0], 'ArgInfo'):
-                lines = []
-                for x in subList[0].Arguments:
-                    if x in subList[0].ArgInfo.descriptions:
-                        a = subList[0].ArgInfo.descriptions[x]
-                        lines.append((x, a.desc.split('\n')[0]))
-                if lines:
-                    format = '#  %%-%ds  %%s' % max([len(x[0]) for x in lines])
-                    print '# Macros:'
-                    print '\n'.join([format % l for l in lines])
-            print 'file %s' % template
-            print '{'
-            subList[0]._PrintPattern()
-            for substitution in subList:
-                substitution._PrintSubstitution()
-            print '}'
+        for template, (subs_class, subList) in self.__Substitutions.items():
+            if subList:
+                print
+                if hasattr(subs_class, 'ArgInfo'):
+                    lines = []
+                    for x in subs_class.Arguments:
+                        if x in subs_class.ArgInfo.descriptions:
+                            a = subs_class.ArgInfo.descriptions[x]
+                            lines.append((x, a.desc.split('\n')[0]))
+                    if lines:
+                        format = '#  %%-%ds  %%s' % \
+                            max([len(x[0]) for x in lines])
+                        print '# Macros:'
+                        print '\n'.join([format % l for l in lines])
+                print 'file %s' % template
+                print '{'
+                subs_class._PrintPattern()
+                for substitution in subList:
+                    substitution._PrintSubstitution()
+                print '}'
 
     def CountSubstitutions(self):
         return len(self.__Substitutions)
 
     def AllSubstitutions(self):
         l = []
-        for template, subList in self.__Substitutions.items():
+        for template, (subs_class, subList) in self.__Substitutions.items():
             l += subList
         return l
 
