@@ -429,6 +429,24 @@ if [ -n "$1" ]; then
 fi
 exec ./%(ioc)s st%(ioc)s.boot'''
 
+    # Startup shell script for Windows IOC
+    WINDOWS_CMD = '''\
+@echo off
+pushd %%~dp0
+
+if not [%%1]==[] (
+    set EPICS_CA_SERVER_PORT=%%1
+    set /a EPICS_CA_REPEATER_PORT=%%1+1
+    if not [%%1] GEQ 0 (
+        echo First argument %%1 should be an integer greater than 0
+        popd
+        exit /B 1
+    )
+)
+%(ioc)s.exe st%(ioc)s.boot
+popd
+exit /B %%ERRORLEVEL%%'''
+
     # Configuration.  Unfortunately we need different configurations for old
     # and newer versions of EPICS: we can't write CHECK_RELEASE to CONFIG, so
     # at least for now we don't write it at all!
@@ -578,7 +596,6 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             keep_files = [], makefile_name = 'Makefile'):
         # Remember parameters
         IocWriter.__init__(self, path)  # Sets up iocRoot
-        self.CreateBootFiles_win32 = self.CreateBootFiles_linux
         self.check_release = check_release
         self.substitute_boot = substitute_boot
         self.keep_files = keep_files
@@ -781,6 +798,16 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
                 'envPaths cdCommands:\n'
                 '\t$(PERL) $(TOOLS)/convertRelease.pl -a $(T_A) $@')
             self.makefile_boot.AddRule('%.boot: ../%.cmd\n\t$(CP) $< $@')
+
+    def CreateBootFiles_win32(self, scripts):
+        ioc = self.ioc_name
+        self.WriteFile((self.iocBootDir, 'st%s.bat' % ioc),
+            self.WINDOWS_CMD % dict(ioc = ioc),
+            header = lambda: PrintDisclaimer('@rem '))
+        if not self.substitute_boot:
+            self.makefile_boot.AddLine('%s += envPaths' % scripts)
+        self.makefile_boot.AddLine(
+            '%s += ../st%s.bat' % (scripts, self.ioc_name))
 
     def CreateBootFiles_linux(self, scripts):
         ioc = self.ioc_name
