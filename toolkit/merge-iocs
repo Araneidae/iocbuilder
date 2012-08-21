@@ -108,6 +108,7 @@ MergeOneIoc()
             [ -d "$SVN_DOM_DIR" ]  ||
                 svn mkdir $QUIET "$SVN_DOM_DIR"
             svn mkdir $QUIET "$SVN_IOC_DIR"
+            svn propset $QUIET dls:contact "$USER" "$SVN_IOC_DIR"
         else
             Error "IOC $location/$ioc_name not in subversion"
         fi
