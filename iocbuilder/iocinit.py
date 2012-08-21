@@ -61,10 +61,12 @@ def quote_IOC_string_linux(text):
 
 quote_IOC_string_vxWorks = quote_c_string
 quote_IOC_string_win32 = quote_IOC_string_linux
+quote_IOC_string_windows = quote_IOC_string_linux
 
 def setenv_linux(name, value):
     print 'epicsEnvSet "%s", %s' % (name, quote_IOC_string(value))
 setenv_win32 = setenv_linux
+setenv_windows = setenv_linux
 
 def setenv_vxWorks(name, value):
     print 'putenv ' + quote_c_string('%s=%s' % (name, value))
@@ -87,6 +89,7 @@ class iocInit(support.Singleton):
         self.__IocCommands_PreInit = []
         self.__IocCommands_PostInit = []
         self.PrintHeader_win32 = self.PrintHeader_linux
+        self.PrintHeader_windows = self.PrintHeader_linux
 
 
     def Initialise(self):

@@ -21,6 +21,7 @@ def Architecture():
 _TargetOSlookup = {
     'linux': 'Linux',
     'win32': 'WIN32',
+    'windows': 'WIN32',
     'vxWorks': 'vxWorks'
 }
 def TargetOS():

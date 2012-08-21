@@ -190,6 +190,7 @@ class IocWriter:
     IOCmaxLineLength_vxWorks = 126      # Oops
     IOCmaxLineLength_linux = 0          # EPICS shell is better behaved
     IOCmaxLineLength_win32 = 0          # EPICS shell is better behaved
+    IOCmaxLineLength_windows = 0          # EPICS shell is better behaved
 
     def __init__(self, iocRoot=''):
         self.iocRoot = iocRoot
@@ -771,6 +772,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.makefile_src.AddLine('BIN_INSTALLS_WIN32 += '
             '$(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe')
 
+    CreateSourceFiles_windows = CreateSourceFiles_win32
+
     def CreateSourceFiles_vxWorks(self):
         self.makefile_src.AddLine(
             '%s_OBJS += $(EPICS_BASE_BIN)/vxComLibrary' % self.ioc_name)
@@ -808,6 +811,8 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             self.makefile_boot.AddLine('%s += envPaths' % scripts)
         self.makefile_boot.AddLine(
             '%s += ../st%s.bat' % (scripts, self.ioc_name))
+
+    CreateBootFiles_windows = CreateBootFiles_win32
 
     def CreateBootFiles_linux(self, scripts):
         ioc = self.ioc_name

@@ -60,6 +60,7 @@ class _header:
 
 _ResourceExclusions = {
     'win32-x86': ['library'],
+    'windows-x64': ['library'],    
     'none':      ['library', 'object']
 }
 # Implements a simple filter on resources against architecture: we don't check
