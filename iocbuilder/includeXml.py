@@ -148,6 +148,9 @@ def constructArgDict(el, objects, classes, ident_lookup=True):
                 value = False
         elif desc.typ == str:
             value = value.decode('string_escape')
+        elif desc.typ == float:
+            # pass a string to retain formatting
+            float(value)            
         else:
             value = desc.typ(value)
         # add it to the dict
