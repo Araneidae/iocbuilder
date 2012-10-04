@@ -1,4 +1,4 @@
-#!/bin/env python2.6
+#!/bin/env dls-python2.6
 
 from PyQt4.QtGui import \
     QMainWindow, QMessageBox, QApplication, QTableView, \

@@ -1,4 +1,4 @@
-#!/bin/env python2.6
+#!/bin/env dls-python2.6
 from xmlstore import Store
 import sys, os
 from optparse import OptionParser

@@ -27,6 +27,9 @@ def find_macros(line):
                 bracket -= 1
             if bracket == 0:
                 # we've closed the macro bracket
+                if macro_start.search(macro):
+                    for m in find_macros(macro):
+                        yield m
                 yield macro
                 macro = ''
                 i += 1
@@ -221,4 +224,5 @@ macro_desc_re = re.compile(
     r'([^, \t]+)[ \t]*,[ \t]*' # Captures the macro name and discards comma
     r'([^\n]+' # This start the description capture and the first line
     r'(?:\n#[ \t]*[^\n \t%#][^\n]*)*)', # subsequent non-'blank' line
-    re.MULTILINE)
+    re.MULTILINE)  
+
