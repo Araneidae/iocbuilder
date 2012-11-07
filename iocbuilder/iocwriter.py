@@ -1,7 +1,7 @@
 '''The IOC writers defined here are designed to be passed to the library
 Configure call as an 'iocwriter' argument.'''
 
-import sys, time
+import sys, time, textwrap
 import os, os.path
 import shutil
 import types
@@ -32,7 +32,7 @@ def SetSource(s):
 def PrintDisclaimer(s, m=None, e=''):
     if m is None:  m = s
     now = time.strftime('%a %d %b %Y %H:%M:%S %Z')
-    source = _Source
+    source = "\n".join(textwrap.wrap(_Source, 110))
     message = '''\
 This file was automatically generated on %(now)s from
 source: %(source)s
