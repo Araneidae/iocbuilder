@@ -126,6 +126,7 @@ class Record(object):
         # These assignment have to be directly into the dictionary to
         # bypass the tricksy use of __setattr__.
         self.__setattr('__fields', {})
+        self.__setattr('__aliases', set())
         self.__setattr('name', self.RecordName(record))
 
         # Support the special 'address' field as an alias for either INP or
@@ -145,6 +146,9 @@ class Record(object):
 
         recordset.PublishRecord(self.name, self)
 
+
+    def add_alias(self, alias):
+        self.__aliases.add(alias)
 
 
     # Call to generate database description of this record.  Outputs record
@@ -167,6 +171,8 @@ class Record(object):
             value = str(value)
             padding = ''.ljust(4-len(k))  # To align field values
             print '    field(%s, %s"%s")' % (k, padding, value)
+        for alias in sorted(list(self.__aliases)):
+            print '    alias("%s")' % alias
         print '}'
 
 
