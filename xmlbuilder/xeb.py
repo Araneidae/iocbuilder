@@ -69,6 +69,20 @@ class TableView(QTableView):
     def fillCellsInc(self):
         return self.fillCells(inc=True)
 
+    def subText(self, srcText, number):
+        """Increment the last number (with no - signs) in srcText by number"""
+        # find the last positive int in the string
+        match = re.search("[^\d]*(\d+)[^\d]*$", srcText)        
+        # if we found a number
+        if match:
+            text  = srcText[:match.start(1)]
+            fstr = '%%0%dd' % (match.end(1) - match.start(1))
+            text += fstr % (int(srcText[match.start(1):match.end(1)]) + number)
+            text += srcText[match.end(1):]
+        else:
+            text = srcText        
+        return text
+
     def fillCells(self, inc=False):
         selRange = self.selectedIndexes()
         if not selRange:
@@ -80,7 +94,7 @@ class TableView(QTableView):
         nrows = max(rows) - minrows + 1
         ncols = max(cols) - mincols + 1
         if inc:
-               self.model().stack.beginMacro('Increment Cells')
+            self.model().stack.beginMacro('Increment Cells')
         else:
             self.model().stack.beginMacro('Fill Cells')
         if nrows == 1:
@@ -90,16 +104,12 @@ class TableView(QTableView):
                      break
             cells = [x for x in selRange if x != source]
             srcText = str(source.data().toString())
-            srcInt = ''
-            while srcText and srcText[-1].isdigit() and inc:
-                srcInt = srcText[-1] + srcInt
-                srcText = srcText[:-1]
             # Fill cells across
-            for cell in cells:
-                text = srcText
-                if srcInt:
-                     text += ('%%0%dd' % len(srcInt)) % (
-                        int(srcInt) + cell.column() - mincols)
+            for cell in cells:                
+                if inc:
+                    text = self.subText(srcText, cell.column() - mincols)
+                else:
+                    text = srcText
                 self.__setCell(self.model(), cell.row(), cell.column(), text)
         else:
             # Treat as a group of columns
@@ -109,18 +119,13 @@ class TableView(QTableView):
                 source = [ x for x in cells if x.row() == minrows ][0]
                 cells = [ x for x in cells if x != source ]
                 srcText = str(source.data().toString())
-                srcInt = ''
-                while srcText and srcText[-1].isdigit() and inc:
-                    srcInt = srcText[-1] + srcInt
-                    srcText = srcText[:-1]
                 # Fill cells down
                 for cell in cells:
-                    text = srcText
-                    if srcInt:
-                        text += ('%0'+str(len(srcInt))+'d')%(
-                            int(srcInt) + cell.row() - minrows)
-                    self.__setCell(
-                        self.model(), cell.row(), cell.column(), text)
+                    if inc:
+                        text = self.subText(srcText, cell.row() - minrows)
+                    else:
+                        text = srcText
+                    self.__setCell(self.model(), cell.row(), cell.column(), text)
         self.model().stack.endMacro()
 
     def cut(self):
@@ -357,7 +362,7 @@ class GUI(QMainWindow):
 
     def Open(self, filename = '', name = None):
         # make sure the user is sure if there are unsaved changes
-        if self.__prompt_unsaved() != QMessageBox.Yes:
+        if self.__prompt_unsaved() == QMessageBox.Cancel:
             return
         # ask for a filename
         if filename == '':
@@ -407,7 +412,7 @@ class GUI(QMainWindow):
 
     def New(self):
         # make sure the user is sure if there are unsaved changes
-        if self.__prompt_unsaved() != QMessageBox.Yes:
+        if self.__prompt_unsaved() == QMessageBox.Cancel:
             return
         # load a release file if we can
         self.store.build_root = os.getcwd()
@@ -431,21 +436,23 @@ class GUI(QMainWindow):
 
     def closeEvent(self, event=None):
         # override closeEvent so we can check things have been saved
-        if self.__prompt_unsaved() == QMessageBox.Yes:
+        if self.__prompt_unsaved() == QMessageBox.Cancel:
+            if event:
+                event.ignore()
+        else:        
             if event:
                 event.accept()
             else:
                 app.quit()
-        else:
-            if event:
-                event.ignore()
 
     def __prompt_unsaved(self):
-        ret = QMessageBox.Yes
+        ret = QMessageBox.Discard
         if self.isWindowModified():
             ret = QMessageBox.question(self, 'Unsaved Changes',
-                'All unsaved changes will be lost, continue?',
-                (QMessageBox.Yes | QMessageBox.No))
+                'The current file has unsaved changes, what would you like to do?',
+                (QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel))
+            if ret == QMessageBox.Save:
+                self.Save()
         return ret
 
     def __populateMenu(self):
