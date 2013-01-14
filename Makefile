@@ -1,8 +1,8 @@
 # Specify defaults for testing
-PREFIX=/dls_sw/prod/tools/RHEL5
-PYTHON=$(PREFIX)/bin/python2.6
-INSTALL_DIR=/dls_sw/work/common/python/test/packages
-SCRIPT_DIR=/dls_sw/work/common/python/test/scripts
+PREFIX := $(shell pwd)/prefix
+PYTHON = dls-python
+INSTALL_DIR = $(PREFIX)/lib/python2.7/site-packages
+SCRIPT_DIR = $(PREFIX)/bin
 MODULEVER=0.0
 
 # Override with any release info
