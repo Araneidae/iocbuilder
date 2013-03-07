@@ -57,7 +57,7 @@ class TableView(QTableView):
             data.append(['\x00'] * ncols)
         for cell in selRange:
             data[cell.row() - minrows][cell.column() - mincols] = \
-                str(cell.data().toString())
+                str(cell.data(Qt.EditRole).toString())
         rows = ['\t'.join(row) for row in data]
         cb = app.clipboard()
         cb.setText(QString('\n'.join(rows)))
@@ -170,7 +170,8 @@ class TableView(QTableView):
             for row in range(minrows, minrows + nrows):
                 for col in range(mincols, mincols + ncols):
                     val = data[row - minrows][col - mincols]
-                    self.__setCell(model, row, col, val)
+                    if model.index(row, col).data() != val:
+                        self.__setCell(model, row, col, val)
         else:
             # many cells selected
             for cell in selRange:
@@ -179,7 +180,8 @@ class TableView(QTableView):
                 except IndexError:
                     pass
                 else:
-                    self.__setCell(cell.model(), cell.row(), cell.column(), val)
+                    if cell.data() != val:
+                        self.__setCell(cell.model(), cell.row(), cell.column(), val)
         selRange[0].model().stack.endMacro()
 
     def insertRowUnder(self):
