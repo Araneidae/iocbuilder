@@ -837,7 +837,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             paths.EPICS_BASE, 'templates/makeBaseApp/top/configure')
         template_files = os.listdir(template_dir)
         for file in template_files:
-            if file != 'RELEASE':
+            if file not in ['RELEASE', 'CONFIG_SITE']:
                 shutil.copy(
                     os.path.join(template_dir, file),
                     os.path.join(self.iocRoot, 'configure'))
@@ -893,8 +893,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.WriteFile(('configure', config_file),
             config_text % dict(
                 ARCH = ARCH,
-                CHECK_RELEASE = self.check_release and 'YES' or 'NO'),
-            mode = 'a')
+                CHECK_RELEASE = self.check_release and 'YES' or 'NO'))
 
 
     def CreateDataFiles(self):
