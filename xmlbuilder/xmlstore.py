@@ -136,7 +136,7 @@ class Store(object):
                 nodes = self._elements(root)
                 if len(nodes) == 0:
                     # treat this as a comment on the next node
-                    commentText = str(node.nodeValue)
+                    commentText += str(node.nodeValue) + "\n"
             elif node.nodeType == node.ELEMENT_NODE:
                 # If it's an element node, then just add this node
                 commented = False
