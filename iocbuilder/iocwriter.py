@@ -840,7 +840,7 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
             if file not in ['RELEASE']:
                 shutil.copyfile(
                     os.path.join(template_dir, file),
-                    os.path.join(self.iocRoot, 'configure'))
+                    os.path.join(self.iocRoot, 'configure', file))
 
         self.WriteConfigFile('CONFIG_SITE' in template_files)
 
