@@ -1,6 +1,6 @@
 # Specify defaults for testing
 PREFIX := $(shell pwd)/prefix
-PYTHON = dls-python
+PYTHON = dls-python2.6
 INSTALL_DIR = $(PREFIX)/lib/python2.7/site-packages
 SCRIPT_DIR = $(PREFIX)/bin
 MODULEVER=0.0

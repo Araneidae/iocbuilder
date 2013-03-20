@@ -10,7 +10,7 @@ setup(
     description = 'IOC builder',
     author = 'Michael Abbott',
     author_email = 'Michael.Abbott@diamond.ac.uk',
-    install_requires = ['dls_dependency_tree==2.3', 'dls_edm==1.32'],
+    install_requires = ['dls_dependency_tree==2.3', 'dls_edm==1.33'],
     packages = ['iocbuilder', 'xmlbuilder'],
     package_data = { 'iocbuilder': ['defaults/*.py', 'defaults/*/*.py'],
                      'xmlbuilder': ['xeb.png'] },
