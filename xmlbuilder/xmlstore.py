@@ -132,7 +132,7 @@ class Store(object):
                 # its content
                 commented = True
                 text = '<junk>'+node.toxml()[4:-3]+'</junk>'
-                root = self._elements(xml.dom.minidom.parseString(text))[0]
+                root = self._elements(xml.dom.minidom.parseString(text.replace("&dashdash;","--")))[0]
                 nodes = self._elements(root)
                 if len(nodes) == 0:
                     # treat this as a comment on the next node

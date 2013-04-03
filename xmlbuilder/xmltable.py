@@ -15,10 +15,10 @@ class Table(QAbstractTableModel):
         # Make sure we have Name information first
         # _header contains the row headers
         self._header = [
-            QVariant('--'), QVariant('#'), QVariant(getattr(self.ob, 'UniqueName', 'name'))]
+            QVariant('X'), QVariant('#'), QVariant(getattr(self.ob, 'UniqueName', 'name'))]
         # _tooltips contains the tooltips
         self._tooltips = [
-            QVariant('An -- indicates row is disabled %s'%bool),
+            QVariant('An X indicates row is disabled %s'%bool),
             QVariant('Comment for row'),
             QVariant('Object name %s'%str)]
         # _required is a list of required columns
@@ -129,7 +129,8 @@ class Table(QAbstractTableModel):
             if len(row[1].toString()) > 0:
                 doc.documentElement.appendChild(doc.createComment(str(row[1].toString())))
             if row[0].toBool() == True:
-                el = doc.createComment(el.toxml())
+                # can't put -- in a comment unfortunately...
+                el = doc.createComment(el.toxml().replace("--", "&dashdash;"))
             doc.documentElement.appendChild(el)
 
     def addNode(self, node, commented = False, commentText = ""):
@@ -320,10 +321,10 @@ class Table(QAbstractTableModel):
                 for i, v in enumerate(self._cValues[col]):
                     if v.toString() == value.toString():
                         return QVariant(self._cItems[col].toStringList()[i])
-            # display commented out rows as --
+            # display commented out rows as X
             elif col == 0:
                 if value.toBool():
-                    return QVariant(QString('--'))
+                    return QVariant(QString('X'))
                 else:
                     return QVariant(QString(''))
             # empty string rows should be ""
