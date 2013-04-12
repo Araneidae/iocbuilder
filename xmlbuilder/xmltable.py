@@ -127,7 +127,7 @@ class Table(QAbstractTableModel):
                         val = val.title()
                     el.setAttribute(header[i], val)
             if len(row[1].toString()) > 0:
-                doc.documentElement.appendChild(doc.createComment(str(row[1].toString())))
+                doc.documentElement.appendChild(doc.createComment(str(row[1].toString()).strip()))
             if row[0].toBool() == True:
                 # can't put -- in a comment unfortunately...
                 el = doc.createComment(el.toxml().replace("--", "&dashdash;"))
