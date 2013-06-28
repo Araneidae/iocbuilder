@@ -1,9 +1,15 @@
-#!/bin/env dls-python2.6
+#!/bin/env dls-python2.7
 from xmlstore import Store
-import sys, os
+import sys, os, subprocess
 from optparse import OptionParser
 import xml.dom.minidom
 
+# hacky hacky change linux-x86 to linux-x86_64 in RHEL6
+def patch_arch(arch):
+    if subprocess.check_output(["lsb_release", "-sr"])[0] == "6" and arch == "linux-x86":
+        arch = "linux-x86_64"
+    return arch
+    
 def main():
     parser = OptionParser('usage: %prog [options] <xml-file>')
     parser.add_option(
@@ -63,10 +69,10 @@ def main():
     components = [n
         for n in xml_root.childNodes if n.nodeType == n.ELEMENT_NODE][0]
     if options.simarch is not None:
-        store.architecture = options.simarch
+        store.architecture = patch_arch(options.simarch)
         store.simarch = store.architecture
     else:
-        store.architecture = str(components.attributes['arch'].value)
+        store.architecture = patch_arch(str(components.attributes['arch'].value))
         store.simarch = None
     store.New()
     store.iocbuilder.SetSource(os.path.realpath(xml_file))
@@ -99,8 +105,7 @@ def main():
         print "Done"
 
 if __name__=='__main__':
-    sys.path.append(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    sys.path = [os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')] + sys.path
     from pkg_resources import require
     sys.path.append("/dls_sw/work/common/python/dls_edm")
     require('dls_dependency_tree')

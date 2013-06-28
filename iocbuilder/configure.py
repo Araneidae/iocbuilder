@@ -115,7 +115,6 @@ class Configure(Singleton):
         import recordnames
         import iocwriter
 
-        self.architecture = architecture
         libversion.simulation_mode = simulation
 
         if epics_base:
@@ -123,6 +122,13 @@ class Configure(Singleton):
             paths.SetEpicsBase(epics_base)
         assert hasattr(paths, 'EPICS_BASE'), \
             'Must specify EPICS_BASE in environment or in Configure call'
+
+        libArchPath = os.path.join(paths.EPICS_BASE, "lib", architecture)
+        assert os.path.isdir(libArchPath), \
+            'EPICS_BASE %s not built for architecture %s. Not building IOC' %(
+                paths.EPICS_BASE, architecture)
+             
+        self.architecture = architecture
 
         if module_path is not None:
             # Override computed paths.module_path if a value is configured.
@@ -325,30 +331,16 @@ def ParseAndConfigure(options, dependency_tree=None):
     # if we have a dependency_tree class, then parse RELEASE file
     if dependency_tree is not None:
         # If we have a release file, then parse it
-        release = os.path.join(
-            options.build_root, '..', '..', 'configure', 'RELEASE')
-        if os.path.isfile(release):
-            tree = dependency_tree(None, release, warnings=False)
-        else:
-            tree = dependency_tree(None, warnings=False)
-        # add any leaves in
         extra_release = os.path.join(
             options.build_root, options.iocname + '_RELEASE')
         if os.path.isfile(extra_release):
-            class hacked_tree(dependency_tree):
-                def init_version(self):
-                    self.modules.update(tree.modules)
-            extra_tree = hacked_tree(None, extra_release, warnings=False)
-            if options.debug:
-                print '# Release tree'
-                tree.print_tree()
-            if options.debug:
-                print '# Extra tree'
-                extra_tree.print_tree()
-            tree.leaves += extra_tree.leaves
-        # print the tree if requested
+            release = extra_release
+        else:
+            release = os.path.join(
+                options.build_root, '..', '..', 'configure', 'RELEASE')                
+        tree = dependency_tree(None, release, warnings=False)
         if options.debug:
-            print '# Generated RELEASE tree'
+            print '# Release tree'
             tree.print_tree()
         if 'EPICS_BASE' in tree.macros:
             options.epics_base = tree.macros['EPICS_BASE']
