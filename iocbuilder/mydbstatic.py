@@ -1,7 +1,7 @@
 import os
 from ctypes import *
 
-import paths
+import paths, platform
 
 
 _FunctionList = (
@@ -25,14 +25,26 @@ _FunctionList = (
     ('dbVerify',            c_char_p, (c_void_p, c_char_p)),
 )
 
-
-
 # This function is called late to complete the process of importing all the
 # exports from this module.  This is done late so that paths.EPICS_BASE can be
 # configured late.
 def ImportFunctions():
+    # Mapping from host architecture to EPICS host architecture name can be done
+    # with a little careful guesswork.  As EPICS architecture names are a little
+    # arbitrary this isn't guaranteed to work.
+    system_map = {
+        ('Linux',   '32bit'):   'linux-x86',
+        ('Linux',   '64bit'):   'linux-x86_64',
+        ('Darwin',  '32bit'):   'darwin-x86',
+        ('Darwin',  '64bit'):   'darwin-x86',
+        ('Windows', '32bit'):   'win32-x86',
+        ('Windows', '64bit'):   'windows-x64',  # Not quite yet!
+    }
+    bits = platform.architecture()[0]
+    current_host_arch = system_map[(platform.system(), bits)]
+
     libdb = CDLL(os.path.join(
-        paths.EPICS_BASE, 'lib', paths.EPICS_HOST_ARCH, 'libdbStaticHost.so'))
+        paths.EPICS_BASE, 'lib', current_host_arch, 'libdbStaticHost.so'))
 
     for name, restype, argtypes in _FunctionList:
         function = getattr(libdb, name)
