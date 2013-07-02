@@ -105,9 +105,9 @@ def main():
         print "Done"
 
 if __name__=='__main__':
-    sys.path = [os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')] + sys.path
-    from pkg_resources import require
-    sys.path.append("/dls_sw/work/common/python/dls_edm")
-    require('dls_dependency_tree')
-#    require('dls_edm')
+    root = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+    sys.path.append(os.path.join(root, 'dls_environment'))
+    sys.path.append(os.path.join(root, 'dls_dependency_tree'))
+    sys.path.append(os.path.join(root, 'dls_edm'))
+    sys.path.append(os.path.join(root, 'iocbuilder'))
     main()

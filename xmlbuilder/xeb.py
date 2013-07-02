@@ -1,4 +1,4 @@
-#!/bin/env dls-python2.6
+#!/bin/env dls-python2.7
 
 from PyQt4.QtGui import \
     QMainWindow, QMessageBox, QApplication, QTableView, \
@@ -604,8 +604,8 @@ def main():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    sys.path.append(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-    from pkg_resources import require
-    require('dls_dependency_tree')
+    root = os.path.abspath(os.path.join(os.path.realpath(__file__), '..', '..', '..'))
+    sys.path.append(os.path.join(root, 'dls_environment'))
+    sys.path.append(os.path.join(root, 'dls_dependency_tree'))
+    sys.path.append(os.path.join(root, 'iocbuilder'))
     main()

@@ -328,17 +328,31 @@ be run from the etc/makeIocs directory, and will create iocs/<ioc_name>''')
 #    created from <tt>\<iocname>_RELEASE</tt> and
 #    <tt>../../configure/RELEASE</tt>
 def ParseAndConfigure(options, dependency_tree=None):
+    # import iocwriter and set default iocwriter
+    if options.ioc_writer is None:
+        import iocwriter
+        options.ioc_writer = iocwriter.DiamondIocWriter
+
     # if we have a dependency_tree class, then parse RELEASE file
     if dependency_tree is not None:
         # If we have a release file, then parse it
-        extra_release = os.path.join(
-            options.build_root, options.iocname + '_RELEASE')
+        release = os.path.join(options.build_root, 
+            '..', '..', 'configure', 'RELEASE')                
+        release_tree = dependency_tree(None, release, warnings=False)
+        # If we have an extra tree then use that as the tree instead
+        extra_release = os.path.join(options.build_root, 
+            options.iocname + '_RELEASE')            
         if os.path.isfile(extra_release):
-            release = extra_release
+            tree = dependency_tree(None, extra_release, warnings=False)
+            tree.leaves.append(release_tree)
         else:
-            release = os.path.join(
-                options.build_root, '..', '..', 'configure', 'RELEASE')                
-        tree = dependency_tree(None, release, warnings=False)
+            tree = release_tree
+        # If we have a RELEASE.blah.Common then include the text from that in 
+        # the built IOC
+        relCommon = os.path.join(options.build_root, 
+            '..', '..', 'configure', 'RELEASE.%s.Common' % options.architecture)       
+        if os.path.isfile(relCommon):
+            options.ioc_writer.WINDOWS_RELEASE_COMMON = open(relCommon).read()
         if options.debug:
             print '# Release tree'
             tree.print_tree()
@@ -346,9 +360,6 @@ def ParseAndConfigure(options, dependency_tree=None):
             options.epics_base = tree.macros['EPICS_BASE']
 
     # do the relevant configure call
-    if options.ioc_writer is None:
-        import iocwriter
-        options.ioc_writer = iocwriter.DiamondIocWriter
     Configure(
         record_names = recordnames.BasicRecordNames(),
         ioc_writer   = options.ioc_writer,
@@ -361,6 +372,7 @@ def ParseAndConfigure(options, dependency_tree=None):
     # set debugging
     import libversion
     libversion.Debug = getattr(options, 'debug', True)
+    libversion.ReportMissingModuleFiles = False
 
     # do the ModuleVersion calls on a dependency tree
     vs = []
@@ -378,6 +390,9 @@ def ParseAndConfigure(options, dependency_tree=None):
             elif duplicates:
                 print '***Warning: Module "%s" defined with' % leaf.name, \
                     'multiple versions, using "%s"' % duplicates[0].version
+                if max(["R3.14.11" in x.path for x in duplicates+[leaf]]) and \
+                    max(["R3.14.12.3" in x.path for x in duplicates+[leaf]]):
+                    print 'Multiple epics versions detected. Have you set your EPICS_HOST_ARCH correctly?'
             else:
                 leaves.append(leaf)
         from libversion import ModuleVersion
