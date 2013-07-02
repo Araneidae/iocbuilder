@@ -49,7 +49,8 @@ def PythonIdentifier(name):
 # Enable debugging
 Debug = False
 
-
+# Enable reporting of missing module files
+ReportMissingModuleFiles = True
 
 ## Specifies module version and imports definitions.
 #
@@ -260,7 +261,7 @@ class ModuleVersion:
                         'Value %s.%s already in hardware module' % (
                             self.__name, name)
                     setattr(hardware, name, getattr(self.module, name))
-        else:
+        elif ReportMissingModuleFiles:
             print >>sys.stderr, \
                 'Module definitions for', self.__name, 'not found'
 
