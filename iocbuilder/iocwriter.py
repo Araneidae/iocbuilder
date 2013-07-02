@@ -17,7 +17,6 @@ import support
 
 from liblist import Hardware
 
-
 __all__ = ['IocWriter', 'SimpleIocWriter', 'DiamondIocWriter', 'SetSource',
     'DocumentationIocWriter', 'DbOnlyWriter']
 
@@ -459,6 +458,13 @@ CROSS_COMPILER_TARGET_ARCHS = %(ARCH)s
 CHECK_RELEASE = %(CHECK_RELEASE)s
 '''
 
+    # Windows RELEASE.blah.COMMON file. Can be overwritten by ParseAndConfigure
+    WINDOWS_RELEASE_COMMON = '''\
+# Windows specific prefixes
+SUPPORT = %(SUPPORT)s
+WORK = %(WORK)s
+EPICS_BASE = %(EPICS_BASE)s
+'''
 
     # Makefile templates
     TOP_MAKEFILE_HEADER = [
@@ -475,7 +481,6 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         'include $(TOP)/configure/CONFIG']
     MAKEFILE_FOOTER = [
         'include $(TOP)/configure/RULES']
-
 
     # Directory helper routines
 
@@ -865,16 +870,13 @@ CHECK_RELEASE = %(CHECK_RELEASE)s
         self.WriteFile('configure/RELEASE', '\n'.join(releases))
 
         if configure.TargetOS() == 'WIN32':
-            lines = ['# Windows specific prefixes']
-            lines.append('SUPPORT = %s' %
-                paths.module_path.replace('/dls_sw/', r'W:\\'))
-            lines.append('WORK = %s' %
-                paths.module_work_path.replace('/dls_sw/', r'W:\\'))
-            lines.append('EPICS_BASE = %s' %
-                paths.EPICS_BASE.replace('/dls_sw/', r'W:\\'))
+            paths_dict = dict(
+                SUPPORT = paths.module_path.replace('/dls_sw/', r'W:\\'),
+                WORK = paths.module_work_path.replace('/dls_sw/', r'W:\\'),
+                EPICS_BASE = paths.EPICS_BASE.replace('/dls_sw/', r'W:\\'))
             self.WriteFile(
                 'configure/RELEASE.%s.Common' % configure.Architecture(),
-                '\n'.join(lines))
+                self.WINDOWS_RELEASE_COMMON % paths_dict)
 
     def WriteConfigFile(self, config_site):
         # If CONFIG_SITE exists add our configuration to that, otherwise add
