@@ -1,6 +1,6 @@
 '''IOC builder configuration and initialisation.'''
 
-import os
+import os, sys
 
 from support import Singleton
 import recordnames
@@ -124,8 +124,9 @@ class Configure(Singleton):
             'Must specify EPICS_BASE in environment or in Configure call'
 
         libArchPath = os.path.join(paths.EPICS_BASE, "lib", architecture)
-        assert os.path.isdir(libArchPath), \
-            'EPICS_BASE %s not built for architecture %s. Not building IOC' %(
+        if not os.path.isdir(libArchPath):
+            print >> sys.stderr, '***Warning: EPICS_BASE ' \
+                '%s not built for architecture %s' %(
                 paths.EPICS_BASE, architecture)
              
         self.architecture = architecture

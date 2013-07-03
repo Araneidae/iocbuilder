@@ -68,7 +68,7 @@ class Store(object):
         # now do the import and configure of iocbuilder
         import iocbuilder
         if self.debug:
-            print '# Creating IOC with Architcture %s' % (self.architecture)
+            print '# Creating IOC with Architecture %s' % (self.architecture)
             if self.simarch:
                 print '# Simulation mode'
         self.iocbuilder = iocbuilder
