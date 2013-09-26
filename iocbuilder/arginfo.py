@@ -3,7 +3,7 @@
 import inspect, sys
 from libversion import ModuleBase
 
-__all__ = ['makeArgInfo', 'filter_dict']
+__all__ = ['makeArgInfo', 'filter_dict', 'defArgInfo']
 
 ## Returns dictionary \c d with keys restricted to entries in the list \c l
 # \param d Dictionary to filter
@@ -35,19 +35,19 @@ class ArgInfo(object):
     #     .default_values     List of default values of arguments
     #     .optional_names     List of optional arguments.
 
-    def __init__(self, __source=None, __optional=[], __method=True, **descs):
+    def __init__(self, _source=None, _optional=[], _method=True, **descs):
         self.descriptions = descs
         for k, v in descs.items():
             assert isinstance(v, ArgType), \
                 'ArgInfo description "%s" is not of valid type. Got:\n%s' % \
                     (k, v)
-        self.optional_names = list(__optional)
+        self.optional_names = list(_optional)
 
-        if callable(__source):
+        if callable(_source):
             # First get the names and defaults from the given function
-            names, _, varkw, defaults = inspect.getargspec(__source)
+            names, _, varkw, defaults = inspect.getargspec(_source)
             # If this is a bound method, discard the first argument.
-            if __method:
+            if _method:
                 names = names[1:]
             if defaults:
                 self.required_names = names[:-len(defaults)]
@@ -63,16 +63,16 @@ class ArgInfo(object):
                 # to the list of optional names.  We sort the list so that
                 # the ordering is at least predictable.
                 self.required_names += sorted(list(
-                    set(descs) - set(names) - set(__optional)))
-            assert varkw or not __optional, \
+                    set(descs) - set(names) - set(_optional)))
+            assert varkw or not _optional, \
                 'Unusable optional arguments: %s' % self.optional_names
         else:
             # Somewhat special case for taking the arguments from a list of
             # names.  These are treated as all mandatory.
-            if __source:
-                self.required_names = list(__source)
+            if _source:
+                self.required_names = list(_source)
             else:
-                self.required_names = sorted(set(descs) - set(__optional))
+                self.required_names = sorted(set(descs) - set(_optional))
             self.default_names = []
             self.default_values = []
 
@@ -190,6 +190,12 @@ class ArgInfo(object):
         return result
 
 makeArgInfo = ArgInfo
+
+def defArgInfo(_optional=[], **descs):
+    def decorate(f):
+        f.ArgInfo = makeArgInfo(f, _optional=_optional, _method=False, **descs)
+        return f
+    return decorate
 
 
 
