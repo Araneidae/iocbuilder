@@ -50,6 +50,13 @@ class StartupCommand(Device):
         at_end    = Simple('If not set command generated in sequence', bool))
 
 
+@defArgInfo(
+    pv    = Simple('PV name'),
+    value = Simple('Value to put to PV'))
+def dbpf(pv, value):
+    StartupCommand('dbpf "%s" "%s"' % (pv, value), post_init=True, at_end=False)
+
+
 class EpicsEnvSet(ModuleBase):
     '''Set a variable in the EPICS environment'''
     _EpicsEnvSet = EpicsEnvSet
