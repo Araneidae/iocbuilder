@@ -58,6 +58,10 @@ class TableView(QTableView):
         for cell in selRange:
             data[cell.row() - minrows][cell.column() - mincols] = \
                 str(cell.data(Qt.EditRole).toString())
+        # insert escapes
+        for row in data:
+            for i, val in enumerate(row):
+                row[i] = val.replace("\n", "\\n").replace("\t", "\\t")                
         rows = ['\t'.join(row) for row in data]
         cb = app.clipboard()
         cb.setText(QString('\n'.join(rows)))
@@ -163,6 +167,10 @@ class TableView(QTableView):
             nrows = max(rows) - minrows + 1
             ncols = max(cols) - mincols + 1
             data = [ [clipText] * ncols ] * nrows
+        # replace escapes
+        for row in data:
+            for i, val in enumerate(row):
+                row[i] = val.replace("\\n", "\n").replace("\\t", "\t")
         selRange[0].model().stack.beginMacro('Paste from clipboard')
         if len(selRange) == 1:
             # single cell selected, so write the size of the clipboard
@@ -225,6 +233,7 @@ class ListView(QListWidget):
         items = self.findItems(text, Qt.MatchExactly)
         if items:
             self.setCurrentItem(items[0])
+        self.parent().parent().populate(name = str(items[0].text()))
         return ret
 
     def contextMenuEvent(self,event):
