@@ -264,15 +264,19 @@ class GUI(QMainWindow):
     def __init__(self, debug=False):
         QMainWindow.__init__(self)
         # initialise filename
-        self.filename = None
+        self.filename = None        
         # make the data store
         from xmlstore import Store
         self.store = Store(debug = debug)
         # view the current table
         self.tableView = TableView(self)
-        self.tableView.setDragEnabled(True);
-        self.tableView.setAcceptDrops(True);
-        self.tableView.setDropIndicatorShown(True);
+        #self.tableView.setDragEnabled(True);
+        #self.tableView.setDragDropMode(QAbstractItemView.InternalMove)
+        #self.tableView.setAcceptDrops(True);
+        #self.tableView.setDropIndicatorShown(True);
+        self.tableView.verticalHeader().sectionMoved.connect(self.sectionMoved)
+        self.tableView.verticalHeader().setMovable(True)
+
         self.setCentralWidget(self.tableView)
         # add a custom delegate to it
         self.delegate = ComboBoxDelegate()
@@ -525,6 +529,10 @@ class GUI(QMainWindow):
         self.tableView.resizeColumnsToContents()
         self.connect(table.stack, SIGNAL('cleanChanged(bool)'),
                      self._setClean)
+
+    def sectionMoved(self, logicalIndex, oldVisualIndex, newVisualIndex):
+        self.store.getTable(self.tablename).sectionMoved(logicalIndex, oldVisualIndex, newVisualIndex)
+        #self.tableView.verticalHeader().reset()
 
     def _isClean(self):
         for s in self.store.stack.stacks():

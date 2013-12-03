@@ -220,6 +220,20 @@ class Table(QAbstractTableModel):
         if count > 1:
             self.stack.endMacro()
 
+    def sectionMoved(self, logicalIndex, oldVisualIndex, newVisualIndex, parent = QModelIndex()):
+        assert oldVisualIndex == logicalIndex, \
+            "oldVisualIndex %d should be equal to logicalIndex %d" % (
+                oldVisualIndex, logicalIndex)
+        self.stack.beginMacro('Move row %d to %d'%(oldVisualIndex, newVisualIndex))
+        # grab the old data
+        olddata = [QVariant(x) for x in self.rows[oldVisualIndex]]
+        # delete the old row
+        self.stack.push(RowCommand(oldVisualIndex, self, parent, False))
+        # create a command to make a new row with the old data        
+        cmd = RowCommand(newVisualIndex, self, parent)
+        cmd.rowdata = olddata
+        self.stack.push(cmd)
+        self.stack.endMacro()
 
     def _isCommented(self, row):
         return self.rows[row][0].toBool()
