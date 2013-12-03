@@ -6,7 +6,7 @@ from PyQt4.QtGui import \
     QMenu, QFileDialog, QInputDialog, QLineEdit, QListWidgetItem, \
     QClipboard, QDialog, QScrollArea, QTextEdit, QFont, QPushButton, QLabel, \
     QToolTip, QIcon
-from PyQt4.QtCore import Qt, SIGNAL, SLOT, QSize, QVariant, QString, QEvent
+from PyQt4.QtCore import Qt, SIGNAL, SLOT, QSize, QVariant, QString, QEvent, QPoint
 from delegates import ComboBoxDelegate
 import sys, signal, os, re, traceback
 from optparse import OptionParser
@@ -273,10 +273,10 @@ class GUI(QMainWindow):
         #self.tableView.setDragEnabled(True);
         #self.tableView.setDragDropMode(QAbstractItemView.InternalMove)
         #self.tableView.setAcceptDrops(True);
-        #self.tableView.setDropIndicatorShown(True);
+        #self.tableView.setDropIndicatorShown(True);        
         self.tableView.verticalHeader().sectionMoved.connect(self.sectionMoved)
         self.tableView.verticalHeader().setMovable(True)
-
+        
         self.setCentralWidget(self.tableView)
         # add a custom delegate to it
         self.delegate = ComboBoxDelegate()
@@ -425,23 +425,22 @@ class GUI(QMainWindow):
         else:
             self.listView.insertItem(row, item)
 
-    def New(self):
+    def New(self, filename = ''):
+        print "**", filename
         # make sure the user is sure if there are unsaved changes
         if self.__prompt_unsaved() == QMessageBox.Cancel:
             return
-        # load a release file if we can
-        self.store.build_root = os.getcwd()
         # tell the store to create a new set of tables
         try:
-            self.store.New()
+            self.store.New(filename)
         except Exception, e:
             x = formLog('An error ocurred. Make sure all the modules listed '
                 'in RELEASE files are built. Check the text below for '
                 'details:\n\n' + traceback.format_exc(), self)
             x.show()
             return
-        self.filename = ''
-        self.setWindowTitle('XEB - <untitled>[*]')
+        self.filename = filename
+        self.setWindowTitle('XEB - %s[*]' % (filename or "<untitled>"))
         self.listView.clear()
         self.__populateMenu()
         self.populate()
@@ -503,6 +502,10 @@ class GUI(QMainWindow):
             a.setToolTip("None")
 
     def populate(self, index = None, name = None):
+        # first store the state of the current view
+        if getattr(self, "tablename", None) in self.store.getTableNames():
+            topLeftIndex = self.tableView.indexAt(QPoint(0,0)) 
+            self.store.getTable(self.tablename).topLeftIndex = topLeftIndex
         if index is not None:
             name = str(index.data().toString())
         if name is None:
@@ -529,10 +532,16 @@ class GUI(QMainWindow):
         self.tableView.resizeColumnsToContents()
         self.connect(table.stack, SIGNAL('cleanChanged(bool)'),
                      self._setClean)
+        # scroll to the stored point of the table
+        if table.topLeftIndex:
+            self.tableView.scrollTo(table.index(table.rowCount() - 1, table.columnCount() - 1))
+            self.tableView.scrollTo(table.topLeftIndex)
+        elif table.rowCount():
+            self.tableView.scrollTo(table.index(0, 0))
 
     def sectionMoved(self, logicalIndex, oldVisualIndex, newVisualIndex):
         self.store.getTable(self.tablename).sectionMoved(logicalIndex, oldVisualIndex, newVisualIndex)
-        #self.tableView.verticalHeader().reset()
+        self.tableView.selectRow(newVisualIndex)
 
     def _isClean(self):
         for s in self.store.stack.stacks():
@@ -612,8 +621,8 @@ def main():
         if os.path.isfile(args[0]):
             g.Open(args[0])
         else:
-            QMessageBox.warning(g,'Open Error','No such file "%s"'%args[0])
-            g.New()
+            QMessageBox.warning(g,'Open Error','No such file "%s". Starting new file'%args[0])
+            g.New(args[0])
     else:
         g.New()
     # catch CTRL-C

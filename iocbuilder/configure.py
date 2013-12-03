@@ -399,6 +399,9 @@ def ParseAndConfigure(options, dependency_tree=None):
         from libversion import ModuleVersion
         for name, version, path in [
                 (l.name, l.version, l.path) for l in leaves if l.path]:
+            # if we don't have a name, it can't be a useful module
+            if name is None:
+                continue
             # for work and local modules, just tell iocbuilder the path
             if version in ['work', 'local', 'invalid']:
                 home = os.path.abspath(path)

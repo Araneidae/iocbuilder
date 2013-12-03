@@ -57,13 +57,11 @@ def main():
 
     # setup the store
     xml_file = args[0]
-    iocname = os.path.basename(xml_file).replace('.xml','')
     store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc)
     if options.debug:
         print '--- Parsing %s ---' % xml_file
-    store.iocname = os.path.basename(xml_file).replace('.xml','')
-    store.build_root = os.path.dirname(os.path.abspath(xml_file))
-
+    
+    # read the xml text for the architecture
     xml_text = open(xml_file).read()
     xml_root = xml.dom.minidom.parseString(xml_text)
     components = [n
@@ -74,10 +72,12 @@ def main():
     else:
         store.architecture = patch_arch(str(components.attributes['arch'].value))
         store.simarch = None
-    store.New()
+    
+    # Now create a new store, loading the release file from this xml file
+    store.New(xml_file)
     store.iocbuilder.SetSource(os.path.realpath(xml_file))
 
-    # open the Xml file
+    # create iocbuilder objects from the xml text
     store.iocbuilder.includeXml.instantiateXml(xml_text)
 
     if options.doc:
@@ -85,11 +85,11 @@ def main():
     elif DbOnly:
         iocpath = os.path.abspath(".")
         if options.simarch:
-            iocname += '_sim'
+            store.iocname += '_sim'
     else:
         # write the iocs
         root = os.path.abspath(options.out)
-        iocpath = os.path.join(root, iocname)
+        iocpath = os.path.join(root, store.iocname)
         if options.simarch:
             iocpath += '_sim'
 #            store.iocbuilder.SetEpicsPort(6064)
@@ -99,7 +99,7 @@ def main():
         substitute_boot = False
     if debug:
         print "Writing ioc to %s" % iocpath
-    store.iocbuilder.WriteNamedIoc(iocpath, iocname, check_release = not options.no_check_release,
+    store.iocbuilder.WriteNamedIoc(iocpath, store.iocname, check_release = not options.no_check_release,
         substitute_boot = substitute_boot, edm_screen = options.edm_screen)
     if debug:
         print "Done"

@@ -52,6 +52,8 @@ class Table(QAbstractTableModel):
             self.__processArgType(name, a.descriptions[name], optional = True)
         # maps (filt, without, upto) -> (timestamp, stringList)
         self._cachedNameList = {}
+        # this is the top left item visible in the TableView widget
+        self.topLeftIndex = None
 
     def __processArgType(self, name, ob, **args):
         # this is the column index

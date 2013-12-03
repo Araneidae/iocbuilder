@@ -49,9 +49,17 @@ class Store(object):
     def setLastModified(self, index1=None, index2=None):
         self._lastModified = time.time()
 
-    def New(self):
+    def New(self, filename = ""):
         '''Create a new table list by setting up ModuleVersion calls according
         to paths in release'''
+        self.iocname = os.path.basename(filename).replace('.xml','')
+        if filename:
+            self.build_root = os.path.dirname(os.path.abspath(filename))        
+        else:
+            self.build_root = os.getcwd()
+        if self.debug:
+            print "IOC name: %s" % self.iocname
+            print "Build root: %s" % self.build_root
         # First clear up the undo stack
         for stack in self.stack.stacks():
             self.stack.removeStack(stack)
@@ -108,8 +116,6 @@ class Store(object):
     def Open(self, filename, sim = None):
         if self.debug:
             print '--- Parsing %s ---'%filename
-        self.iocname = os.path.basename(filename).replace('.xml','')
-        self.build_root = os.path.dirname(os.path.abspath(filename))
         # read the tables
         xml_root = xml.dom.minidom.parse(filename)
         # find the root node
@@ -120,7 +126,7 @@ class Store(object):
         else:
             self.architecture = str(components.attributes['arch'].value)
             self.simarch = None
-        self.New()
+        self.New(filename)
         # proccess each component in turn
         problems = []
         warnings = []
