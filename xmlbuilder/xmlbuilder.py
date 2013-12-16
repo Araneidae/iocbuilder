@@ -1,12 +1,14 @@
-#!/bin/env dls-python2.7
+#!/bin/env dls-python
 from xmlstore import Store
-import sys, os, subprocess
+import sys, os
+from subprocess import *
 from optparse import OptionParser
 import xml.dom.minidom
 
 # hacky hacky change linux-x86 to linux-x86_64 in RHEL6
 def patch_arch(arch):
-    if subprocess.check_output(["lsb_release", "-sr"])[0] == "6" and arch == "linux-x86":
+    lsb_release = Popen(["lsb_release", "-sr"], stdout=PIPE).communicate()[0]
+    if lsb_release == "6" and arch == "linux-x86":
         arch = "linux-x86_64"
     return arch
     
