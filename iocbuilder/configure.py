@@ -351,14 +351,17 @@ def ParseAndConfigure(options, dependency_tree=None):
         # If we have a RELEASE.blah.Common then include the text from that in 
         # the built IOC
         relCommon = os.path.join(options.build_root, 
-            '..', '..', 'configure', 'RELEASE.%s.Common' % options.architecture)       
+            '..', '..', 'configure', 'RELEASE.%s' % options.architecture)      
         if os.path.isfile(relCommon):
             options.ioc_writer.WINDOWS_RELEASE_COMMON = open(relCommon).read()
+        elif os.path.isfile(relCommon + ".Common"):
+            options.ioc_writer.WINDOWS_RELEASE_COMMON = open(relCommon + ".Common").read()        
         if options.debug:
             print '# Release tree'
             tree.print_tree()
         if 'EPICS_BASE' in tree.macros:
             options.epics_base = tree.macros['EPICS_BASE']
+        options.ioc_writer.macros = tree.macros
 
     # do the relevant configure call
     Configure(

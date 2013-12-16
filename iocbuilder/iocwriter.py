@@ -482,6 +482,12 @@ EPICS_BASE = %(EPICS_BASE)s
     MAKEFILE_FOOTER = [
         'include $(TOP)/configure/RULES']
 
+    # dictionary of macros to be used in RELEASE file
+    macros = dict(
+        SUPPORT = paths.module_path,
+        WORK = paths.module_work_path,
+        EPICS_BASE = paths.EPICS_BASE)
+
     # Directory helper routines
 
     def MakeDirectory(self, *dir_names):
@@ -849,11 +855,17 @@ EPICS_BASE = %(EPICS_BASE)s
 
         self.WriteConfigFile('CONFIG_SITE' in template_files)
 
-        # Write out configure/RELEASE
-        releases = ['# DLS specific macros for the work and prod areas']
-        releases.append('SUPPORT = %s' % paths.module_path)
-        releases.append('WORK = %s' % paths.module_work_path)
-        releases.append('# Module paths')
+        # first build a reverse macro lookup table
+        rev_macros = dict((v,k) for k,v in self.macros.items())
+        
+        # now sort the keys by reverse length
+        rev_macro_keys = sorted(rev_macros, key=len, reverse=True)
+        
+        # and a set of macros we have used
+        used_macros = set()
+
+        # now generate release lines
+        modules = ['# Module definitions']
         for module in sorted(libversion.ModuleBase.ListModules()):
             ## \todo Do something sensible on check_release
             # Something like this might be a good idea --
@@ -861,19 +873,26 @@ EPICS_BASE = %(EPICS_BASE)s
             #                 module.CheckDependencies()
             if module.MacroName() != 'EPICS_BASE':
                 path = module.LibPath()
-                path = path.replace(paths.module_path, '$(SUPPORT)')
-                path = path.replace(paths.module_work_path, '$(WORK)')
-                releases.append(
-                    '%s = %s' % (module.MacroName(), path))
-        releases.append('# EPICS Base appears last')
-        releases.append('EPICS_BASE = %s' % paths.EPICS_BASE)
+                for v in rev_macro_keys:
+                    if v in path and v != path:
+                        path = path.replace(v, "$(%s)"%rev_macros[v])
+                        used_macros.add(rev_macros[v])
+                modules.append(
+                    '%s = %s' % (module.MacroName(), path))        
+        
+        # Put in the macros we've used
+        releases = ['# Common prefixes'] + \
+            ['%s = %s' % (k, self.macros[k]) for k in sorted(used_macros)] + \
+            modules + \
+            ['# EPICS Base appears last', 
+             'EPICS_BASE = %s' % paths.EPICS_BASE]
+
+        # Write out configure/RELEASE
         self.WriteFile('configure/RELEASE', '\n'.join(releases))
 
         if configure.TargetOS() == 'WIN32':
-            paths_dict = dict(
-                SUPPORT = paths.module_path.replace('/dls_sw/', r'W:\\'),
-                WORK = paths.module_work_path.replace('/dls_sw/', r'W:\\'),
-                EPICS_BASE = paths.EPICS_BASE.replace('/dls_sw/', r'W:\\'))
+            paths_dict = dict((k, v.replace('/dls_sw/', r'W:\\')) \
+                for k,v in self.macros.items())
             self.WriteFile(
                 'configure/RELEASE.%s.Common' % configure.Architecture(),
                 self.WINDOWS_RELEASE_COMMON % paths_dict)
