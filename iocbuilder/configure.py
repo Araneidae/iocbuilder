@@ -123,12 +123,13 @@ class Configure(Singleton):
         assert hasattr(paths, 'EPICS_BASE'), \
             'Must specify EPICS_BASE in environment or in Configure call'
 
-        libArchPath = os.path.join(paths.EPICS_BASE, "lib", architecture)
-        if not os.path.isdir(libArchPath):
-            print >> sys.stderr, '***Warning: EPICS_BASE ' \
-                '%s not built for architecture %s' %(
-                paths.EPICS_BASE, architecture)
-             
+        if architecture != 'none':
+            libArchPath = os.path.join(paths.EPICS_BASE, "lib", architecture)
+            if not os.path.isdir(libArchPath):
+                print >> sys.stderr, '***Warning: EPICS_BASE ' \
+                    '%s not built for architecture %s' %(
+                    paths.EPICS_BASE, architecture)
+
         self.architecture = architecture
 
         if module_path is not None:
