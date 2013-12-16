@@ -338,25 +338,26 @@ def ParseAndConfigure(options, dependency_tree=None):
     # if we have a dependency_tree class, then parse RELEASE file
     if dependency_tree is not None:
         # If we have a release file, then parse it
-        release = os.path.join(options.build_root, 
-            '..', '..', 'configure', 'RELEASE')                
+        release = os.path.join(options.build_root,
+            '..', '..', 'configure', 'RELEASE')
         release_tree = dependency_tree(None, release, warnings=False)
         # If we have an extra tree then use that as the tree instead
-        extra_release = os.path.join(options.build_root, 
-            options.iocname + '_RELEASE')            
+        extra_release = os.path.join(options.build_root,
+            options.iocname + '_RELEASE')
         if os.path.isfile(extra_release):
             tree = dependency_tree(None, extra_release, warnings=False)
             tree.leaves.append(release_tree)
         else:
             tree = release_tree
-        # If we have a RELEASE.blah.Common then include the text from that in 
+        # If we have a RELEASE.blah.Common then include the text from that in
         # the built IOC
-        relCommon = os.path.join(options.build_root, 
-            '..', '..', 'configure', 'RELEASE.%s' % options.architecture)      
+        relCommon = os.path.join(options.build_root,
+            '..', '..', 'configure', 'RELEASE.%s' % options.architecture)
         if os.path.isfile(relCommon):
             options.ioc_writer.WINDOWS_RELEASE_COMMON = open(relCommon).read()
         elif os.path.isfile(relCommon + ".Common"):
-            options.ioc_writer.WINDOWS_RELEASE_COMMON = open(relCommon + ".Common").read()        
+            options.ioc_writer.WINDOWS_RELEASE_COMMON = \
+                open(relCommon + ".Common").read()
         if options.debug:
             print '# Release tree'
             tree.print_tree()

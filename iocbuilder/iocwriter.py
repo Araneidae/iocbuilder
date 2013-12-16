@@ -393,6 +393,34 @@ class DbOnlyWriter(IocWriter):
 
 
 
+def canonicalise_macros(macros, modules):
+    # first build a reverse macro lookup table
+    rev_macros = dict((v,k) for k,v in macros.items())
+    # now sort the keys by reverse length
+    rev_macro_keys = sorted(rev_macros, key=len, reverse=True)
+    # and a set of macros we have used
+    used_macros = set()
+
+    # now generate release lines
+    result = {}
+    for module in modules:
+        ## \todo Do something sensible on check_release
+        # Something like this might be a good idea --
+        #             if self.check_release:
+        #                 module.CheckDependencies()
+        if module.MacroName() != 'EPICS_BASE':
+            path = module.LibPath()
+            for v in rev_macro_keys:
+                if v in path and v != path:
+                    path = path.replace(v, "$(%s)"%rev_macros[v])
+                    used_macros.add(rev_macros[v])
+            result[module.MacroName()] = path
+    return used_macros, result
+
+def dict_to_lines(keys, macros):
+    return ['%s = %s' % (k, macros[k]) for k in sorted(keys)]
+
+
 ## This IOC writer generates a complete IOC application tree in the Diamond
 # style.
 class DiamondIocWriter(IocWriter):
@@ -855,36 +883,16 @@ EPICS_BASE = %(EPICS_BASE)s
 
         self.WriteConfigFile('CONFIG_SITE' in template_files)
 
-        # first build a reverse macro lookup table
-        rev_macros = dict((v,k) for k,v in self.macros.items())
-        
-        # now sort the keys by reverse length
-        rev_macro_keys = sorted(rev_macros, key=len, reverse=True)
-        
-        # and a set of macros we have used
-        used_macros = set()
+        used_macros, modules = canonicalise_macros(
+            self.macros, libversion.ModuleBase.ListModules())
 
-        # now generate release lines
-        modules = ['# Module definitions']
-        for module in sorted(libversion.ModuleBase.ListModules()):
-            ## \todo Do something sensible on check_release
-            # Something like this might be a good idea --
-            #             if self.check_release:
-            #                 module.CheckDependencies()
-            if module.MacroName() != 'EPICS_BASE':
-                path = module.LibPath()
-                for v in rev_macro_keys:
-                    if v in path and v != path:
-                        path = path.replace(v, "$(%s)"%rev_macros[v])
-                        used_macros.add(rev_macros[v])
-                modules.append(
-                    '%s = %s' % (module.MacroName(), path))        
-        
-        # Put in the macros we've used
-        releases = ['# Common prefixes'] + \
-            ['%s = %s' % (k, self.macros[k]) for k in sorted(used_macros)] + \
-            modules + \
-            ['# EPICS Base appears last', 
+        # Convert macros into text.
+        releases = \
+            ['# Common prefixes'] + \
+            dict_to_lines(used_macros, self.macros) + \
+            ['# Module definitions'] + \
+            dict_to_lines(modules.keys(), modules) + \
+            ['# EPICS Base appears last',
              'EPICS_BASE = %s' % paths.EPICS_BASE]
 
         # Write out configure/RELEASE
