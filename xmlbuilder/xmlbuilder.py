@@ -7,7 +7,7 @@ import xml.dom.minidom
 
 # hacky hacky change linux-x86 to linux-x86_64 in RHEL6
 def patch_arch(arch):
-    lsb_release = Popen(["lsb_release", "-sr"], stdout=PIPE).communicate()[0]
+    lsb_release = Popen(["lsb_release", "-sr"], stdout=PIPE).communicate()[0][0]
     if lsb_release == "6" and arch == "linux-x86":
         arch = "linux-x86_64"
     return arch
