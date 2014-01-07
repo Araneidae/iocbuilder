@@ -411,7 +411,7 @@ def canonicalise_macros(macros, modules):
         if module.MacroName() != 'EPICS_BASE':
             path = module.LibPath()
             for v in rev_macro_keys:
-                if v in path and v != path:
+                if v != path and v == path[:len(v)]:
                     path = path.replace(v, "$(%s)"%rev_macros[v])
                     used_macros.add(rev_macros[v])
             result[module.MacroName()] = path
