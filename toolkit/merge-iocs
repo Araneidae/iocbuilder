@@ -137,7 +137,9 @@ FORCE_UPDATE=0
 ECHO=:
 QUIET=-q
 RELEASE_NUM=
-while getopts 'dcm:akfr:vh' option; do
+RELEASE_RHEL=
+RELEASE_EPICS=
+while getopts 'dcm:akfr:R:e:vh' option; do
     case $option in
     d)  SHOW_DIFFS=1 ;;
     c)  COMMIT_SVN=1 ;;
@@ -146,6 +148,8 @@ while getopts 'dcm:akfr:vh' option; do
     a)  AUTO_ADD=1 ;;
     f)  FORCE_UPDATE=1 ;;
     r)  RELEASE_NUM="$OPTARG" ;;
+    R)  RELEASE_RHEL=-r"$OPTARG" ;;
+    e)  RELEASE_EPICS=-e"$OPTARG" ;;
     v)  ECHO=echo
         [ -z "$QUIET" ] && set -x
         QUIET= ;;
@@ -164,6 +168,9 @@ The following options are supported:
     -a      Add IOCs which don't already exist.  Note that the IOC location
             must already exist.
     -r:     Release all updated iocs with specified release number
+    -R:     Use specified Red-Hat version for release (passed as -r flag to
+            dls-release.py)
+    -e:     Use specfied EPICS version for release (passed to dls-release.py)
     -k      Keep the updated SVN directory tree, otherwise it is deleted.
     -f      Don't check for changes, force update anyway
     -v      Verbose: show details, -vv is super verbose (debug only)
@@ -268,7 +275,8 @@ Automatically merged IOCs from $IOCS_DIR:
         if [ -n "$RELEASE_NUM" ]; then
             RELEASE_PROBLEMS=()
             for ioc in "${MERGED_IOCS[@]}"; do
-                dls-release.py -i "$ioc" "$RELEASE_NUM" ||
+                dls-release.py -i $RELEASE_RHEL $RELEASE_EPICS \
+                        "$ioc" "$RELEASE_NUM" ||
                     RELEASE_PROBLEMS=("${RELEASE_PROBLEMS[@]}" "$ioc")
             done
             for ioc in "${RELEASE_PROBLEMS[@]}"; do
