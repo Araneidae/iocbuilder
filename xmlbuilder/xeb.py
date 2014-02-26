@@ -226,14 +226,26 @@ class TableView(QTableView):
 
 class ListView(QListWidget):
 
-    def dropEvent(self,event):
-        text = self.currentItem().text()
-        ret = QListWidget.dropEvent(self,event)
-        self.writeNames()
+    def selectTable(self, text):
+        # select the table with name text
         items = self.findItems(text, Qt.MatchExactly)
         if items:
             self.setCurrentItem(items[0])
-        self.parent().parent().populate(name = str(items[0].text()))
+        self.parent().parent().populate(name = str(items[0].text()))        
+
+    def writeNames(self):
+        # write the current list of names to the store
+        store = self.parent().parent().store
+        items = [str(self.item(i).text()) for i in range(self.count())]
+        store.setTableNames(items)
+        self.parent().parent()._setClean()
+
+    def dropEvent(self,event):
+        # override drop event so we can repopulate the table view
+        text = self.currentItem().text()
+        ret = QListWidget.dropEvent(self,event)
+        self.writeNames()
+        self.selectTable(text)
         return ret
 
     def contextMenuEvent(self,event):
@@ -242,6 +254,7 @@ class ListView(QListWidget):
         menu.exec_(event.globalPos())
 
     def removeTable(self):
+        # remove current table from the list
         sel = self.selectedItems()
         texts = [self.item(i).text()
             for i in range(self.count())
@@ -252,11 +265,25 @@ class ListView(QListWidget):
         self.writeNames()
         self.parent().parent().populate()
 
-    def writeNames(self):
-        store = self.parent().parent().store
-        items = [str(self.item(i).text()) for i in range(self.count())]
-        store.setTableNames(items)
-        self.parent().parent()._setClean()
+    def moveTable(self, offset):
+        text = self.currentItem().text()
+        row = self.currentRow()        
+        # move the current table to index+offset
+        if row + offset < 0 or row + offset >= self.count():
+            return
+        # remove the item
+        self.takeItem(row)     
+        # Insert the new item at the correct place
+        self.insertItem(row + offset, text)
+        # write the current list of names to the store
+        self.writeNames()
+        self.selectTable(text)
+
+    def moveTableUp(self):
+        self.moveTable(-1)
+
+    def moveTableDown(self):
+        self.moveTable(1)
 
 
 class GUI(QMainWindow):
@@ -473,6 +500,8 @@ class GUI(QMainWindow):
         # populate the component menu with menus
         self.menuComponents.clear()
         self.menuComponents.addAction('Remove Table', self.listView.removeTable)
+        self.menuComponents.addAction('Move Table Up', self.listView.moveTableUp)
+        self.menuComponents.addAction('Move Table Down', self.listView.moveTableDown)                        
         self.menuComponents.addSeparator()
         modules = {}
         self.functions = []
