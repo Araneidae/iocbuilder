@@ -352,7 +352,7 @@ class ModuleBase(support.autosuper):
                 if dependency:
                     # Note that it's important that the base class
                     # dependencies are instantiated first.
-                    Dependencies = dependency + Dependencies
+                    Dependencies = dependency + tuple(Dependencies)
             cls.Dependencies = Dependencies
 
 
