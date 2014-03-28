@@ -363,7 +363,8 @@ def ParseAndConfigure(options, dependency_tree=None):
             tree.print_tree()
         if 'EPICS_BASE' in tree.macros:
             options.epics_base = tree.macros['EPICS_BASE']
-        options.ioc_writer.macros.update(tree.macros)
+        if hasattr(options.ioc_writer, "macros"):
+            options.ioc_writer.macros.update(tree.macros)
 
     # do the relevant configure call
     Configure(
