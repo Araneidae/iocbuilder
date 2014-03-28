@@ -1,7 +1,7 @@
 '''Meta data argument info support.'''
 
 import inspect, sys
-from libversion import ModuleBase
+from libversion import ModuleBase, ModuleVersion
 
 __all__ = ['makeArgInfo', 'filter_dict', 'defArgInfo']
 
@@ -194,6 +194,10 @@ makeArgInfo = ArgInfo
 def defArgInfo(_optional=[], **descs):
     def decorate(f):
         f.ArgInfo = makeArgInfo(f, _optional=_optional, _method=False, **descs)
+        # FIXME: this is probably a bad thing to do as it is a function rather
+        # than a class, but it seems to work...
+        ModuleBase.ModuleBaseClasses.append(f)
+        f.ModuleName = ModuleVersion._LoadingModule.Name()
         return f
     return decorate
 
