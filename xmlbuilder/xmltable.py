@@ -1,7 +1,7 @@
 from PyQt4.QtGui import QUndoStack, QUndoCommand, QColor
 from PyQt4.QtCore import QStringList, Qt, QAbstractTableModel, QMimeData, \
     QVariant, SIGNAL, QString, QModelIndex
-import re, time
+import re, time, types
 from commands import ChangeValueCommand, RowCommand
 
 class Table(QAbstractTableModel):
@@ -253,7 +253,9 @@ class Table(QAbstractTableModel):
         for name in self._parent.getTableNames():
             table = self._parent._tables[name]
             # if we have a filter, then make sure this table is a subclass of it
-            if filt is not None and not issubclass(table.ob, filt):
+            if filt is not None and type(filt) == types.ClassType and \
+                    type(table.ob) == types.ClassType and \
+                    not issubclass(table.ob, filt):
                 # if we are only going up to a certain table and this is it
                 if table == self and upto is not None:
                     return sl

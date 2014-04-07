@@ -54,6 +54,7 @@ class StartupCommand(Device):
     pv    = Simple('PV name'),
     value = Simple('Value to put to PV'))
 def dbpf(pv, value):
+    """Set a pv to a value after iocInit in the startup script"""
     StartupCommand('dbpf "%s" "%s"' % (pv, value), post_init=True, at_end=False)
 
 
@@ -102,6 +103,7 @@ class IpAttach(Device):
 
 
 class hostAdd(Device):
+    """Bind a host name to an IP address on vxWorks"""
     def __init__(self, host, address):
         self.__super.__init__()
         dotted_to_ip(address)
