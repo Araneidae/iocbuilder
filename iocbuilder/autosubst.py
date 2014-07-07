@@ -63,14 +63,16 @@ def populate_class(cls, template_file):
                 # this a macro with a default value
                 mtext, default = mtext.split('=', 1)
                 # check it's not a required value
-                assert mtext not in required_names + optional_names, \
-                    'Cannot define default macro "%s", already defined as '\
+                if mtext in required_names + optional_names:
+                    print >> sys.stderr, \
+                    '***Warning: Cannot define default macro "%s", already defined as '\
                     'a non-default macro in "%s"' % (mtext, template_file)
                 if mtext in default_names:
                     # if it's a default value already, check it matches
                     old_default = default_values[default_names.index(mtext)]
-                    assert default == old_default, \
-                        'Cannot set macro "%s" to "%s", already defined with '\
+                    if default != old_default: 
+                        print >> sys.stderr, \
+                        '***Warning: Cannot set macro "%s" to "%s", already defined with '\
                         'value "%s" in "%s"' % (mtext, default, \
                             old_default, template_file)
                 else:
