@@ -65,15 +65,17 @@ def populate_class(cls, template_file):
                 # check it's not a required value
                 if mtext in required_names + optional_names:
                     print >> sys.stderr, \
-                    '***Warning: Cannot define default macro "%s", already defined as '\
-                    'a non-default macro in "%s"' % (mtext, template_file)
+                    '***Warning: Redefining non-default macro "%s" to have '\
+                    'default "%s" in "%s"' % (mtext, default, template_file)
+                    required_names = [x for x in required_names if x != mtext]
+                    optional_names = [x for x in optional_names if x != mtext]                    
                 if mtext in default_names:
                     # if it's a default value already, check it matches
                     old_default = default_values[default_names.index(mtext)]
                     if default != old_default: 
                         print >> sys.stderr, \
-                        '***Warning: Cannot set macro "%s" to "%s", already defined with '\
-                        'value "%s" in "%s"' % (mtext, default, \
+                        '***Warning: Cannot set macro "%s" to "%s", already '\
+                        'defined with value "%s" in "%s"' % (mtext, default, \
                             old_default, template_file)
                 else:
                     # add it as a default value
@@ -84,10 +86,11 @@ def populate_class(cls, template_file):
                 # strip off any msi ,undefined stuff
                 if mtext.endswith(',undefined'):
                     mtext = mtext.replace(',undefined', '')
-                assert mtext not in default_names, \
-                    'Cannot define macro "%s", already defined as '\
-                    'a default macro in "%s"' % (mtext, template_file)
-                if line.startswith('#'):
+                if mtext in default_names:
+                    print >> sys.stderr, \
+                    '***Warning: Cannot define non-default macro "%s", already '\
+                    'defined as default macro in "%s"' % (mtext, template_file)
+                elif line.startswith('#'):
                     # comments are optional if they are epics_parser lines
                     if epics_parser_re.match(line):
                         if mtext not in optional_names:
