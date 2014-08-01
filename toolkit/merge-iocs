@@ -170,7 +170,7 @@ The following options are supported:
     -r:     Release all updated iocs with specified release number
     -R:     Use specified Red-Hat version for release (passed as -r flag to
             dls-release.py)
-    -e:     Use specfied EPICS version for release (passed to dls-release.py)
+    -e:     Use specified EPICS version for release (passed to dls-release.py)
     -k      Keep the updated SVN directory tree, otherwise it is deleted.
     -f      Don't check for changes, force update anyway
     -v      Verbose: show details, -vv is super verbose (debug only)
