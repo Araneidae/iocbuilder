@@ -3,6 +3,7 @@
 
 from iocbuilder import Device, IocCommand, ModuleBase, EpicsEnvSet
 from iocbuilder import configure
+from iocbuilder.support import quote_c_string
 from iocbuilder.arginfo import *
 
 class epicsBase(Device):
@@ -116,3 +117,22 @@ class hostAdd(Device):
     ArgInfo = makeArgInfo(__init__,
         host = Simple("Host name to be bound to given address"),
         address = Simple("IP address to bind to given host name"))
+        
+class system(Device):
+    """
+    A generic class to execute commands from an IOC startup script. Wraps the 
+    system() call, so any precautions there apply here as well. Special 
+    characters will be escaped.
+    """
+    DbdFileList = ['system']
+
+    def __init__(self, command):
+        self.__super.__init__()
+        self.command = command
+
+    def PostIocInitialise(self):
+        print 'system %s' % quote_c_string(self.command)
+        
+    ArgInfo = makeArgInfo(__init__,
+        command = Simple("Command to be run post IOC init"))
+
