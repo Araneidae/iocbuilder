@@ -52,7 +52,7 @@ class Record(object):
     # appear in the generated database.
     @classmethod
     def RecordName(cls, name):
-        return recordnames.RecordNames.RecordName(name)
+        return recordnames.RecordName(name)
 
 
     __MetadataHooks = []

@@ -149,7 +149,7 @@ class Configure(Singleton):
         if record_names is None:
             record_names = recordnames.BasicRecordNames()
         self.__PublishNames(record_names)
-        recordnames.RecordNames = record_names
+        recordnames.SetRecordNames(record_names)
 
         if ioc_writer is None:
             ioc_writer = iocwriter.SimpleIocWriter()

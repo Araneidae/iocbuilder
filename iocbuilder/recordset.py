@@ -29,7 +29,7 @@ class RecordSet(support.Singleton):
     # Returns the record with the given name.  We perform record name
     # expansion using the currently configured record name hook.
     def LookupRecord(self, record):
-        return self.__RecordSet[recordnames.RecordNames.RecordName(record)]
+        return self.__RecordSet[recordnames.RecordName(record)]
 
     # Output complete set of records to stdout.
     def Print(self):

@@ -4,7 +4,7 @@ import string
 
 __all__ = [
     'BasicRecordNames', 'TemplateRecordNames', 'DiamondRecordNames',
-    'RecordName']
+    'RecordName', 'SetRecordNames', 'PopRecordNames']
 
 
 # Base class for record name configuration.
@@ -208,9 +208,22 @@ class DiamondRecordNames(RecordNamesBase):
         return '%s:%s' % (device, record)
 
 
+# We can switch between record name selections by pushing a new selection or
+# restoring the old selection.
+_RecordNames = []
 
-# By default we use an instance of RecordNamesBase for record names, but this
+def SetRecordNames(names = None):
+    if names is None:
+        names = BasicRecordNames()
+    _RecordNames.append(names)
+
+def PopRecordNames():
+    del _RecordNames[-1]
+    assert _RecordNames, 'Cannot pop last record name setting'
+
+# By default we use an instance of BasicRecordNames for record names, but this
 # can be rebound during configuration.
-RecordNames = RecordNamesBase()
+SetRecordNames()
+
 def RecordName(*args, **kargs):
-    return RecordNames.RecordName(*args, **kargs)
+    return _RecordNames[-1].RecordName(*args, **kargs)
