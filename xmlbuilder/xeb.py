@@ -408,7 +408,7 @@ class GUI(QMainWindow):
             return
         # ask for a filename
         if filename == '':
-            filename = str(QFileDialog.getOpenFileName())
+            filename = str(QFileDialog.getOpenFileName(filter="Xml Files (*.xml);;All files (*.*)"))
         if filename == '':
             return
         # store the filename
