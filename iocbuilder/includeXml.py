@@ -138,8 +138,10 @@ def constructArgDict(el, objects, classes, ident_lookup=True):
         # if it is an ident look it up
         if getattr(desc, 'ident', False):
             if ident_lookup:
-                assert value in objects, 'Can\'t find object %s' % value
-                value = objects[value]
+                if value in objects:
+                    value = objects[value]
+                else:
+                    print "***Warning: Can't lookup object %s" % value
         # otherwise make it the right type
         elif desc.typ == bool:
             if value and value.lower() != 'false':
