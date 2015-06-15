@@ -364,7 +364,8 @@ def ParseAndConfigure(options, dependency_tree=None):
         if 'EPICS_BASE' in tree.macros:
             options.epics_base = tree.macros['EPICS_BASE']
         if hasattr(options.ioc_writer, "macros"):
-            options.ioc_writer.macros.update(tree.macros)
+            filt_macros = {k: v for k,v in tree.macros.items() if "#" not in k}
+            options.ioc_writer.macros.update(filt_macros)
 
     # do the relevant configure call
     Configure(
