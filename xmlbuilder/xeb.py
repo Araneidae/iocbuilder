@@ -659,8 +659,10 @@ def main():
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    root = os.path.abspath(os.path.join(os.path.realpath(__file__), '..', '..', '..'))
-    sys.path.append(os.path.join(root, 'dls_environment'))
-    sys.path.append(os.path.join(root, 'dls_dependency_tree'))
-    sys.path.append(os.path.join(root, 'iocbuilder'))
+    # Pick up containing IOC builder
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    sys.path.append(root)
+    from pkg_resources import require
+    require('dls_environment')
+    require('dls_dependency_tree')
     main()
