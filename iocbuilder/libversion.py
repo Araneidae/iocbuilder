@@ -99,7 +99,7 @@ class ModuleVersion:
     # This is set while the module is being loaded so that we can detect
     # nested loads (really bad idea) and can treat the module name specially
     # in ModuleBase.
-    _LoadingModule = None
+    _LoadingModule = []
     # This is set to the list of auto-instantiating ModuleBase subclasses
     # that have been loaded so that we can auto instantiate them if
     # requested.
@@ -249,11 +249,10 @@ class ModuleVersion:
                 # local to ModuleFile.
                 self.module.__path__ = [os.path.dirname(ModuleFile)]
 
-            assert self._LoadingModule is None, \
-                'Calling ModuleVersion inside an EPICS module is a BAD idea!'
-            ModuleVersion._LoadingModule = self
+            ModuleVersion._LoadingModule.append(self)
             execfile(ModuleFile, self.module.__dict__)
-            ModuleVersion._LoadingModule = None
+            assert ModuleVersion._LoadingModule.pop() == self, \
+                'Something went wrong during module loading!'
 
             if hasattr(self.module, '__all__'):
                 for name in self.module.__all__:
@@ -318,7 +317,7 @@ class ModuleBase(support.autosuper):
             cls.BaseClass = False
             # A normal implementation class.  This needs to be tied to a
             # particular module.
-            if ModuleVersion._LoadingModule is None:
+            if not ModuleVersion._LoadingModule:
                 # Module is being defined as part of the build script, not in
                 # the module.  In this case if the class doesn't already have
                 # a module name specified we'll automatically name it after
@@ -330,7 +329,7 @@ class ModuleBase(support.autosuper):
                 # name to agree with the loading module: in other words, an
                 # EPICS module isn't allowed to create classes which belong to
                 # other modules.
-                name = ModuleVersion._LoadingModule.Name()
+                name = ModuleVersion._LoadingModule[-1].Name()
                 if 'ModuleName' in dict:
                     assert cls.ModuleName == name, \
                         'ModuleName must be %s' % name

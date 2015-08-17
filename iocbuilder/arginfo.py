@@ -197,7 +197,7 @@ def defArgInfo(_optional=[], **descs):
         # FIXME: this is probably a bad thing to do as it is a function rather
         # than a class, but it seems to work...
         ModuleBase.ModuleBaseClasses.append(f)
-        f.ModuleName = ModuleVersion._LoadingModule.Name()
+        f.ModuleName = ModuleVersion._LoadingModule[-1].Name()
         return f
     return decorate
 
