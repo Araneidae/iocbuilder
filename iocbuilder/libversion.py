@@ -216,10 +216,11 @@ class ModuleVersion:
         self.ClassesList = []
         modules.LoadedModules[self.__module_name] = self.ClassesList
 
-        # Create some useful module properties.
+        # Create some useful module properties and push a number of
+        # ModuleVersion attributes down to the new module.
         self.module.ModuleVersion = self
-        self.module.LibPath = self.LibPath
-        self.module.ModuleFile = self.ModuleFile
+        for attr in ['LibPath', 'ModuleFile', 'LoadDefinitions']:
+            setattr(self.module, attr, getattr(self, attr))
 
 
     def __LoadModuleDefinitions(self, load_path):
@@ -239,30 +240,44 @@ class ModuleVersion:
                     break
 
         if ModuleFile:
-            ModuleFile = os.path.abspath(ModuleFile)
-            self.module.__file__ = ModuleFile
-            if IsPackage:
-                # Convert the module into a package by setting up the file
-                # name and path so that it looks like a convincing Python
-                # package.  Now executing execfile has the desired effect of
-                # ensuring that all imports with ModuleFile are treated as
-                # local to ModuleFile.
-                self.module.__path__ = [os.path.dirname(ModuleFile)]
-
-            ModuleVersion._LoadingModule.append(self)
-            execfile(ModuleFile, self.module.__dict__)
-            assert ModuleVersion._LoadingModule.pop() == self, \
-                'Something went wrong during module loading!'
-
-            if hasattr(self.module, '__all__'):
-                for name in self.module.__all__:
-                    assert not hasattr(hardware, name), \
-                        'Value %s.%s already in hardware module' % (
-                            self.__name, name)
-                    setattr(hardware, name, getattr(self.module, name))
+            self.__LoadDefinitions(ModuleFile, IsPackage)
         elif ReportMissingModuleFiles:
             print >>sys.stderr, \
                 'Module definitions for', self.__name, 'not found'
+
+
+    def __LoadDefinitions(self, ModuleFile, IsPackage):
+        ModuleFile = os.path.abspath(ModuleFile)
+        self.module.__file__ = ModuleFile
+        if IsPackage:
+            # Convert the module into a package by setting up the file
+            # name and path so that it looks like a convincing Python
+            # package.  Now executing execfile has the desired effect of
+            # ensuring that all imports with ModuleFile are treated as
+            # local to ModuleFile.
+            self.module.__path__ = [os.path.dirname(ModuleFile)]
+
+        ModuleVersion._LoadingModule.append(self)
+        execfile(ModuleFile, self.module.__dict__)
+        assert ModuleVersion._LoadingModule.pop() == self, \
+            'Something went wrong during module loading!'
+
+        if hasattr(self.module, '__all__'):
+            for name in self.module.__all__:
+                assert not hasattr(hardware, name), \
+                    'Value %s.%s already in hardware module' % (
+                        self.__name, name)
+                setattr(hardware, name, getattr(self.module, name))
+
+
+    ## This function can be called to add new definitions to the associated
+    # module.
+    def LoadDefinitions(self, load_path):
+        ModuleFile, IsPackage = _CheckPythonModule(load_path, self.__name)
+        assert ModuleFile, \
+            'Definitions for module %s not found in directory %s' % \
+                (self.__name, load_path)
+        self.__LoadDefinitions(ModuleFile, IsPackage)
 
 
 
