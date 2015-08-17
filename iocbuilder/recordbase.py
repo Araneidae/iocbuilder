@@ -136,9 +136,7 @@ class Record(object):
             for field in ['INP', 'OUT']
             if self.ValidFieldName(field)]
         if len(address) == 1:
-            self.__setattr('address', address[0])
-        else:
-            self.__setattr('address', 'address')
+            self.__setattr('__address', address[0])
 
         # Make sure all the fields are properly processed and validated.
         for name, value in fields.items():
