@@ -115,6 +115,7 @@ def populate_class(cls, template_file):
 
 
     for name, desc in macro_desc_re.findall(text):
+        desc = desc.strip() # needed in case of CRLF separators in template (e.g. windows based modules)
         search = re.search(r'\n#[ \t]*', desc)
         if search:
             desc = re.sub(search.group(), '\n', desc)
