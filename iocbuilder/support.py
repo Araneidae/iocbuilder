@@ -282,7 +282,8 @@ def AutoRegisterClass(register, ignoreParent=True, superclass=type):
 # because of the stupidly complex syntax...
 def msi_replace_macros(d, text):
     if '$(' in text:
-        args = ['msi'] + ['-M%s=%s' % x for x in d.items()]
+        args = ['msi'] + ['-M%s=%s' % (k, str(v).replace(",undefined)", ")"))
+            for k, v in d.items()]
         p = subprocess.Popen(args, stdout = subprocess.PIPE,
             stdin = subprocess.PIPE)
         return p.communicate(text)[0]
