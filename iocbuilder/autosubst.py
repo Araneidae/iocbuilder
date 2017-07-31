@@ -173,6 +173,9 @@ class AutoSubstitution(recordset.Substitution):
     Scanned = False
 
     def __init_meta__(cls, first_call):
+        assert not hasattr(cls, "Templatefile"), \
+            "Cls %s defines 'Templatefile'. It should be 'TemplateFile'" % \
+            cls.__name__
         if cls.TemplateFile is not None and not cls.Scanned:
             # populate Arguments, Descriptions etc.
             populate_class(cls, cls.ModuleFile(
