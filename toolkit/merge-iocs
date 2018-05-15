@@ -4,8 +4,13 @@
 # script will merge the IOCs into trunk.
 
 
-# The IOCs to be updated are found here under subversion.
-IOC_TRUNK="$SVN_ROOT/diamond/trunk/ioc"
+
+# The IOCs to be updated are found here under subversion:
+SVN_IOC_TRUNK="$SVN_ROOT/diamond/trunk/ioc"
+# and here under git:
+GITOLITE=dascgitolite@dasc-git.diamond.ac.uk
+GIT_IOC_TRUNK=ssh://$GITOLITE/controls/ioc
+
 HERE="$(dirname "$(readlink -fn "$0")")"
 
 
@@ -26,6 +31,201 @@ function OnExit()
         rm -rf "$TEMP_ROOT"
     fi
 }
+
+
+# ------------------------------------------------------------------------------
+# SVN functions
+
+function prepare_workspace_svn()
+{
+    svn checkout -qN "$SVN_IOC_TRUNK" "$TEMP_ROOT"
+}
+
+
+function checkout_ioc_svn()
+{
+    local location="$1"
+    local ioc_name="$2"
+    local SVN_DOM_DIR="$TEMP_ROOT/$location"
+    local SVN_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
+
+    # Check out the current IOC state, or create from new if necessary.
+
+    # Create the location skeleton and the IOC
+    svn update $QUIET -N "$TEMP_ROOT/$location"  &&
+    svn update -q "$SVN_IOC_DIR"  &&
+    # Create new IOC if necessary
+    if ! [ -d "$SVN_IOC_DIR" ]; then
+        if ((AUTO_ADD)); then
+            [ -d "$SVN_DOM_DIR" ]  ||
+                svn mkdir $QUIET "$SVN_DOM_DIR"
+            svn mkdir $QUIET "$SVN_IOC_DIR"
+            svn propset $QUIET dls:contact "$USER" "$SVN_IOC_DIR"
+        else
+            Error "IOC $location/$ioc_name not in subversion"
+        fi
+    fi
+}
+
+
+function merge_ioc_svn()
+{
+    local location="$1"
+    local ioc_name="$2"
+    local ioc_dir="$3"
+    local SVN_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
+
+    "$HERE/merge-svn" $QUIET "$SVN_IOC_DIR" "$ioc_dir"  ||
+        Error "Something failed merging ioc $ioc_name"
+}
+
+
+function show_ioc_diff_svn()
+{
+    svn diff --diff-cmd="$HERE/merge-iocs-diff" "$TEMP_ROOT"
+}
+
+
+function commit_iocs_svn()
+{
+    COMMIT_MESSAGE="${COMMIT_MESSAGE}\
+Automatically merged IOCs from $IOCS_DIR:
+    ${MERGED_IOCS[*]}
+"
+    svn commit -m"$COMMIT_MESSAGE" "$TEMP_ROOT"
+}
+
+
+# ------------------------------------------------------------------------------
+# Git functions
+
+function prepare_workspace_git()
+{
+    # No workspace preparation required for git
+    :
+}
+
+
+function checkout_ioc_git()
+{
+    local location="$1"
+    local ioc_name="$2"
+    local GIT_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
+
+    mkdir -p "$GIT_IOC_DIR"  &&
+    (
+        cd "$GIT_IOC_DIR"  &&
+        git clone $QUIET "$GIT_IOC_TRUNK/$location/$ioc_name" .
+    )
+}
+
+
+function merge_ioc_git()
+{
+    local location="$1"
+    local ioc_name="$2"
+    local ioc_dir="$3"
+    local GIT_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
+
+    # First erase all working files in the checkout
+    find "$GIT_IOC_DIR" -mindepth 1 -maxdepth 1 \
+        -name .git -o -exec rm -rf {} +  &&
+    # Replace with entire contents of given $ioc_dir
+    find "$ioc_dir" -mindepth 1 -maxdepth 1 \
+        -exec cp -a {} "$GIT_IOC_DIR" \;  &&
+    # Update git repo
+    (
+        cd "$GIT_IOC_DIR"  &&
+        git add -u .  &&            # Remove deleted files
+        git add .                   # Add new files
+    )
+
+    # We leave the update staged but not committed, we'll commit as part of the
+    # push process
+}
+
+
+function show_ioc_diff_git()
+{
+    local ioc
+    for ioc in "$TEMP_ROOT"/*/*; do
+        ( cd "$ioc"  &&  git diff --cached )
+    done
+}
+
+
+function commit_iocs_git()
+{
+    local ioc
+    for ioc in "$TEMP_ROOT"/*/*; do
+        COMMIT="${COMMIT_MESSAGE}\
+Automatically merged IOC $ioc from $IOCS_DIR"
+        (
+            cd "$ioc"  &&
+            git commit -m"$COMMIT"  &&
+            if [ -n "$RELEASE_NUM" ]; then
+                git tag "$RELEASE_NUM"
+            fi  &&
+            git push --tags
+        )  ||
+            Error "Problem committing changes to $ioc"
+    done
+}
+
+
+# ------------------------------------------------------------------------------
+# The following functions provide a common interface to the repository
+
+# Prepares the working space.  For svn we also need to check out a skeleton of
+# the entire repository, for git we will do the checkouts later.
+#
+# Called with no arguments:
+#   prepare_workspace
+function prepare_workspace()
+{
+    # Do everything in a directory we're going to discard
+    TEMP_ROOT="$(mktemp -d /tmp/merge-iocs.XXXXXX)"  &&
+    trap OnExit EXIT  &&
+
+    # Prepare the working space
+    prepare_workspace_$IOC_REPO "$@"  ||
+        Error 'Unable to prepare temporary files'
+}
+
+
+# Checks out the given IOC
+#
+# Called with 
+function checkout_ioc()
+{
+    $ECHO "Checking out IOC $location/$ioc_name"  &&
+    checkout_ioc_$IOC_REPO "$@"  ||
+        Error "Error checking out $location/$ioc_name"
+}
+
+
+# Performs IOC merge
+function merge_ioc()
+{
+    $ECHO "Merging IOC $location/$ioc_name"
+    merge_ioc_$IOC_REPO "$@"  ||
+        Error "Something failed merging ioc $ioc_name"
+}
+
+
+function commit_iocs()
+{
+    commit_iocs_$IOC_REPO
+}
+
+
+function show_ioc_diff()
+{
+    show_ioc_diff_$IOC_REPO "$@"
+}
+
+
+# ------------------------------------------------------------------------------
 
 
 # Performs a sanity check on the given directory to ensure that it really is
@@ -54,9 +254,13 @@ ValidateIoc()
     done
 
     # Simply refuse to process IOCs which have already been put under
-    # subversion: clearly a sign of confusion.
+    # source control: clearly a sign of confusion.
     [ -n "$(find "$1" -name .svn -print -quit)" ]  &&
         Error "IOC $1 seems to have svn files.  Not processing."
+    # For git it's harder to do a clean check.  All we do here is check for the
+    # top level .git directory, a pretty blunt check
+    [ -e "$1"/.git ]  &&
+        Error "IOC $1 seems to have a .git directory.  Not processing."
 }
 
 
@@ -66,13 +270,13 @@ ValidateIoc()
 #
 CheckChanged()
 {
-    (($("$HERE/merge-iocs-diff" -r --exclude='*.svn*' "$1" "$2" | wc -l) > 0))
+    (($("$HERE/merge-iocs-diff" \
+        -r --exclude="*.$IOC_REPO*" "$1" "$2" | wc -l) > 0))
 }
 
 
 # This is the function called in the loop below which performs all the real
-# work of merging an IOC from the given directory into the checked out
-# subversion tree.
+# work of merging an IOC from the given directory into the workspace tree.
 #   Called with the path to the IOC to merge and the IOC name split into its
 # two components, location and name:
 #
@@ -90,37 +294,18 @@ MergeOneIoc()
     [ "$location" = "${ioc_name%%-*}" -o "$ioc_name" = "${ioc_name%%-*}" ]  ||
         Error "IOC $ioc_name doesn't match location $location"
 
-    SVN_DOM_DIR="$TEMP_ROOT/$location"
-    SVN_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
     ioc_dir="$IOCS_DIR/$ioc_path"
+    repo_dir="$TEMP_ROOT/$location/$ioc_name"
 
     # Ensure the IOC we're about to merge is a proper ioc!
     ValidateIoc "$ioc_dir"
 
-    # Create the location skeleton
-    svn update $QUIET -N "$TEMP_ROOT/$location"  &&
-
     # Check out the current IOC state, or create from new if necessary.
-    $ECHO "Checking out IOC $location/$ioc_name"  &&
-    svn update -q "$SVN_IOC_DIR"  &&
-    if ! [ -d "$SVN_IOC_DIR" ]; then
-        if ((AUTO_ADD)); then
-            [ -d "$SVN_DOM_DIR" ]  ||
-                svn mkdir $QUIET "$SVN_DOM_DIR"
-            svn mkdir $QUIET "$SVN_IOC_DIR"
-            svn propset $QUIET dls:contact "$USER" "$SVN_IOC_DIR"
-        else
-            Error "IOC $location/$ioc_name not in subversion"
-        fi
-    fi  ||
-        Error "Error checking out $location/$ioc_name"
+    checkout_ioc "$location" "$ioc_name"
 
     # Merge the newly generated IOC into the SVN tree.
-    if ((FORCE_UPDATE))  ||
-            CheckChanged  "$SVN_IOC_DIR" "$ioc_dir"; then
-        $ECHO "Merging IOC $location/$ioc_name"
-        "$HERE/merge-svn" $QUIET "$SVN_IOC_DIR" "$ioc_dir"  ||
-            Error "Something failed merging ioc $ioc_name"
+    if ((FORCE_UPDATE))  ||  CheckChanged  "$repo_dir" "$ioc_dir"; then
+        merge_ioc "$location" "$ioc_name" "$ioc_dir"
         MERGED_IOCS=("${MERGED_IOCS[@]}" "$location/$ioc_name")
     else
         $ECHO "IOC $location/$ioc_name unchanged"
@@ -130,7 +315,7 @@ MergeOneIoc()
 
 SHOW_DIFFS=0
 KEEP_DIR=0
-COMMIT_SVN=0
+COMMIT_REPO=0
 COMMIT_MESSAGE=
 AUTO_ADD=0
 FORCE_UPDATE=0
@@ -139,10 +324,12 @@ QUIET=-q
 RELEASE_NUM=
 RELEASE_RHEL=
 RELEASE_EPICS=
-while getopts 'dcm:akfr:R:e:vh' option; do
+RELEASE_GIT=
+IOC_REPO=svn
+while getopts 'dcm:akfr:R:e:gvh' option; do
     case $option in
     d)  SHOW_DIFFS=1 ;;
-    c)  COMMIT_SVN=1 ;;
+    c)  COMMIT_REPO=1 ;;
     m)  COMMIT_MESSAGE="$OPTARG"$'\n' ;;
     k)  KEEP_DIR=1 ;;
     a)  AUTO_ADD=1 ;;
@@ -150,29 +337,32 @@ while getopts 'dcm:akfr:R:e:vh' option; do
     r)  RELEASE_NUM="$OPTARG" ;;
     R)  RELEASE_RHEL=-r"$OPTARG" ;;
     e)  RELEASE_EPICS=-e"$OPTARG" ;;
+    g)  IOC_REPO=git
+        RELEASE_GIT=-g ;;
     v)  ECHO=echo
         [ -z "$QUIET" ] && set -x
         QUIET= ;;
     h)  cat <<EOF
 Usage: $(basename "$0") [options] <ioc-dir> [<iocs>]
 
-Merges updated IOC directories in <iocs> into subversion trunk.  If run
+Merges updated IOC directories in <iocs> into repository trunk.  If run
 without any options performs the merge into a temporary directory which is
 discarded, but reports which IOCs were merged.  Normally run with -c and -m
 to automatically commit any merges, but an initial run with -d is recommended.
 
 The following options are supported:
     -d      Show diffs to IOCs which will be committed, use for review.
-    -c      Commit changes to subversion
-    -m:     Commit message to use for SVN commit
+    -c      Commit changes to repository
+    -m:     Commit message to use for commit
     -a      Add IOCs which don't already exist.  Note that the IOC location
             must already exist.
     -r:     Release all updated iocs with specified release number
     -R:     Use specified Red-Hat version for release (passed as -r flag to
             dls-release.py)
     -e:     Use specified EPICS version for release (passed to dls-release.py)
-    -k      Keep the updated SVN directory tree, otherwise it is deleted.
+    -k      Keep the updated IOC directory tree, otherwise it is deleted.
     -f      Don't check for changes, force update anyway
+    -g      Check out IOC from git (on gitolite server), not SVN.
     -v      Verbose: show details, -vv is super verbose (debug only)
     -h      Shows this help text.
 EOF
@@ -204,12 +394,16 @@ fi
     Error "No IOCs to commit found in $IOCS_DIR"
 
 
-# Do everything in a directory we're going to discard
-TEMP_ROOT="$(mktemp -d /tmp/merge-iocs.XXXXXX)"  &&
-trap OnExit EXIT  &&
-# Pick up the skeleton of the base directory we're going to update
-svn checkout -qN "$SVN_ROOT/diamond/trunk/ioc" "$TEMP_ROOT"  ||
-    Error 'Unable to prepare temporary files'
+# # Do everything in a directory we're going to discard
+# TEMP_ROOT="$(mktemp -d /tmp/merge-iocs.XXXXXX)"  &&
+# trap OnExit EXIT  &&
+# # Pick up the skeleton of the base directory we're going to update
+# svn checkout -qN "$IOC_TRUNK" "$TEMP_ROOT"  ||
+#     Error 'Unable to prepare temporary files'
+
+# Prepare the workspace: create temporary directory and checkout the skeleton if
+# required.
+prepare_workspace
 
 
 # This is used to accumulate the list of merged IOCs
@@ -262,20 +456,16 @@ done
 # the user asked for.
 if ((${#MERGED_IOCS[@]})); then
     if ((SHOW_DIFFS)); then
-        svn diff --diff-cmd="$HERE/merge-iocs-diff" "$TEMP_ROOT"
+        show_ioc_diff
     fi
 
-    if ((COMMIT_SVN)); then
-        COMMIT_MESSAGE="${COMMIT_MESSAGE}\
-Automatically merged IOCs from $IOCS_DIR:
-    ${MERGED_IOCS[*]}
-"
-        svn commit -m"$COMMIT_MESSAGE" "$TEMP_ROOT"
+    if ((COMMIT_REPO)); then
+        commit_iocs
 
         if [ -n "$RELEASE_NUM" ]; then
             RELEASE_PROBLEMS=()
             for ioc in "${MERGED_IOCS[@]}"; do
-                dls-release.py -i $RELEASE_RHEL $RELEASE_EPICS \
+                dls-release.py -i $RELEASE_RHEL $RELEASE_EPICS $RELEASE_GIT \
                         "$ioc" "$RELEASE_NUM" ||
                     RELEASE_PROBLEMS=("${RELEASE_PROBLEMS[@]}" "$ioc")
             done
