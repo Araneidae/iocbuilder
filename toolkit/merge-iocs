@@ -159,14 +159,14 @@ function commit_iocs_git()
     local ioc
     for ioc in "$TEMP_ROOT"/*/*; do
         COMMIT="${COMMIT_MESSAGE}\
-Automatically merged IOC $ioc from $IOCS_DIR"
+Automatically merged IOC $(basename "$ioc") from $IOCS_DIR"
         (
             cd "$ioc"  &&
             git commit -m"$COMMIT"  &&
             if [ -n "$RELEASE_NUM" ]; then
                 git tag "$RELEASE_NUM"
             fi  &&
-            git push --tags
+            git push origin master --tags
         )  ||
             Error "Problem committing changes to $ioc"
     done
