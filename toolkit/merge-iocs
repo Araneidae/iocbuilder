@@ -136,8 +136,7 @@ function merge_ioc_git()
     # Update git repo
     (
         cd "$GIT_IOC_DIR"  &&
-        git add -u .  &&            # Remove deleted files
-        git add .                   # Add new files
+        git add -A                  # Add all changes
     )
 
     # We leave the update staged but not committed, we'll commit as part of the
