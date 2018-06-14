@@ -161,11 +161,12 @@ function commit_iocs_git()
 Automatically merged IOC $(basename "$ioc") from $IOCS_DIR"
         (
             cd "$ioc"  &&
-            git commit -m"$COMMIT"  &&
+            git commit -m "$COMMIT"  &&
+            git push origin master &&
             if [ -n "$RELEASE_NUM" ]; then
-                git tag "$RELEASE_NUM"
-            fi  &&
-            git push origin master --tags
+                git tag -a "$RELEASE_NUM" -m "Release $RELEASE_NUM" &&
+                git push origin ${RELEASE_NUM}
+            fi
         )  ||
             Error "Problem committing changes to $ioc"
     done
