@@ -187,6 +187,9 @@ def createClassLookup():
             continue
         # add it to our class dict
         name = o.ModuleName + '.' + o.__name__
+        # Special case names that start with a digit as they aren't valid xml idents
+        if name and name[0].isdigit():
+            name = "_" + name
         classes[name] = o
     return classes
 
