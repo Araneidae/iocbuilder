@@ -322,11 +322,12 @@ FORCE_UPDATE=0
 ECHO=:
 QUIET=-q
 RELEASE_NUM=
+DO_RELEASE=0
 RELEASE_RHEL=
 RELEASE_EPICS=
 RELEASE_GIT=
 IOC_REPO=svn
-while getopts 'dcm:akfr:R:e:gvh' option; do
+while getopts 'dcm:akft:r:R:e:gvh' option; do
     case $option in
     d)  SHOW_DIFFS=1 ;;
     c)  COMMIT_REPO=1 ;;
@@ -334,7 +335,9 @@ while getopts 'dcm:akfr:R:e:gvh' option; do
     k)  KEEP_DIR=1 ;;
     a)  AUTO_ADD=1 ;;
     f)  FORCE_UPDATE=1 ;;
-    r)  RELEASE_NUM="$OPTARG" ;;
+    t)  RELEASE_NUM="$OPTARG" ;;
+    r)  RELEASE_NUM="$OPTARG"
+        DO_RELEASE=1 ;;
     R)  RELEASE_RHEL=-r"$OPTARG" ;;
     e)  RELEASE_EPICS=-e"$OPTARG" ;;
     g)  IOC_REPO=git
@@ -356,6 +359,8 @@ The following options are supported:
     -m:     Commit message to use for commit
     -a      Add IOCs which don't already exist.  Note that the IOC location
             must already exist.
+    -t:     Tag all updated iocs with specified release number, but don't
+            release (this is overridden by -r)
     -r:     Release all updated iocs with specified release number
     -R:     Use specified Red-Hat version for release (passed as -r flag to
             dls-release.py)
@@ -462,7 +467,7 @@ if ((${#MERGED_IOCS[@]})); then
     if ((COMMIT_REPO)); then
         commit_iocs
 
-        if [ -n "$RELEASE_NUM" ]; then
+        if ((DO_RELEASE)); then
             RELEASE_PROBLEMS=()
             for ioc in "${MERGED_IOCS[@]}"; do
                 dls-release.py -i $RELEASE_RHEL $RELEASE_EPICS $RELEASE_GIT \
