@@ -5,13 +5,13 @@
 #
 # The diff pattern ensures that the boiler-plate messages at the start of
 # every generated file don't trigger differences.  These lines are of the
-# form 
+# form
 #
 #   This file was automatically generated on %(now)s from
 #   source: %(source)s
 #
-# preceded by either # or /* or * comment characters.
+# preceded by either # or /* or * or @rem comment characters.
 
-DIFF_PATTERN='^\(#\|/\*\) This file was automatically \|^\(#\| \*\) source: '
+C='^\(#\|[/ ]\*\|@rem\)'
+DIFF_PATTERN="$C This file was automatically generated on \|$C source: "
 exec diff -I"$DIFF_PATTERN" "$@"
-
