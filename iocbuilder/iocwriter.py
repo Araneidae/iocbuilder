@@ -516,6 +516,8 @@ EPICS_BASE = %(EPICS_BASE)s
         WORK = paths.module_work_path,
         EPICS_BASE = paths.EPICS_BASE)
 
+    macros = dict((k, v) for k, v in macros.iteritems() if v is not None)
+
     # Directory helper routines
 
     def MakeDirectory(self, *dir_names):
