@@ -56,7 +56,7 @@ class StartupCommand(Device):
     value = Simple('Value to put to PV'))
 def dbpf(pv, value):
     """Set a pv to a value after iocInit in the startup script"""
-    StartupCommand('dbpf "%s" "%s"' % (pv, value), post_init=True, at_end=False)
+    StartupCommand('dbpf "%s", "%s"' % (pv, value), post_init=True, at_end=False)
 
 
 class EpicsEnvSet(ModuleBase):
