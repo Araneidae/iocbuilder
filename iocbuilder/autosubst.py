@@ -83,9 +83,11 @@ def populate_class(cls, template_file):
                     default_values.append(default)
             else:
                 # this is a required or optional macro
-                # strip off any msi ,undefined stuff
+                # strip off any msi ,undefined and ,recursive stuff
                 if mtext.endswith(',undefined'):
                     mtext = mtext.replace(',undefined', '')
+                elif mtext.endswith(',recursive'):
+                    mtext = mtext.replace(',recursive', '')
                 if mtext in default_names:
                     print >> sys.stderr, \
                     '***Warning: Cannot define non-default macro "%s", already '\
