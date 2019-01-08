@@ -8,8 +8,8 @@
 # The IOCs to be updated are found here under subversion:
 SVN_IOC_TRUNK="$SVN_ROOT/diamond/trunk/ioc"
 # and here under git:
-GITOLITE=dascgitolite@dasc-git.diamond.ac.uk
-GIT_IOC_TRUNK=ssh://$GITOLITE/controls/ioc
+GITLAB="git@gitlab.diamond.ac.uk"
+GIT_IOC_TRUNK=ssh://$GITLAB/controls/ioc
 
 HERE="$(dirname "$(readlink -fn "$0")")"
 
@@ -115,7 +115,7 @@ function checkout_ioc_git()
     mkdir -p "$GIT_IOC_DIR"  &&
     (
         cd "$GIT_IOC_DIR"  &&
-        git clone $QUIET "$GIT_IOC_TRUNK/$location/$ioc_name" .
+        git clone $QUIET "$GIT_IOC_TRUNK/$location/${ioc_name}.git" .
     )
 }
 
