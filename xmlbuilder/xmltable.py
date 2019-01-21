@@ -104,7 +104,9 @@ class Table(QAbstractTableModel):
         elif typ == int:
             if "$(" in val:
                 return (val, True)
-            return variant.toInt()
+            # Using .toLongLong() to handle very large numbers
+            # eg 89000000000
+            return variant.toLongLong()
         elif typ == float:
             if "$(" in val:
                 return (val, True)
