@@ -274,6 +274,11 @@ CheckChanged()
         -r --exclude="*.$IOC_REPO*" "$1" "$2" | wc -l) > 0))
 }
 
+# Return first digit of RHEL version; e.g. 6 or 7
+function redhat_release
+{
+    lsb_release -rs | cut -d. -f1
+}
 
 # This is the function called in the loop below which performs all the real
 # work of merging an IOC from the given directory into the workspace tree.
@@ -326,8 +331,15 @@ DO_RELEASE=0
 RELEASE_RHEL=
 RELEASE_EPICS=
 RELEASE_GIT=
-IOC_REPO=svn
-while getopts 'dcm:akft:r:R:e:gvh' option; do
+
+# Choose default version control system based on operating system
+if [[ $(redhat_release) -gt 6 ]]; then
+    IOC_REPO=git
+else
+    IOC_REPO=svn
+fi
+
+while getopts 'dcm:akft:r:R:e:sgvh' option; do
     case $option in
     d)  SHOW_DIFFS=1 ;;
     c)  COMMIT_REPO=1 ;;
@@ -340,6 +352,8 @@ while getopts 'dcm:akft:r:R:e:gvh' option; do
         DO_RELEASE=1 ;;
     R)  RELEASE_RHEL=-r"$OPTARG" ;;
     e)  RELEASE_EPICS=-e"$OPTARG" ;;
+    # Override default version control system based on options
+    s)  IOC_REPO=svn ;;
     g)  IOC_REPO=git
         RELEASE_GIT=-g ;;
     v)  ECHO=echo
@@ -352,6 +366,11 @@ Merges updated IOC directories in <iocs> into repository trunk.  If run
 without any options performs the merge into a temporary directory which is
 discarded, but reports which IOCs were merged.  Normally run with -c and -m
 to automatically commit any merges, but an initial run with -d is recommended.
+
+On Red Hat 6 and earlier, defaults to using Subversion (SVN) unless the -g
+option is given.
+On Red Hat 7 and later, defaults to using Git (Gitlab) uless the -s option
+is given.
 
 The following options are supported:
     -d      Show diffs to IOCs which will be committed, use for review.
@@ -367,7 +386,10 @@ The following options are supported:
     -e:     Use specified EPICS version for release (passed to dls-release.py)
     -k      Keep the updated IOC directory tree, otherwise it is deleted.
     -f      Don't check for changes, force update anyway
-    -g      Check out IOC from git (on gitolite server), not SVN.
+    -s      Check out IOC from SVN
+            This is the default on RHEL6 and earlier.
+    -g      Check out IOC from git (on gitlab server), not SVN.
+            This is the default on RHEL7 and later.
     -v      Verbose: show details, -vv is super verbose (debug only)
     -h      Shows this help text.
 EOF
