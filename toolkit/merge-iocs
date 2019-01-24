@@ -335,8 +335,10 @@ RELEASE_GIT=
 # Choose default version control system based on operating system
 if [[ $(redhat_release) -gt 6 ]]; then
     IOC_REPO=git
+    RELEASE_GIT=-g
 else
     IOC_REPO=svn
+    RELEASE_GIT=
 fi
 
 while getopts 'dcm:akft:r:R:e:sgvh' option; do
@@ -353,7 +355,8 @@ while getopts 'dcm:akft:r:R:e:sgvh' option; do
     R)  RELEASE_RHEL=-r"$OPTARG" ;;
     e)  RELEASE_EPICS=-e"$OPTARG" ;;
     # Override default version control system based on options
-    s)  IOC_REPO=svn ;;
+    s)  IOC_REPO=svn
+        RELEASE_GIT= ;;
     g)  IOC_REPO=git
         RELEASE_GIT=-g ;;
     v)  ECHO=echo
