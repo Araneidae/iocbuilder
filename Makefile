@@ -22,6 +22,7 @@ clean:
 
 # Install the built egg
 install: dist
+	mkdir -p $(INSTALL_DIR)
 	$(PYTHON) setup.py easy_install -m \
             --record=installed.files \
             --install-dir=$(INSTALL_DIR) \
