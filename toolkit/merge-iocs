@@ -345,7 +345,7 @@ while getopts 'dcm:akft:r:R:e:sgvh' option; do
     case $option in
     d)  SHOW_DIFFS=1 ;;
     c)  COMMIT_REPO=1 ;;
-    m)  COMMIT_MESSAGE="$OPTARG"$'\n' ;;
+    m)  COMMIT_MESSAGE="$OPTARG"$'\n\n' ;;
     k)  KEEP_DIR=1 ;;
     a)  AUTO_ADD=1 ;;
     f)  FORCE_UPDATE=1 ;;
