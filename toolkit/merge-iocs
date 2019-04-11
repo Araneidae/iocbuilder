@@ -113,8 +113,10 @@ function checkout_ioc_git()
     local GIT_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
 
     if ((AUTO_ADD)); then
-        # Create new empty repo
-        dls-start-new-module.py -e -a ioc "$location/${ioc_name}" ||
+        # Create new empty repo on server
+        # The ignore-existing argument skips existing modules silently
+        # Returns nonzero if some other error
+        dls-start-new-module.py --ioc --empty --ignore_existing "$location/${ioc_name}" ||
             Error "Failed to create remote repo for ${ioc_name}"
     fi
 
