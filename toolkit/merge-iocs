@@ -113,6 +113,10 @@ function checkout_ioc_git()
     local GIT_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
 
     if ((AUTO_ADD)); then
+        # Load dls_ade if on RHEL6 to get correct version of dls-start-new-module.py
+        if [[ $(redhat_release) -le 6 ]]; then
+            module load dls_ade
+        fi
         # Create new empty repo on server
         # The ignore-existing argument skips existing modules silently
         # Returns nonzero if some other error
