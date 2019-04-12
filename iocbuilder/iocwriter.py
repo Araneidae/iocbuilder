@@ -635,13 +635,14 @@ EPICS_BASE = %(EPICS_BASE)s
     #   Name of the makefile for the generated IOC, defaults to \c Makefile.
     def __init__(self, path, ioc_name,
             check_release = True, substitute_boot = False, edm_screen = False,
-            keep_files = [], makefile_name = 'Makefile'):
+            keep_files = [], makefile_name = 'Makefile', build_debug = False):
         # Remember parameters
         IocWriter.__init__(self, path)  # Sets up iocRoot
         self.check_release = check_release
         self.substitute_boot = substitute_boot
         self.keep_files = keep_files
         self.edm_screen = edm_screen
+        self.build_debug = build_debug
 
         # We have to fudge the win32 build as although we run the builder on
         # Linux the IOC will have to be build on Windows.  This is a sign that
@@ -917,16 +918,28 @@ EPICS_BASE = %(EPICS_BASE)s
         else:
             config_file = 'CONFIG'
             config_text = self.CONFIG_TEXT
+
         if self.cross_build:
             ARCH = configure.Architecture()
         else:
             ARCH = ''
+
+        CHECK_RELEASE = self.check_release and 'YES' or 'NO'
+
         self.WriteFile(('configure', config_file),
             config_text % dict(
                 ARCH = ARCH,
-                CHECK_RELEASE = self.check_release and 'YES' or 'NO'),
+                CHECK_RELEASE = CHECK_RELEASE),
             mode = 'a')
 
+        if self.build_debug and configure.Architecture() == 'windows-x64':
+            debug_config_file = 'CONFIG_SITE.%s.Common' % configure.Architecture()
+            DEBUG_ARCH = '%s-debug' % configure.Architecture()
+            self.WriteFile(('configure', debug_config_file),
+                           config_text % dict(
+                               ARCH = DEBUG_ARCH,
+                               CHECK_RELEASE = CHECK_RELEASE,
+                               mode = 'a'))
 
     def CreateDataFiles(self):
         # Note that the data files have to be generated after almost
