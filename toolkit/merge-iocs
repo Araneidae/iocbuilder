@@ -112,6 +112,18 @@ function checkout_ioc_git()
     local ioc_name="$2"
     local GIT_IOC_DIR="$TEMP_ROOT/$location/$ioc_name"
 
+    if ((AUTO_ADD)); then
+        # Load dls_ade if on RHEL6 to get correct version of dls-start-new-module.py
+        if [[ $(redhat_release) -le 6 ]]; then
+            module load dls_ade
+        fi
+        # Create new empty repo on server
+        # The ignore-existing argument skips existing modules silently
+        # Returns nonzero if some other error
+        dls-start-new-module.py --ioc --empty --ignore_existing "$location/${ioc_name}" ||
+            Error "Failed to create remote repo for ${ioc_name}"
+    fi
+
     mkdir -p "$GIT_IOC_DIR"  &&
     (
         cd "$GIT_IOC_DIR"  &&
