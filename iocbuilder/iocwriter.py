@@ -822,7 +822,7 @@ EPICS_BASE = %(EPICS_BASE)s
 
 
     def CreateBootFiles(self):
-        extension = self.substitute_boot and 'src' or 'cmd'
+        extension = 'src' if self.substitute_boot else 'cmd'
         self.WriteFile(
             (self.iocBootDir, 'st%s.%s' % (self.ioc_name, extension)),
             self.PrintIoc, '../..', maxLineLength = self.IOCmaxLineLength)
@@ -924,7 +924,7 @@ EPICS_BASE = %(EPICS_BASE)s
         else:
             ARCH = ''
 
-        CHECK_RELEASE = self.check_release and 'YES' or 'NO'
+        CHECK_RELEASE = 'YES' if self.check_release else 'NO'
 
         self.WriteFile(('configure', config_file),
             config_text % dict(
