@@ -938,8 +938,8 @@ EPICS_BASE = %(EPICS_BASE)s
             self.WriteFile(('configure', debug_config_file),
                            config_text % dict(
                                ARCH = DEBUG_ARCH,
-                               CHECK_RELEASE = CHECK_RELEASE,
-                               mode = 'a'))
+                               CHECK_RELEASE = CHECK_RELEASE),
+                               mode = 'a')
 
     def CreateDataFiles(self):
         # Note that the data files have to be generated after almost
