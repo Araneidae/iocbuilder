@@ -41,7 +41,7 @@ def main():
         ' create an envPaths file to load')
     parser.add_option(
         '-B', "--build-debug", action='store_true', dest='build_debug',
-        help='Enable build of windows-x64-debug')
+        help='Enable debug build of IOC')
 
     # parse arguments
     (options, args) = parser.parse_args()
