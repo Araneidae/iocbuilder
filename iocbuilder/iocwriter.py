@@ -929,17 +929,17 @@ EPICS_BASE = %(EPICS_BASE)s
         self.WriteFile(('configure', config_file),
             config_text % dict(
                 ARCH = ARCH,
-                CHECK_RELEASE = CHECK_RELEASE),
-            mode = 'a')
+                CHECK_RELEASE = CHECK_RELEASE,
+            ), mode = 'a')
 
         if self.build_debug and configure.Architecture() == 'windows-x64':
             debug_config_file = 'CONFIG_SITE.%s.Common' % configure.Architecture()
             DEBUG_ARCH = '%s-debug' % configure.Architecture()
             self.WriteFile(('configure', debug_config_file),
-                           config_text % dict(
-                               ARCH = DEBUG_ARCH,
-                               CHECK_RELEASE = CHECK_RELEASE),
-                               mode = 'a')
+                config_text % dict(
+                    ARCH = DEBUG_ARCH,
+                    CHECK_RELEASE = CHECK_RELEASE,
+                ), mode = 'a')
 
     def CreateDataFiles(self):
         # Note that the data files have to be generated after almost
