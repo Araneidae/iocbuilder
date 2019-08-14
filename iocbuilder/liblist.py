@@ -102,6 +102,13 @@ class Hardware(Singleton):
             for library in self.__LibraryList
             for text in library.MakefileStringList]
 
+    # Compiles a list of environment variables required by underlying Devices
+    def GetEnvironmentVariables(self):
+        environment_variables = []
+        for device in self.__HardwareList:
+            environment_variables += device.EnvironmentVariables
+        return environment_variables
+
     # Any devices which need post iocInit() initialisation can have their
     # code generation here
     def PrintPostIocInit(self):
