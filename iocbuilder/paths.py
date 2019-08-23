@@ -81,6 +81,7 @@ EPICS_HOST_ARCH = os.environ.get('EPICS_HOST_ARCH', EPICS_HOST_ARCH)
 
 # Default values if values cannot be set.
 module_path = None
+module_work_path = None
 msiPath = None
 
 # If EPICS_BASE has been set in the environment set this version by default.

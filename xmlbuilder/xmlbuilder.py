@@ -39,6 +39,9 @@ def main():
         '-b', action='store_true', dest='no_substitute_boot',
         help='Don\'t substitute .src file to make a .boot file, copy it and '\
         ' create an envPaths file to load')
+    parser.add_option(
+        '--build-debug', action='store_true', dest='build_debug',
+        help='Enable debug build of IOC')
 
     # parse arguments
     (options, args) = parser.parse_args()
@@ -102,7 +105,7 @@ def main():
     if debug:
         print "Writing ioc to %s" % iocpath
     store.iocbuilder.WriteNamedIoc(iocpath, store.iocname, check_release = not options.no_check_release,
-        substitute_boot = substitute_boot, edm_screen = options.edm_screen)
+        substitute_boot = substitute_boot, edm_screen = options.edm_screen, build_debug = options.build_debug)
     if debug:
         print "Done"
 
