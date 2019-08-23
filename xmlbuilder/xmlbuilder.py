@@ -40,7 +40,7 @@ def main():
         help='Don\'t substitute .src file to make a .boot file, copy it and '\
         ' create an envPaths file to load')
     parser.add_option(
-        '-B', "--build-debug", action='store_true', dest='build_debug',
+        '--build-debug', action='store_true', dest='build_debug',
         help='Enable debug build of IOC')
 
     # parse arguments
