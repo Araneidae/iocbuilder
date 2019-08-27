@@ -163,6 +163,9 @@ class Device(libversion.ModuleBase):
     ## Define this method to be called after \c iocInit in the startup script.
     PostIocInitialise = None
 
+    ## Environment variables required - list of tuple(name, value)
+    EnvironmentVariables = []
+
 
     # This routine generates all the library instance loading code and is
     # called from Hardware during creation of the st.cmd file.  In dynamic

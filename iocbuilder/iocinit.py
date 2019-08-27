@@ -113,6 +113,9 @@ class iocInit(support.Singleton):
         self.ioc_name = ioc_name
         self.substitute_boot = substitute_boot
 
+    # Retrieves any require environment variables from underlying Hardware
+    def GetEnvironmentVariables(self):
+        return Hardware.GetEnvironmentVariables()
 
     def PrintHeader_vxWorks(self, ioc_root):
         # Set up the working home directory.  If a target directory has
