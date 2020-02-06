@@ -116,7 +116,7 @@ def main():
 
 
 def readme_exists(xml_file, debug):
-    readme_path = xml_file.replace(".xml", "_README")
+    readme_path = xml_file.replace(".xml", "_README.md")
     if os.path.exists(readme_path):
         if debug:
             print("Found README at {path}".format(path=readme_path))
