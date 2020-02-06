@@ -1,9 +1,10 @@
 #!/bin/env dls-python
 from xmlstore import Store
-import sys, os
+import sys, os, shutil
 from subprocess import *
 from optparse import OptionParser
 import xml.dom.minidom
+
 
 # hacky hacky change linux-x86 to linux-x86_64 in RHEL6
 def patch_arch(arch):
@@ -12,6 +13,7 @@ def patch_arch(arch):
         arch = "linux-x86_64"
     return arch
     
+
 def main():
     parser = OptionParser('usage: %prog [options] <xml-file>')
     parser.add_option(
@@ -108,6 +110,33 @@ def main():
         substitute_boot = substitute_boot, edm_screen = options.edm_screen, build_debug = options.build_debug)
     if debug:
         print "Done"
+
+    # Check for README in same directory as source XML
+    copy_readme(xml_file, iocpath, debug)
+
+
+def readme_exists(xml_file, debug):
+    readme_path = xml_file.replace(".xml", "_README.md")
+    if os.path.exists(readme_path):
+        if debug:
+            print("Found README at {path}".format(path=readme_path))
+        return readme_path
+    else:
+        if debug:
+            print("No README found")
+        return None
+
+
+def copy_readme(xml_file, iocpath, debug):
+    # Check for README
+    source_readme_path = readme_exists(xml_file, debug)
+    if source_readme_path is not None:
+        if debug:
+            print("Copying README to {0}".format(iocpath))
+        destination_readme_path = "{iocpath}/README.md".format(iocpath=iocpath)
+        shutil.copyfile(source_readme_path, destination_readme_path)
+
+
 
 if __name__=='__main__':
     # Pick up containing IOC builder
