@@ -1,7 +1,7 @@
 # EPICS_BASE ensures base.dbd is loaded.  Everything else is currently done
 # in iocinit.
 
-from iocbuilder import Device, IocCommand, ModuleBase, EpicsEnvSet
+from iocbuilder import Device, IocCommand, ModuleBase, EpicsEnvSet, PreBootCommandSet
 from iocbuilder import configure
 from iocbuilder.support import quote_c_string
 from iocbuilder.arginfo import *
@@ -69,6 +69,17 @@ class EpicsEnvSet(ModuleBase):
     ArgInfo = makeArgInfo(__init__,
         key   = Simple('Variable to set', str),
         value = Simple('Value to set it to', str))
+
+
+class PreBootCommandSet(ModuleBase):
+    '''Set commands to run before IOC startup'''
+    _PreBootCommandSet = PreBootCommandSet
+    def __init__(self, command):
+        self._PreBootCommandSet(command)
+        self.__super.__init__()
+
+    ArgInfo = makeArgInfo(__init__,
+        command = Simple('Command to run before IOC startup', str))
 
 
 def dotted_to_ip(dotted):

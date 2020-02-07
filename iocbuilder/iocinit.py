@@ -91,6 +91,9 @@ class iocInit(support.Singleton):
         self.PrintHeader_win32 = self.PrintHeader_linux
         self.PrintHeader_windows = self.PrintHeader_linux
 
+	# List of commands to run in startup script before IOC boot
+        self.__PreBootCommands = []
+
 
     def Initialise(self):
         # We can't import the IOC until we've finished importing (at least,
@@ -116,6 +119,15 @@ class iocInit(support.Singleton):
     # Retrieves any require environment variables from underlying Hardware
     def GetEnvironmentVariables(self):
         return Hardware.GetEnvironmentVariables()
+
+    ## Sets pre boot commands
+    @export
+    def PreBootCommandSet(self, command):
+        self.__PreBootCommands.append(command)
+
+    ## Gets pre boot commands
+    def GetPreBootCommands(self):
+        return self.__PreBootCommands
 
     def PrintHeader_vxWorks(self, ioc_root):
         # Set up the working home directory.  If a target directory has

@@ -120,6 +120,7 @@ A number of calls help to configure the generated IOC.
 - \ref iocbuilder.iocinit.iocInit.SetEpicsLogging "SetEpicsLogging()"
 - \ref iocbuilder.iocinit.iocInit.SetClockRate "SetClockRate()"
 - \ref iocbuilder.iocinit.iocInit.EpicsEnvSet "EpicsEnvSet()"
+- \ref iocbuilder.iocinit.iocInit.PreBootCommandSet "PreBootCommandSet()"
 - \ref iocbuilder.iocinit.iocInit.IocCommand "IocCommand()"
 
 
