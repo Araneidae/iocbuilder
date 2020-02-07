@@ -1,6 +1,6 @@
 #!/bin/env dls-python
 from xmlstore import Store
-import sys, os, shutil
+import sys, os, shutil, glob
 from subprocess import *
 from optparse import OptionParser
 import xml.dom.minidom
@@ -112,30 +112,39 @@ def main():
         print "Done"
 
     # Check for README in same directory as source XML
-    copy_readme(xml_file, iocpath, debug)
+    check_for_readme(xml_file, iocpath, store.iocname, debug)
 
 
-def readme_exists(xml_file, debug):
-    readme_path = xml_file.replace(".xml", "_README.md")
-    if os.path.exists(readme_path):
+def readme_exists(xml_file, iocname, debug):
+    readme_pattern = xml_file.replace(".xml", "_README*")
+    readme_paths = glob.glob(readme_pattern)
+    if len(readme_paths) > 0:
+        # Return only the first match
         if debug:
-            print("Found README at {path}".format(path=readme_path))
-        return readme_path
+            print("Found README at {path}".format(path=readme_paths[0]))
+        return readme_paths[0]
     else:
         if debug:
             print("No README found")
         return None
 
 
-def copy_readme(xml_file, iocpath, debug):
-    # Check for README
-    source_readme_path = readme_exists(xml_file, debug)
-    if source_readme_path is not None:
-        if debug:
-            print("Copying README to {0}".format(iocpath))
-        destination_readme_path = "{iocpath}/README.md".format(iocpath=iocpath)
-        shutil.copyfile(source_readme_path, destination_readme_path)
+def get_readme_filename(source_readme_path):
+    split_path = source_readme_path.split("/")
+    return split_path[-1]
 
+
+def check_for_readme(xml_file, iocpath, iocname, debug):
+    # Check for README
+    source_readme_path = readme_exists(xml_file, iocname, debug)
+    if source_readme_path is not None:
+        readme_filename = get_readme_filename(source_readme_path)
+        destination_readme_path = "{iocpath}/{filename}".format(
+            iocpath=iocpath,
+            filename=readme_filename)
+        if debug:
+            print("Copying README to {0}".format(destination_readme_path))
+        shutil.copyfile(source_readme_path, destination_readme_path)
 
 
 if __name__=='__main__':
