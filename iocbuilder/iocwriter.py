@@ -225,6 +225,7 @@ class IocWriter:
         self.SetIocName = iocinit.iocInit.SetIocName
 
         self.GetEnvironmentVariables = iocinit.iocInit.GetEnvironmentVariables
+        self.GetPreBootCommands = iocinit.iocInit.GetPreBootCommands
 
 
 
@@ -458,6 +459,7 @@ if [ -n "$1" ]; then
     }
 fi
 %(env)s
+%(pre)s
 exec ./%(ioc)s st%(ioc)s.boot'''
 
     # Startup shell script for Windows IOC
@@ -871,8 +873,14 @@ EPICS_BASE = %(EPICS_BASE)s
                 for name, value in environment_variables
             ])
 
+        pre_command_string = ""
+        pre_commands = self.GetPreBootCommands()
+        if pre_commands:
+            pre_command_string = "\n".join(pre_commands)
+
         self.WriteFile((self.iocBootDir, 'st%s.sh' % ioc),
-            self.LINUX_CMD % dict(ioc=ioc, env=environment),
+            self.LINUX_CMD % dict(ioc=ioc, env=environment, 
+                                  pre=pre_command_string),
             header = PrintDisclaimerCommand('/bin/sh'))
         if not self.substitute_boot:
             self.makefile_boot.AddLine('%s += envPaths' % scripts)
