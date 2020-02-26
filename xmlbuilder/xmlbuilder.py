@@ -129,16 +129,25 @@ def readme_exists(xml_file, iocname, debug):
         return None
 
 
-def get_readme_filename(source_readme_path):
+def get_source_readme_filename(source_readme_path):
     split_path = source_readme_path.split("/")
     return split_path[-1]
+
+
+def get_destination_readme_filename(source_readme_path):
+    readme_filename = get_source_readme_filename(source_readme_path)
+    extension_pos = readme_filename.find(".")
+    destination_filename = "README"
+    if extension_pos != -1:
+        destination_filename += readme_filename[extension_pos:]
+    return destination_filename
 
 
 def check_for_readme(xml_file, iocpath, iocname, debug):
     # Check for README
     source_readme_path = readme_exists(xml_file, iocname, debug)
     if source_readme_path is not None:
-        readme_filename = get_readme_filename(source_readme_path)
+        readme_filename = get_destination_readme_filename(source_readme_path)
         destination_readme_path = "{iocpath}/{filename}".format(
             iocpath=iocpath,
             filename=readme_filename)
