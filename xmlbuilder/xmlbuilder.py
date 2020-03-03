@@ -1,6 +1,7 @@
 #!/bin/env dls-python
 from xmlstore import Store
 import sys, os, shutil, glob
+import re
 from subprocess import *
 from optparse import OptionParser
 import xml.dom.minidom
@@ -83,6 +84,7 @@ def main():
     # Now create a new store, loading the release file from this xml file
     store.New(xml_file)
     store.iocbuilder.SetSource(os.path.realpath(xml_file))
+    store.iocbuilder.SetAdditionalHeaderText(get_git_status(xml_file))
 
     # create iocbuilder objects from the xml text
     store.iocbuilder.includeXml.instantiateXml(xml_text)
@@ -154,6 +156,66 @@ def check_for_readme(xml_file, iocpath, iocname, debug):
         if debug:
             print("Copying README to {0}".format(destination_readme_path))
         shutil.copyfile(source_readme_path, destination_readme_path)
+
+
+def get_git_status(source):
+    git_status = []
+    source_path = os.path.dirname(source)
+    xml_file = os.path.basename(source)
+    release = os.path.splitext(xml_file)[0] + "_RELEASE"
+    git_status += get_latest_commit(source_path)
+    git_status += compare_to_upstream(source_path)
+    git_status += get_file_git_status([xml_file, release], source_path)
+    return '\n'.join(git_status)
+
+
+def get_latest_commit(repo_path):
+    commit_info = []
+    git_describe = 'git describe --tags --long --always'.split()
+    git_log = 'git log -n 1 --pretty=format:%s'.split()
+    try:
+        description = check_output(git_describe, cwd=repo_path)
+        message = check_output(git_log, cwd=repo_path)
+        if "-" not in description:
+            commit_info.append('SHA1 {} "{}"'.format(description, message))
+        else:
+            match = re.search(r"^(.+)-(\d+)-g([0-9a-f]+)$", description)
+            tag, n_commits, sha1 = match.groups()
+            commit_info.append('SHA1 {} "{}"'.format(sha1, message))
+            commit_info.append('{} commits since {}'.format(n_commits, tag))
+    except CalledProcessError:
+        commit_info.append('No git info')
+    return commit_info
+
+
+def compare_to_upstream(repo_path):
+    comparison = []
+    git_ahead = 'git rev-list --left-only --count @...@{upstream}'.split()
+    git_behind = 'git rev-list --right-only --count @...@{upstream}'.split()
+    try:
+        ahead = check_output(git_ahead, cwd=repo_path).strip()
+        behind = check_output(git_behind, cwd=repo_path).strip()
+        comparison.append('{} ahead, {} behind upstream'.format(ahead, behind))
+    except CalledProcessError:
+        comparison.append('No upstream info')
+    return comparison
+
+
+def get_file_git_status(file_list, repo_path):
+    file_status = []
+    git_lstree = 'git ls-tree -r --name-only HEAD'.split()
+    git_diff = 'git diff --name-only HEAD'.split()
+    try:
+        tracked = check_output(git_lstree, cwd=repo_path)
+        uncommitted = check_output(git_diff, cwd=repo_path)
+        for f in file_list:
+            if f not in tracked:
+                file_status.append('{} not tracked'.format(f))
+            if f in uncommitted:
+                file_status.append('{} has uncommitted changes'.format(f))
+    except CalledProcessError:
+        pass
+    return file_status
 
 
 if __name__=='__main__':
