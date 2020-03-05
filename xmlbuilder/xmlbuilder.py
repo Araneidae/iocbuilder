@@ -159,7 +159,7 @@ def check_for_readme(xml_file, iocpath, iocname, debug):
 
 
 def get_git_status(source):
-    git_status = []
+    git_status = ["Git status:"]
     source_path = os.path.dirname(source)
     xml_file = os.path.basename(source)
     release = os.path.splitext(xml_file)[0] + "_RELEASE"

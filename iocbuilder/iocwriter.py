@@ -40,8 +40,9 @@ def PrintDisclaimer(s, m=None, e=''):
     now = time.strftime('%a %d %b %Y %H:%M:%S %Z')
     source = "\n".join(textwrap.wrap(_Source, 110))
     message = ['This file was automatically generated on'\
-               '%s from\nsource: %s' % (now, source)]
+               ' %s from\nsource: %s' % (now, source)]
     if _HeaderText:
+        message.append("")
         lines = _HeaderText.splitlines()
         for line in lines:
             message.append("\n".join(textwrap.wrap(line, 110)))
@@ -890,7 +891,7 @@ EPICS_BASE = %(EPICS_BASE)s
             pre_command_string = "\n".join(pre_commands)
 
         self.WriteFile((self.iocBootDir, 'st%s.sh' % ioc),
-            self.LINUX_CMD % dict(ioc=ioc, env=environment, 
+            self.LINUX_CMD % dict(ioc=ioc, env=environment,
                                   pre=pre_command_string),
             header = PrintDisclaimerCommand('/bin/sh'))
         if not self.substitute_boot:
