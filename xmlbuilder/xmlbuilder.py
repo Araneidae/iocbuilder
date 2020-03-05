@@ -174,15 +174,9 @@ def get_latest_commit(repo_path):
     git_describe = 'git describe --tags --long --always'.split()
     git_log = 'git log -n 1 --pretty=format:%s'.split()
     try:
-        description = check_output(git_describe, cwd=repo_path)
+        description = check_output(git_describe, cwd=repo_path).strip()
         message = check_output(git_log, cwd=repo_path)
-        if "-" not in description:
-            commit_info.append('SHA1 {} "{}"'.format(description, message))
-        else:
-            match = re.search(r"^(.+)-(\d+)-g([0-9a-f]+)$", description)
-            tag, n_commits, sha1 = match.groups()
-            commit_info.append('SHA1 {} "{}"'.format(sha1, message))
-            commit_info.append('{} commits since {}'.format(n_commits, tag))
+        commit_info.append('{} "{}"'.format(description, message))
     except CalledProcessError:
         commit_info.append('No git info')
     return commit_info
