@@ -203,10 +203,9 @@ def get_file_git_status(file_list, repo_path):
         tracked = check_output(git_lstree, cwd=repo_path)
         uncommitted = check_output(git_diff, cwd=repo_path)
         for f in file_list:
-            if f not in tracked:
-                file_status.append('{} not tracked'.format(f))
-            if f in uncommitted:
-                file_status.append('{} has uncommitted changes'.format(f))
+            if f not in tracked or f in uncommitted:
+                file_status.append('{} contained uncommitted changes'\
+                                   ' at build time'.format(f))
     except CalledProcessError:
         pass
     return file_status
