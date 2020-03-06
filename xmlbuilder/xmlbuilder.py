@@ -164,7 +164,6 @@ def get_git_status(source):
     xml_file = os.path.basename(source)
     release = os.path.splitext(xml_file)[0] + "_RELEASE"
     git_status += get_latest_commit(source_path)
-    git_status += compare_to_upstream(source_path)
     git_status += get_file_git_status([xml_file, release], source_path)
     return '\n'.join(git_status)
 
@@ -180,19 +179,6 @@ def get_latest_commit(repo_path):
     except CalledProcessError:
         commit_info.append('No git info')
     return commit_info
-
-
-def compare_to_upstream(repo_path):
-    comparison = []
-    git_ahead = 'git rev-list --left-only --count @...@{upstream}'.split()
-    git_behind = 'git rev-list --right-only --count @...@{upstream}'.split()
-    try:
-        ahead = check_output(git_ahead, cwd=repo_path).strip()
-        behind = check_output(git_behind, cwd=repo_path).strip()
-        comparison.append('{} ahead, {} behind upstream'.format(ahead, behind))
-    except CalledProcessError:
-        comparison.append('No upstream info')
-    return comparison
 
 
 def get_file_git_status(file_list, repo_path):
