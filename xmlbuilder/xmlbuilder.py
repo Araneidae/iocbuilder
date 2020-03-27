@@ -1,10 +1,10 @@
 #!/bin/env dls-python
-from xmlstore import Store
 import sys, os, shutil, glob
 import re
 from subprocess import *
 from optparse import OptionParser
 import xml.dom.minidom
+from xmlconfig import XmlConfig
 
 
 # hacky hacky change linux-x86 to linux-x86_64 in RHEL6
@@ -13,7 +13,7 @@ def patch_arch(arch):
     if lsb_release == "6" and arch == "linux-x86":
         arch = "linux-x86_64"
     return arch
-    
+
 
 def main():
     parser = OptionParser('usage: %prog [options] <xml-file>')
@@ -24,7 +24,7 @@ def main():
         '-D', action='store_true', dest='DbOnly',
         help='Only output files destined for the Db dir')
     parser.add_option('-o', dest='out',
-        default = os.path.join('..', '..', 'iocs'),
+        default=os.path.join('..', '..', 'iocs'),
         help='Output directory for ioc')
     parser.add_option(
         '--doc', dest='doc',
@@ -63,58 +63,61 @@ def main():
     else:
         DbOnly = False
 
-    # setup the store
+    # read the xml text for the architecture
     xml_file = args[0]
-    store = Store(debug = debug, DbOnly = DbOnly, doc = options.doc)
     if options.debug:
         print '--- Parsing %s ---' % xml_file
-    
-    # read the xml text for the architecture
     xml_text = open(xml_file).read()
     xml_root = xml.dom.minidom.parseString(xml_text)
     components = [n
         for n in xml_root.childNodes if n.nodeType == n.ELEMENT_NODE][0]
     if options.simarch is not None:
-        store.architecture = patch_arch(options.simarch)
-        store.simarch = store.architecture
+        architecture = patch_arch(options.simarch)
+        simarch = architecture
     else:
-        store.architecture = patch_arch(str(components.attributes['arch'].value))
-        store.simarch = None
-    
-    # Now create a new store, loading the release file from this xml file
-    store.New(xml_file)
-    store.iocbuilder.SetSource(os.path.realpath(xml_file))
-    store.iocbuilder.SetAdditionalHeaderText(get_git_status(xml_file))
+        architecture = patch_arch(str(components.attributes['arch'].value))
+        simarch = None
+
+    # setup the XmlIocBuilder
+    xml_config = XmlConfig(debug=debug, DbOnly=DbOnly,
+                           doc=options.doc, arch=architecture,
+                           simarch=simarch, filename=xml_file)
+    xml_config.iocbuilder.SetSource(os.path.realpath(xml_file))
+    xml_config.iocbuilder.SetAdditionalHeaderText(get_git_status(xml_file))
 
     # create iocbuilder objects from the xml text
-    store.iocbuilder.includeXml.instantiateXml(xml_text)
+    xml_config.iocbuilder.includeXml.instantiateXml(xml_text)
 
     if options.doc:
         iocpath = options.doc
     elif DbOnly:
         iocpath = os.path.abspath(".")
         if options.simarch:
-            store.iocname += '_sim'
+            xml_config.iocname += '_sim'
     else:
         # write the iocs
         root = os.path.abspath(options.out)
-        iocpath = os.path.join(root, store.iocname)
+        iocpath = os.path.join(root, xml_config.iocname)
         if options.simarch:
             iocpath += '_sim'
 #            store.iocbuilder.SetEpicsPort(6064)
 
     substitute_boot = not options.no_substitute_boot
-    if store.architecture == "win32-x86":
+    if xml_config.architecture == "win32-x86":
         substitute_boot = False
     if debug:
         print "Writing ioc to %s" % iocpath
-    store.iocbuilder.WriteNamedIoc(iocpath, store.iocname, check_release = not options.no_check_release,
-        substitute_boot = substitute_boot, edm_screen = options.edm_screen, build_debug = options.build_debug)
+    xml_config.iocbuilder.WriteNamedIoc(iocpath,
+                                        xml_config.iocname,
+                                        check_release=not options.no_check_release,
+                                        substitute_boot=substitute_boot,
+                                        edm_screen=options.edm_screen,
+                                        build_debug=options.build_debug)
     if debug:
         print "Done"
 
     # Check for README in same directory as source XML
-    check_for_readme(xml_file, iocpath, store.iocname, debug)
+    check_for_readme(xml_file, iocpath, xml_config.iocname, debug)
 
 
 def readme_exists(xml_file, iocname, debug):
